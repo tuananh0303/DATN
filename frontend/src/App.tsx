@@ -1,9 +1,9 @@
-import HelloComponent from '@/components/HelloComponent'
+import DemoComponent from '@/components/DemoComponent'
 
 const App = () => {
   return (
     <>
-      <HelloComponent />
+      <DemoComponent />
     </>
   )
 }
