@@ -2,6 +2,7 @@ import TogleColumn from '@/assets/toggle-column.svg'
 import PersonCropCircle from '@/assets/person-crop-circle.svg'
 import { Link } from 'react-router-dom'
 import { useState, useRef, useEffect } from 'react'
+
 const NavBar = () => {
   const [isExpand, setIsExpand] = useState<boolean>(false)
   const divRef = useRef<HTMLDivElement>(null)
