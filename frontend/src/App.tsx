@@ -3,27 +3,14 @@ import UserRootLayout from "@/layouts/users/UserRoot";
 import HomePage from "@/pages/Home";
 import LoginPage from "@/pages/Login";
 import RegisterPage from "@/pages/Register";
-import FacilityCard from "./components/UI/FacilityCard";
-
-import BadmintonIcon from "@/assets/badminton.svg";
-import BasketballIcon from "@/assets/basketball.svg";
-import FootballIcon from "@/assets/football.svg";
-import PingPongIcon from "@/assets/ping-pong.svg";
-import SwimmingIcon from "@/assets/swimming.svg";
-import Sidebar from "./components/Owner/Sidebar";
-
-const sportIcons = [
-  BadmintonIcon,
-  BasketballIcon,
-  PingPongIcon,
-  FootballIcon,
-  SwimmingIcon,
-];
+import DetaildFacilityPage from "@/pages/DetaildFacility";
+import ErrorPage from "@/pages/Error";
 
 const router = createBrowserRouter([
   {
     path: "/",
     element: <UserRootLayout />,
+    errorElement: <ErrorPage />,
     children: [
       {
         index: true,
@@ -37,14 +24,20 @@ const router = createBrowserRouter([
         path: "register",
         element: <RegisterPage />,
       },
+      {
+        path: "detail/:id",
+        element: <DetaildFacilityPage />,
+      },
     ],
+  },
+  {
+    path: "owner",
+    element: <></>,
   },
   {
     path: "test",
     element: (
-      <div className="flex bg-white min-h-screen justify-center items-center">
-        <Sidebar />
-      </div>
+      <div className="flex bg-white min-h-screen justify-center items-center"></div>
     ),
   },
 ]);
