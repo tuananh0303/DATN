@@ -1,3 +1,4 @@
+import Footer from '@/components/users/Footer'
 import UserHeader from '@/components/users/UserHeader/UserHeader'
 import { Outlet } from 'react-router-dom'
 
@@ -8,6 +9,7 @@ const UserRootLayout = () => {
       <main>
         <Outlet />
       </main>
+      <Footer />
     </div>
   )
 }
