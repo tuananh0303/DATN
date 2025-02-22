@@ -1,0 +1,20 @@
+.facility-list-layout {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 1204px;
+    margin: 0 auto;
+    background-color: #f5f6fa;
+  }
+  
+  .top-navigation-bar-container {
+    flex-grow: 0;
+    height: auto;
+  }
+  
+  .header-facility-list-footer-container {
+    flex-grow: 1;
+    height: auto;
+  }
+  
+  

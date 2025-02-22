@@ -5,6 +5,8 @@ import LoginPage from "@/pages/Login";
 import RegisterPage from "@/pages/Register";
 import DetaildFacilityPage from "@/pages/DetaildFacility";
 import ErrorPage from "@/pages/Error";
+import PlaySchedule from "./pages/Owner/PlaySchedule/PlaySchedule";
+import FacilityManager from "./pages/Owner/FacilityManager/FacilityManager";
 
 const router = createBrowserRouter([
   {
@@ -32,7 +34,7 @@ const router = createBrowserRouter([
   },
   {
     path: "owner",
-    element: <></>,
+    element: <FacilityManager></FacilityManager>,
   },
   {
     path: "test",

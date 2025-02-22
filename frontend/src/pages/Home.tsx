@@ -1,9 +1,7 @@
 import FacilityCard from '@/components/UI/FacilityCard'
 import { useState, useRef, useEffect } from 'react'
 import EventImage from '@/assets/event.png'
-import ArrowIcon from '@/assets/arrow.svg'
-
-
+import ArrowIcon from "@/assets/arrow.svg"
 import BadmintonIcon from '@/assets/badminton.svg'
 import BasketballIcon from '@/assets/basketball.svg'
 import FootballIcon from '@/assets/football.svg'
