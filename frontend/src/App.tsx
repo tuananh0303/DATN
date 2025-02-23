@@ -7,6 +7,8 @@ import DetaildFacilityPage from "@/pages/DetaildFacility";
 import ErrorPage from "@/pages/Error";
 import PlaySchedule from "./pages/Owner/PlaySchedule/PlaySchedule";
 import FacilityManager from "./pages/Owner/FacilityManager/FacilityManager";
+import FieldManagement from "./pages/Owner/FieldManagement/FieldManagement";
+import CreateandFixField from "./pages/Owner/FieldManagement/CreateandFixField/Create_Fix_Field";
 
 const router = createBrowserRouter([
   {
@@ -33,8 +35,20 @@ const router = createBrowserRouter([
     ],
   },
   {
-    path: "owner",
+    path: "FacilityManagement",
     element: <FacilityManager></FacilityManager>,
+  },
+  {
+    path: "fieldmanagement",
+    element: <FieldManagement></FieldManagement>,
+  },
+  {
+    path: "createfield",
+    element: <CreateandFixField></CreateandFixField>,
+  },
+  {
+    path: "playschedule",
+    element: <PlaySchedule></PlaySchedule>,
   },
   {
     path: "test",
