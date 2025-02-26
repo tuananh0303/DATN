@@ -1,27 +1,22 @@
 import React from 'react';
 import Sidebar from '@/components/Sidebar';
-import TopBar from './Topbar';
 import ContentArea from './ContentArea';
+import Footer from '@/components/Footer';
 
 const UserManagement: React.FC = () => {
   return (
-    <div style={{ display: 'flex', flexDirection: 'row', width: '100%', minHeight: '100vh', backgroundColor: '#f5f6fa' }}>
+    <div className="flex flex-row w-full min-h-screen bg-[#f5f6fa]">
       {/* Sidebar */}
-      <div style={{ flexGrow: 0, flexShrink: 0, flexBasis: '240px', height: 'auto', boxShadow: '2px 0 5px rgba(0,0,0,0.1)' }}>
+      <div className="w-[240px] flex-none h-auto shadow-[2px_0_5px_rgba(0,0,0,0.1)]">
         <Sidebar />
       </div>
-
       {/* Main Content Area */}
-      <div style={{ flexGrow: 1, flexDirection: 'column', display: 'flex', height: 'auto' }}>
-        {/* Top Bar */}
-        <div style={{ flexGrow: 0, flexShrink: 0, flexBasis: '90px', height: 'auto', borderBottom: '1px solid #e8e8e8' }}>
-          <TopBar />
-        </div>
-
+      <div className="flex-grow flex flex-col h-auto">      
         {/* Content Area */}
-        <div style={{ flexGrow: 1, height: 'auto', padding: '20px' }}>
+        <div className="flex-grow h-auto p-5">
           <ContentArea />
         </div>
+        <Footer/>
       </div>
     </div>
   );

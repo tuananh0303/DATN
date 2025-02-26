@@ -24,157 +24,93 @@ const UserProfile: React.FC<UserProfileProps> = ({
   profileImage = "https://dashboard.codeparrot.ai/api/image/Z7nGolCHtJJZ6wB9/unsplash.png"
 }) => {
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'row',
-      gap: '50px',
-      minWidth: '643px',
-      padding: '20px',
-      alignItems: 'center',
-      flexWrap: 'wrap'
-    }}>
+    <div className="flex flex-row gap-[50px] min-w-[643px] p-5 items-center flex-wrap">
       {/* Profile Image */}
-      <div style={{
-        width: '300px',
-        height: '341px',
-        borderRadius: '30px',
-        overflow: 'hidden',
-        flexShrink: 0
-      }}>
+      <div className="w-[300px] h-[341px] rounded-[30px] overflow-hidden flex-shrink-0">
         <img 
           src={profileImage} 
           alt="Profile"
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover'
-          }}
+          className="w-full h-full object-cover"
         />
       </div>
 
       {/* User Details */}
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '22px',
-        width: '293px',
-        flexShrink: 1
-      }}>
+      <div className="flex flex-col gap-[22px] w-[293px] flex-shrink">
         {/* Name */}
-        <h1 style={{
-          margin: 0,
-          fontFamily: 'Roboto',
-          fontSize: '32px',
-          fontWeight: 600,
-          color: '#000000'
-        }}>{name}</h1>
+        <h1 className="m-0 font-roboto text-[32px] font-semibold text-black">
+          {name}
+        </h1>
 
         {/* Role Badge */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          backgroundColor: '#6ef153b2',
-          borderRadius: '10px',
-          border: '2px solid #858585',
-          padding: '13px 2px',
-          width: '86px'
-        }}>
-          <span style={{
-            fontFamily: 'Roboto',
-            fontSize: '16px',
-            fontWeight: 500,
-            color: '#858585',
-            margin: '0 auto'
-          }}>{role}</span>
+        <div className="flex items-center bg-[#6ef153b2] rounded-[10px] border-2 border-[#858585] py-[13px] px-[2px] w-[86px]">
+          <span className="font-roboto text-base font-medium text-[#858585] mx-auto">
+            {role}
+          </span>
         </div>
 
         {/* Info Row */}
-        <div style={{
-          display: 'flex',
-          flexDirection: 'row',
-          gap: '20px',
-          alignItems: 'center'
-        }}>
+        <div className="flex flex-row gap-5 items-center">
           {/* Gender */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '15px'
-          }}>
-            <img src="https://dashboard.codeparrot.ai/api/image/Z7nGolCHtJJZ6wB9/page-1.png" alt="Gender" style={{ width: '20px', height: '20px' }} />
-            <span style={{
-              fontFamily: 'Roboto',
-              fontSize: '16px',
-              color: '#858585'
-            }}>{gender}</span>
+          <div className="flex items-center gap-[15px]">
+            <img 
+              src="https://dashboard.codeparrot.ai/api/image/Z7nGolCHtJJZ6wB9/page-1.png" 
+              alt="Gender" 
+              className="w-5 h-5" 
+            />
+            <span className="font-roboto text-base text-[#858585]">
+              {gender}
+            </span>
           </div>
 
           {/* Vertical Line */}
-          <div style={{
-            width: '1px',
-            height: '20px',
-            backgroundColor: '#000000'
-          }} />
+          <div className="w-[1px] h-5 bg-black" />
 
           {/* Birth Date */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '15px'
-          }}>
-            <img src="https://dashboard.codeparrot.ai/api/image/Z7nGolCHtJJZ6wB9/birthday.png" alt="Birthday" style={{ width: '20px', height: '20px' }} />
-            <span style={{
-              fontFamily: 'Roboto',
-              fontSize: '16px',
-              color: '#858585'
-            }}>{birthDate}</span>
+          <div className="flex items-center gap-[15px]">
+            <img 
+              src="https://dashboard.codeparrot.ai/api/image/Z7nGolCHtJJZ6wB9/birthday.png" 
+              alt="Birthday" 
+              className="w-5 h-5" 
+            />
+            <span className="font-roboto text-base text-[#858585]">
+              {birthDate}
+            </span>
           </div>
         </div>
 
         {/* Email */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '15px'
-        }}>
-          <img src="https://dashboard.codeparrot.ai/api/image/Z7nGolCHtJJZ6wB9/email.png" alt="Email" style={{ width: '23px', height: '19px' }} />
-          <span style={{
-            fontFamily: 'Roboto',
-            fontSize: '16px',
-            color: '#858585'
-          }}>{email}</span>
+        <div className="flex items-center gap-[15px]">
+          <img 
+            src="https://dashboard.codeparrot.ai/api/image/Z7nGolCHtJJZ6wB9/email.png" 
+            alt="Email" 
+            className="w-[23px] h-[19px]" 
+          />
+          <span className="font-roboto text-base text-[#858585]">
+            {email}
+          </span>
         </div>
 
         {/* Phone */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '15px'
-        }}>
-          <img src="https://dashboard.codeparrot.ai/api/image/Z7nGolCHtJJZ6wB9/vector.png" alt="Phone" style={{ width: '21px', height: '21px' }} />
-          <span style={{
-            fontFamily: 'Roboto',
-            fontSize: '16px',
-            color: '#858585'
-          }}>{phone}</span>
+        <div className="flex items-center gap-[15px]">
+          <img 
+            src="https://dashboard.codeparrot.ai/api/image/Z7nGolCHtJJZ6wB9/vector.png" 
+            alt="Phone" 
+            className="w-[21px] h-[21px]" 
+          />
+          <span className="font-roboto text-base text-[#858585]">
+            {phone}
+          </span>
         </div>
 
         {/* Joined Date */}
-        <p style={{
-          margin: 0,
-          fontFamily: 'Roboto',
-          fontSize: '16px',
-          fontWeight: 600,
-          color: '#000000'
-        }}>Joined Date: {joinedDate}</p>
+        <p className="m-0 font-roboto text-base font-semibold text-black">
+          Joined Date: {joinedDate}
+        </p>
 
         {/* Total Booking */}
-        <p style={{
-          margin: 0,
-          fontFamily: 'Roboto',
-          fontSize: '16px',
-          color: '#000000'
-        }}>Total Booking: {totalBooking}</p>
+        <p className="m-0 font-roboto text-base text-black">
+          Total Booking: {totalBooking}
+        </p>
       </div>
     </div>
   );

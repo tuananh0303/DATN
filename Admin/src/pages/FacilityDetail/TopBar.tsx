@@ -1,162 +1,74 @@
 import React from 'react';
 
 interface TopBarProps {
-  style?: React.CSSProperties;
+  className?: string;
 }
 
-const TopBar: React.FC<TopBarProps> = ({ style }) => {
+const TopBar: React.FC<TopBarProps> = ({ className = '' }) => {
   return (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      backgroundColor: '#ffffff',
-      borderBottom: '1px solid #e8e8e8',
-      padding: '0 42px',
-      minWidth: '1200px',
-      height: '90px',
-      boxSizing: 'border-box',
-      ...style
-    }}>
+    <div className={`flex items-center justify-between bg-white border-b border-[#e8e8e8] px-[42px] min-w-[1200px] h-[90px] box-border ${className}`}>
       {/* Logo and Title */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '10px'
-      }}>
-        <span style={{
-          fontFamily: 'Roboto',
-          fontWeight: 700,
-          fontSize: '40px',
-          letterSpacing: '1px',
-          color: '#000000'
-        }}>
+      <div className="flex items-center gap-2.5">
+        <span className="font-sans font-bold text-[40px] tracking-[1px] text-black">
           Facility Management
         </span>
       </div>
 
       {/* Right Section */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '30px'
-      }}>
+      <div className="flex items-center gap-[30px]">
         {/* Notification */}
-        <div style={{ position: 'relative' }}>
+        <div className="relative">
           <img 
             src="https://dashboard.codeparrot.ai/api/image/Z7n1xTHWD6EJo6vC/notifica.png" 
             alt="notification"
-            style={{
-              width: '27px',
-              height: '27px',
-              cursor: 'pointer'
-            }}
+            className="w-[27px] h-[27px] cursor-pointer"
           />
-          <div style={{
-            position: 'absolute',
-            top: '-8px',
-            right: '-8px',
-            backgroundColor: '#f93c65',
-            color: '#ffffff',
-            width: '16px',
-            height: '20px',
-            borderRadius: '10px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontFamily: 'Nunito Sans',
-            fontWeight: 700,
-            fontSize: '12px'
-          }}>
+          <div className="absolute -top-2 -right-2 bg-[#f93c65] text-white w-4 h-5 rounded-[10px] flex items-center justify-center font-['Nunito_Sans'] font-bold text-xs">
             6
           </div>
         </div>
 
         {/* Language Selector */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px',
-          cursor: 'pointer'
-        }}>
+        <div className="flex items-center gap-2.5 cursor-pointer">
           <img 
             src="https://dashboard.codeparrot.ai/api/image/Z7n1xTHWD6EJo6vC/flag.png" 
             alt="language"
-            style={{
-              width: '40px',
-              height: '35px'
-            }}
+            className="w-10 h-[35px]"
           />
-          <span style={{
-            fontFamily: 'Nunito Sans',
-            fontWeight: 600,
-            fontSize: '14px',
-            color: '#646464'
-          }}>
+          <span className="font-['Nunito_Sans'] font-semibold text-sm text-[#646464]">
             English
           </span>
           <img 
             src="https://dashboard.codeparrot.ai/api/image/Z7n1xTHWD6EJo6vC/drop-dow.png" 
             alt="dropdown"
-            style={{
-              width: '8px',
-              height: '6px'
-            }}
+            className="w-2 h-1.5"
           />
         </div>
 
         {/* Profile */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '15px',
-          cursor: 'pointer'
-        }}>
+        <div className="flex items-center gap-[15px] cursor-pointer">
           <img 
             src="https://dashboard.codeparrot.ai/api/image/Z7n1xTHWD6EJo6vC/man-4380.png" 
             alt="profile"
-            style={{
-              width: '44px',
-              height: '57px'
-            }}
+            className="w-11 h-[57px]"
           />
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column'
-          }}>
-            <span style={{
-              fontFamily: 'Nunito Sans',
-              fontWeight: 700,
-              fontSize: '14px',
-              color: '#404040'
-            }}>
+          <div className="flex flex-col">
+            <span className="font-['Nunito_Sans'] font-bold text-sm text-[#404040]">
               Moni Roy
             </span>
-            <span style={{
-              fontFamily: 'Nunito Sans',
-              fontWeight: 600,
-              fontSize: '12px',
-              color: '#565656'
-            }}>
+            <span className="font-['Nunito_Sans'] font-semibold text-xs text-[#565656]">
               Admin
             </span>
           </div>
           <img 
             src="https://dashboard.codeparrot.ai/api/image/Z7n1xTHWD6EJo6vC/more.png" 
             alt="more"
-            style={{
-              width: '18px',
-              height: '23px'
-            }}
+            className="w-[18px] h-[23px]"
           />
         </div>
       </div>
     </div>
   );
-};
-
-TopBar.defaultProps = {
-  style: {}
 };
 
 export default TopBar;

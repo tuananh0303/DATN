@@ -1,6 +1,7 @@
 import React from 'react';
 
 interface TopBarProps {
+  title?: string;
   userName?: string;
   userRole?: string;
   notificationCount?: number;
@@ -8,151 +9,71 @@ interface TopBarProps {
 }
 
 const TopBar: React.FC<TopBarProps> = ({
+  title = "User Management",
   userName = "Moni Roy",
   userRole = "Admin",
   notificationCount = 6,
   language = "English"
 }) => {
   return (
-    <div style={{
-      width: '100%',
-      height: '90px',
-      backgroundColor: '#ffffff',
-      borderBottom: '1px solid #e8e8e8',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '0 42px',
-      minWidth: '1200px',
-      boxSizing: 'border-box'
-    }}>
-      {/* Left - Title */}
-      <div style={{
-        fontFamily: 'Roboto',
-        fontWeight: 700,
-        fontSize: '40px',
-        letterSpacing: '1px',
-        color: '#000000'
-      }}>
-        User Management
+    <div className="w-full h-[90px] bg-white border-b border-[#e8e8e8] flex items-center justify-between px-4 min-w-[1000px] box-border">
+      {/* Title */}
+      <div className="text-[40px] font-roboto font-bold tracking-[1px] text-black">
+        {title}
       </div>
 
-      {/* Right - Notifications, Language, Profile */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '30px'
-      }}>
+      {/* Right Section */}
+      <div className="flex items-center gap-6">
         {/* Notification */}
-        <div style={{ position: 'relative' }}>
+        <div className="relative">
           <img 
-            src="https://dashboard.codeparrot.ai/api/image/Z7nGolCHtJJZ6wB9/notifica.png" 
+            src="https://dashboard.codeparrot.ai/api/image/Z7oN01CHtJJZ6wCr/notifica.png" 
             alt="notification"
-            style={{
-              width: '27px',
-              height: '27px',
-              cursor: 'pointer'
-            }}
+            className="w-[27px] h-[27px] cursor-pointer"
           />
           {notificationCount > 0 && (
-            <div style={{
-              position: 'absolute',
-              top: '-5px',
-              right: '-5px',
-              width: '16px',
-              height: '20px',
-              backgroundColor: '#f93c65',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#ffffff',
-              fontSize: '12px',
-              fontFamily: 'Nunito Sans',
-              fontWeight: 700,
-            }}>
+            <div className="absolute -top-2 -right-2 bg-[#f93c65] text-white w-4 h-5 rounded-[10px] flex items-center justify-center text-xs font-nunito font-bold">
               {notificationCount}
             </div>
           )}
         </div>
 
         {/* Language Selector */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px',
-          cursor: 'pointer'
-        }}>
+        <div className="flex items-center gap-2 cursor-pointer">
           <img 
-            src="https://dashboard.codeparrot.ai/api/image/Z7nGolCHtJJZ6wB9/flag.png" 
-            alt="language flag"
-            style={{
-              width: '40px',
-              height: '35px'
-            }}
+            src="https://dashboard.codeparrot.ai/api/image/Z7oN01CHtJJZ6wCr/flag.png" 
+            alt="language"
+            className="w-10 h-[35px]"
           />
-          <span style={{
-            fontFamily: 'Nunito Sans',
-            fontWeight: 600,
-            fontSize: '14px',
-            color: '#646464'
-          }}>
+          <span className="font-nunito text-sm font-semibold text-[#646464]">
             {language}
           </span>
           <img 
-            src="https://dashboard.codeparrot.ai/api/image/Z7nGolCHtJJZ6wB9/drop-dow.png" 
+            src="https://dashboard.codeparrot.ai/api/image/Z7oN01CHtJJZ6wCr/drop-dow.png" 
             alt="dropdown"
-            style={{
-              width: '8px',
-              height: '6px'
-            }}
+            className="w-2 h-[6px]"
           />
         </div>
 
         {/* Profile */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '15px'
-        }}>
+        <div className="flex items-center gap-4">
           <img 
-            src="https://dashboard.codeparrot.ai/api/image/Z7nGolCHtJJZ6wB9/man-4380.png" 
+            src="https://dashboard.codeparrot.ai/api/image/Z7oN01CHtJJZ6wCr/man-4380.png" 
             alt="profile"
-            style={{
-              width: '44px',
-              height: '57px'
-            }}
+            className="w-11 h-[57px]"
           />
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '3px'
-          }}>
-            <span style={{
-              fontFamily: 'Nunito Sans',
-              fontWeight: 700,
-              fontSize: '14px',
-              color: '#404040'
-            }}>
+          <div className="flex flex-col">
+            <span className="font-nunito text-sm font-bold text-[#404040]">
               {userName}
             </span>
-            <span style={{
-              fontFamily: 'Nunito Sans',
-              fontWeight: 600,
-              fontSize: '12px',
-              color: '#565656'
-            }}>
+            <span className="font-nunito text-xs font-semibold text-[#565656]">
               {userRole}
             </span>
           </div>
           <img 
-            src="https://dashboard.codeparrot.ai/api/image/Z7nGolCHtJJZ6wB9/more.png" 
-            alt="more options"
-            style={{
-              width: '18px',
-              height: '23px',
-              cursor: 'pointer'
-            }}
+            src="https://dashboard.codeparrot.ai/api/image/Z7oN01CHtJJZ6wCr/more.png" 
+            alt="more"
+            className="w-[18px] h-[23px] cursor-pointer"
           />
         </div>
       </div>

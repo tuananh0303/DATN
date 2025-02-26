@@ -1,10 +1,17 @@
 import React from 'react';
 
 interface ContentStatisticsCardsProps {
-  style?: React.CSSProperties;
+  className?: string;
+  userName?: string;
+  userRole?: string;
+  notificationCount?: number;
+  language?: string;
 }
 
-const Content_StatisticsCards: React.FC<ContentStatisticsCardsProps> = ({ style }) => {
+const Content_StatisticsCards: React.FC<ContentStatisticsCardsProps> = ({ className,userName = "Moni Roy",
+  userRole = "Admin",
+  notificationCount = 6,
+  language = "English" }) => {
   const statisticsData = [
     {
       title: 'Total Users',
@@ -38,266 +45,137 @@ const Content_StatisticsCards: React.FC<ContentStatisticsCardsProps> = ({ style 
       trendIcon: 'https://dashboard.codeparrot.ai/api/image/Z7ocejHWD6EJo6vq/ic-trend-4.png',
       trendColor: '#00b69b'
     }
+    
   ];
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      padding: '20px',
-      backgroundColor: '#f5f6fa',
-      minWidth: '100%',
-      ...style
-    }}>
+    <>
+    {/* TopBar Section */}
+    <div className="w-full h-[90px] bg-white border-b border-[#e8e8e8] flex items-center justify-between px-[30px] min-w-[1200px] box-border">
+        <div className="text-[40px] font-sans font-bold tracking-[1px] text-black">
+          Report Management
+        </div>
+        <div className="flex items-center gap-5">
+          <div className="relative cursor-pointer">
+            <img 
+              src="https://dashboard.codeparrot.ai/api/image/Z7nri1CHtJJZ6wCT/notifica.png" 
+              alt="notification" 
+              className="w-[27px] h-[27px]"
+            />
+            {notificationCount > 0 && (
+              <div className="absolute -top-2 -right-2 bg-[#f93c65] text-white w-4 h-5 rounded-[10px] flex items-center justify-center text-xs font-sans font-bold">
+                {notificationCount}
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-[10px] cursor-pointer">
+            <img 
+              src="https://dashboard.codeparrot.ai/api/image/Z7nri1CHtJJZ6wCT/flag.png" 
+              alt="language flag" 
+              className="w-[40px] h-[35px]"
+            />
+            <span className="font-sans text-sm font-semibold text-[#646464]">{language}</span>
+            <img 
+              src="https://dashboard.codeparrot.ai/api/image/Z7nri1CHtJJZ6wCT/drop-dow-2.png" 
+              alt="dropdown" 
+              className="w-2 h-[6px]"
+            />
+          </div>
+          <div className="flex items-center gap-[15px] cursor-pointer">
+            <img 
+              src="https://dashboard.codeparrot.ai/api/image/Z7nri1CHtJJZ6wCT/man-4380.png" 
+              alt="profile" 
+              className="w-11 h-[57px]"
+            />
+            <div className="flex flex-col gap-1">
+              <span className="font-sans text-sm font-bold text-[#404040]">{userName}</span>
+              <span className="font-sans text-xs font-semibold text-[#565656]">{userRole}</span>
+            </div>
+            <img 
+              src="https://dashboard.codeparrot.ai/api/image/Z7nri1CHtJJZ6wCT/more.png" 
+              alt="more options" 
+              className="w-[18px] h-[23px]"
+            />
+          </div>
+        </div>
+      </div>
+    <div className={`flex flex-col p-5 bg-[#f5f6fa] min-w-full ${className}`}>
       {/* Statistics Cards */}
-      <div style={{
-        display: 'flex',
-        flexDirection: 'row',
-        gap: '30px',
-        padding: '10px',
-        marginBottom: '30px',
-        flexWrap: 'wrap',
-        justifyContent: 'center'
-      }}>
+      <div className="flex flex-row gap-[30px] p-2.5 mb-[30px] flex-wrap justify-center">
         {statisticsData.map((stat, index) => (
-          <div key={index} style={{
-            flex: '1 1 200px',
-            backgroundColor: '#fff',
-            borderRadius: '14px',
-            border: '1px solid #979797',
-            padding: '20px',
-            position: 'relative',
-            minWidth: '200px',
-            maxWidth: '262px',
-            height: '161px',
-            boxSizing: 'border-box'
-          }}>
-            <div style={{
-              fontSize: '16px',
-              fontFamily: 'Nunito Sans',
-              fontWeight: 600,
-              color: '#202224',
-              opacity: 0.7,
-              marginBottom: '10px'
-            }}>
+          <div key={index} className="flex-[1_1_200px] bg-white rounded-[14px] border border-[#979797] p-5 relative min-w-[200px] max-w-[262px] h-[161px] box-border">
+            <div className="text-base font-['Nunito_Sans'] font-semibold text-[#202224] opacity-70 mb-2.5">
               {stat.title}
             </div>
-            <div style={{
-              fontSize: '28px',
-              fontFamily: 'Nunito Sans',
-              fontWeight: 700,
-              letterSpacing: '1px',
-              color: '#202224',
-              marginBottom: '10px'
-            }}>
+            <div className="text-[28px] font-['Nunito_Sans'] font-bold tracking-[1px] text-[#202224] mb-2.5">
               {stat.value}
             </div>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              color: stat.trendColor,
-              fontSize: '16px',
-              fontFamily: 'Nunito Sans',
-              fontWeight: 600
-            }}>
-              <img src={stat.trendIcon} alt="trend" style={{ width: '24px', height: '24px' }} />
-              <span>{stat.trend}</span>
+            <div className="flex items-center gap-2" style={{ color: stat.trendColor }}>
+              <img src={stat.trendIcon} alt="trend" className="w-6 h-6" />
+              <span className="text-base font-['Nunito_Sans'] font-semibold">{stat.trend}</span>
             </div>
             <img 
               src={stat.icon} 
               alt="icon"
-              style={{
-                position: 'absolute',
-                top: '20px',
-                right: '20px',
-                width: '60px',
-                height: '60px'
-              }}
+              className="absolute top-5 right-5 w-[60px] h-[60px]"
             />
           </div>
         ))}
       </div>
 
       {/* User Registration Trends */}
-      <div style={{
-        backgroundColor: '#fff',
-        borderRadius: '4px',
-        border: '1px solid #f1f1f1',
-        padding: '20px',
-        marginBottom: '30px'
-      }}>
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '20px'
-        }}>
-          <h2 style={{
-            fontSize: '24px',
-            fontFamily: 'Roboto',
-            fontWeight: 500,
-            color: '#191919',
-            margin: 0
-          }}>
+      <div className="bg-white rounded border border-[#f1f1f1] p-5 mb-[30px]">
+        <div className="flex justify-between items-center mb-5">
+          <h2 className="text-2xl font-sans font-medium text-[#191919] m-0">
             User Registration Trends
           </h2>
-          <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '5px'
-            }}>
-              <div style={{
-                width: '30px',
-                height: '10px',
-                backgroundColor: '#fa9e93'
-              }}></div>
-              <span style={{
-                fontSize: '10px',
-                fontFamily: 'Roboto',
-                color: '#191919'
-              }}>Users Count</span>
+          <div className="flex gap-5 items-center">
+            <div className="flex items-center gap-1.5">
+              <div className="w-[30px] h-2.5 bg-[#fa9e93]"></div>
+              <span className="text-[10px] font-sans text-[#191919]">Users Count</span>
             </div>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              padding: '5px 10px',
-              backgroundColor: '#fff',
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}>
-              <span style={{
-                fontSize: '13px',
-                fontFamily: 'Roboto',
-                color: '#000'
-              }}>Week</span>
-              <img src="https://dashboard.codeparrot.ai/api/image/Z7ocejHWD6EJo6vq/drop-dow.png" alt="dropdown" style={{ width: '8px', height: '6px' }} />
+            <div className="flex items-center gap-2.5 px-2.5 py-1.5 bg-white rounded cursor-pointer">
+              <span className="text-[13px] font-sans text-black">Week</span>
+              <img src="https://dashboard.codeparrot.ai/api/image/Z7ocejHWD6EJo6vq/drop-dow.png" alt="dropdown" className="w-2 h-1.5" />
             </div>
           </div>
         </div>
-        <div style={{ height: '300px', backgroundImage: `url(https://dashboard.codeparrot.ai/api/image/Z7ocejHWD6EJo6vq/bg-lines.png)`, backgroundSize: 'cover' }}>
-          {/* Chart would go here - using background image for demonstration */}
+        <div className="h-[300px] bg-[url('https://dashboard.codeparrot.ai/api/image/Z7ocejHWD6EJo6vq/bg-lines.png')] bg-cover">
+          {/* Chart would go here */}
         </div>
       </div>
 
       {/* Line Chart */}
-      <div style={{
-        backgroundColor: '#fff',
-        borderRadius: '4px',
-        border: '1px solid #f1f1f1',
-        padding: '20px'
-      }}>
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '20px'
-        }}>
-          <div style={{ display: 'flex', gap: '20px' }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px'
-            }}>
-              <img src="https://dashboard.codeparrot.ai/api/image/Z7ocejHWD6EJo6vq/intetity.png" alt="facility" style={{ width: '16px', height: '16px' }} />
-              <span style={{
-                fontSize: '12px',
-                fontFamily: 'Poppins',
-                fontWeight: 500,
-                color: '#000'
-              }}>Facility</span>
-            </div>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px'
-            }}>
-              <img src="https://dashboard.codeparrot.ai/api/image/Z7ocejHWD6EJo6vq/intetity-2.png" alt="field" style={{ width: '16px', height: '16px' }} />
-              <span style={{
-                fontSize: '12px',
-                fontFamily: 'Poppins',
-                fontWeight: 500,
-                color: '#000'
-              }}>Field</span>
-            </div>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px'
-            }}>
-              <img src="https://dashboard.codeparrot.ai/api/image/Z7ocejHWD6EJo6vq/intetity-3.png" alt="service" style={{ width: '16px', height: '16px' }} />
-              <span style={{
-                fontSize: '12px',
-                fontFamily: 'Poppins',
-                fontWeight: 500,
-                color: '#000'
-              }}>Service</span>
-            </div>
+      <div className="bg-white rounded border border-[#f1f1f1] p-5">
+        <div className="flex justify-between items-center mb-5">
+          <div className="flex gap-5">
+            {[
+              { icon: 'intetity.png', label: 'Facility' },
+              { icon: 'intetity-2.png', label: 'Field' },
+              { icon: 'intetity-3.png', label: 'Service' }
+            ].map((item, index) => (
+              <div key={index} className="flex items-center gap-2.5">
+                <img 
+                  src={`https://dashboard.codeparrot.ai/api/image/Z7ocejHWD6EJo6vq/${item.icon}`} 
+                  alt={item.label.toLowerCase()} 
+                  className="w-4 h-4" 
+                />
+                <span className="text-xs font-['Poppins'] font-medium text-black">{item.label}</span>
+              </div>
+            ))}
           </div>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            cursor: 'pointer'
-          }}>
-            <span style={{
-              fontSize: '12px',
-              fontFamily: 'Poppins',
-              fontWeight: 500,
-              color: '#000'
-            }}>This Week</span>
-            <img src="https://dashboard.codeparrot.ai/api/image/Z7ocejHWD6EJo6vq/dropdown.png" alt="dropdown" style={{ width: '24px', height: '24px' }} />
+          <div className="flex items-center gap-2.5 cursor-pointer">
+            <span className="text-xs font-['Poppins'] font-medium text-black">This Week</span>
+            <img src="https://dashboard.codeparrot.ai/api/image/Z7ocejHWD6EJo6vq/dropdown.png" alt="dropdown" className="w-6 h-6" />
           </div>
         </div>
-        <div style={{ height: '300px', backgroundImage: `url(https://dashboard.codeparrot.ai/api/image/Z7ocejHWD6EJo6vq/group-26.png)`, backgroundSize: 'cover' }}>
-          {/* Line chart would go here - using background image for demonstration */}
+        <div className="h-[300px] bg-[url('https://dashboard.codeparrot.ai/api/image/Z7ocejHWD6EJo6vq/group-26.png')] bg-cover">
+          {/* Line chart would go here */}
         </div>
       </div>
 
-      {/* Footer */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: '20px 0',
-        borderTop: '1px solid #e6e6e6',
-        marginTop: '20px'
-      }}>
-        <span style={{
-          fontSize: '14px',
-          fontFamily: 'Roboto',
-          color: '#191919'
-        }}>Copyright @ 2023 Safelet. All rights reserved.</span>
-        <div style={{
-          display: 'flex',
-          gap: '15px',
-          alignItems: 'center'
-        }}>
-          <a href="#" style={{
-            fontSize: '14px',
-            fontFamily: 'Roboto',
-            fontWeight: 700,
-            color: '#5858fa',
-            textDecoration: 'none'
-          }}>Terms of Use</a>
-          <div style={{ width: '1px', height: '20px', backgroundColor: '#000' }}></div>
-          <a href="#" style={{
-            fontSize: '14px',
-            fontFamily: 'Roboto',
-            fontWeight: 700,
-            color: '#5858fa',
-            textDecoration: 'none'
-          }}>Privacy Policy</a>
-        </div>
-        <span style={{
-          fontSize: '14px',
-          fontFamily: 'Roboto',
-          color: '#191919'
-        }}>Hand Crafted & made with Love</span>
-      </div>
     </div>
+    </>
   );
 };
 

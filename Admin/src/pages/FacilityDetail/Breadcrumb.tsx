@@ -1,41 +1,14 @@
 import React from 'react';
 
 interface BreadcrumbProps {
-  style?: React.CSSProperties;
+  className?: string;
 }
 
-const Breadcrumb: React.FC<BreadcrumbProps> = ({ style }) => {
+const Breadcrumb: React.FC<BreadcrumbProps> = ({ className }) => {
   return (
-    <div 
-      style={{
-        display: 'flex',
-        flexDirection: 'row',
-        gap: '4px',
-        alignItems: 'center',
-        minWidth: '287px',
-        height: '20px',
-        ...style
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'row',
-          gap: '10px',
-          alignItems: 'center',
-          cursor: 'pointer'
-        }}
-      >
-        <span
-          style={{
-            fontFamily: 'Roboto',
-            fontSize: '14px',
-            fontWeight: 400,
-            lineHeight: '20px',
-            color: '#3d4d54',
-            textTransform: 'uppercase'
-          }}
-        >
+    <div className={`flex flex-row gap-1 items-center min-w-[287px] h-5 ${className || ''}`}>
+      <div className="flex flex-row gap-2.5 items-center cursor-pointer">
+        <span className="font-sans text-sm font-normal leading-5 text-[#3d4d54] uppercase">
           FACILITY MANAGEMENT
         </span>
       </div>
@@ -43,41 +16,16 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ style }) => {
       <img 
         src="https://dashboard.codeparrot.ai/api/image/Z7n1xTHWD6EJo6vC/icons.png"
         alt="arrow-right"
-        style={{
-          width: '16px',
-          height: '16px',
-          display: 'flex',
-          alignItems: 'center'
-        }}
+        className="w-4 h-4 flex items-center"
       />
 
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'row',
-          gap: '10px',
-          alignItems: 'center'
-        }}
-      >
-        <span
-          style={{
-            fontFamily: 'Roboto',
-            fontSize: '14px',
-            fontWeight: 400,
-            lineHeight: '20px',
-            color: '#126da6',
-            textTransform: 'uppercase'
-          }}
-        >
+      <div className="flex flex-row gap-2.5 items-center">
+        <span className="font-sans text-sm font-normal leading-5 text-[#126da6] uppercase">
           FACILITY DETAIL
         </span>
       </div>
     </div>
   );
-};
-
-Breadcrumb.defaultProps = {
-  style: {}
 };
 
 export default Breadcrumb;

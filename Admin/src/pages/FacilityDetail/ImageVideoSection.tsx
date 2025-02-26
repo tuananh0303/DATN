@@ -1,10 +1,10 @@
 import React from 'react';
 
 interface ImageVideoSectionProps {
-  style?: React.CSSProperties;
+  className?: string;
 }
 
-const ImageVideoSection: React.FC<ImageVideoSectionProps> = ({ style }) => {
+const ImageVideoSection: React.FC<ImageVideoSectionProps> = ({ className }) => {
   const images = [
     'https://dashboard.codeparrot.ai/api/image/Z7n1xTHWD6EJo6vC/frame-37.png',
     'https://dashboard.codeparrot.ai/api/image/Z7n1xTHWD6EJo6vC/bg.png',
@@ -13,65 +13,21 @@ const ImageVideoSection: React.FC<ImageVideoSectionProps> = ({ style }) => {
   ];
 
   return (
-    <div 
-      style={{
-        width: '100%',
-        minWidth: '320px',
-        maxWidth: '1014px',
-        height: 'auto',
-        backgroundColor: '#ffffff',
-        padding: '20px',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        ...style
-      }}
-    >
-      <h2 
-        style={{
-          fontSize: '24px',
-          fontFamily: 'Roboto',
-          fontWeight: 600,
-          color: '#000000',
-          marginBottom: '20px',
-          textAlign: 'center'
-        }}
-      >
+    <div className={`w-full min-w-[320px] max-w-[1014px] h-auto bg-white p-5 flex flex-col items-center ${className || ''}`}>
+      <h2 className="text-2xl font-roboto font-semibold text-black mb-5 text-center">
         IMAGE & VIDEO
       </h2>
       
-      <div 
-        style={{
-          display: 'flex',
-          gap: '10px',
-          justifyContent: 'center',
-          flexWrap: 'wrap',
-          width: '100%',
-          maxWidth: '946px',
-          height: 'auto',
-          overflow: 'hidden'
-        }}
-      >
+      <div className="flex gap-2.5 justify-center flex-wrap w-full max-w-[946px] h-auto overflow-hidden">
         {images.map((image, index) => (
           <div 
             key={index}
-            style={{
-              flex: '1 1 200px',
-              maxWidth: '220px',
-              height: 'auto',
-              cursor: 'pointer',
-              transition: 'transform 0.2s',
-            }}
+            className="flex-[1_1_200px] max-w-[220px] h-auto cursor-pointer transition-transform duration-200 hover:scale-105"
           >
             <img 
               src={image}
               alt={`Facility image ${index + 1}`}
-              style={{
-                width: '100%',
-                height: 'auto',
-                objectFit: 'cover',
-                borderRadius: '4px'
-              }}
+              className="w-full h-auto object-cover rounded"
             />
           </div>
         ))}

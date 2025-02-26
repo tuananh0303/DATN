@@ -1,31 +1,25 @@
 import React from 'react';
 import Sidebar from '@/components/Sidebar';
-import TopBar from './TopBar';
 import ContentArea_Footer from './ContentArea_Footer';
 
 const SupportManagementLayout: React.FC = () => {
   return (
-    <div style={{ display: 'flex', flexDirection: 'row', width: '100%', minHeight: '100vh' }}>
+    <div className="flex flex-row w-full min-h-screen">
       {/* Sidebar */}
-      <div style={{ flexGrow: 0, flexShrink: 0, flexBasis: '240px' }}>
+      <div className="flex-none w-60">
         <Sidebar />
       </div>
 
       {/* Main Content Area */}
-      <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
-        {/* Top Bar */}
-        <div style={{ height: '90px' }}>
-          <TopBar />
-        </div>
-
+      <div className="flex flex-col flex-grow">
         {/* Content Area and Footer */}
-        <div style={{ flexGrow: 1, backgroundColor: '#f5f6fa', display: 'flex', flexDirection: 'row' }}>
+        <div className="flex flex-row flex-grow bg-[#f5f6fa]">
           {/* Message List */}
-          <div style={{ flexBasis: '30%', borderRight: '1px solid #e0e0e0', overflowY: 'auto' }}>
+          <div className="w-[30%] border-r border-[#e0e0e0] overflow-y-auto">
             {/* Placeholder for Message List */}
           </div>
           {/* Main Content */}
-          <div style={{ flexGrow: 1 }}>
+          <div className="flex-grow">
             <ContentArea_Footer />
           </div>
         </div>

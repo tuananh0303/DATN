@@ -1,144 +1,60 @@
 import React from 'react';
 
 interface FacilityDetailsProps {
-  style?: React.CSSProperties;
+  className?: string;
 }
 
-const FacilityDetails: React.FC<FacilityDetailsProps> = ({ style }) => {
+const FacilityDetails: React.FC<FacilityDetailsProps> = ({ className }) => {
   return (
-    <div style={{
-      width: '100%',
-      minWidth: '320px',
-      maxWidth: '1014px',
-      backgroundColor: '#fff',
-      padding: '20px',
-      boxSizing: 'border-box',
-      ...style
-    }}>
-      <div style={{
-        display: 'flex',
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: '10px',
-        marginBottom: '20px',
-        flexWrap: 'wrap'
-      }}>
-        <h1 style={{
-          fontSize: '32px',
-          fontFamily: 'Roboto',
-          fontWeight: 700,
-          margin: 0,
-          textAlign: 'center'
-        }}>Sân Cầu Lông Phạm Kha</h1>
-        <div style={{
-          backgroundColor: '#6ef153cc',
-          borderRadius: '10px',
-          padding: '0 20px',
-          height: '20px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
-          <span style={{
-            fontSize: '16px',
-            fontFamily: 'Roboto',
-            textAlign: 'center'
-          }}>Active</span>
+    <div className={`w-full min-w-[320px] max-w-[1014px] bg-white p-5 box-border ${className}`}>
+      <div className="flex flex-row justify-center items-center gap-2.5 mb-5 flex-wrap">
+        <h1 className="text-[32px] font-roboto font-bold m-0 text-center">
+          Sân Cầu Lông Phạm Kha
+        </h1>
+        <div className="bg-[#6ef153cc] rounded-[10px] px-5 h-5 flex items-center justify-center">
+          <span className="text-base font-roboto text-center">Active</span>
         </div>
       </div>
 
-      <p style={{
-        fontSize: '20px',
-        fontFamily: 'Roboto',
-        textAlign: 'center',
-        margin: '0 0 20px 0'
-      }}>
+      <p className="text-xl font-roboto text-center m-0 mb-5">
         Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad laborum.
       </p>
 
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '20px',
-        padding: '0 10px'
-      }}>
-        <div style={{
-          display: 'flex',
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap'
-        }}>
-          <span style={{ fontWeight: 700 }}>Facility ID: 123</span>
-          <span style={{ fontWeight: 700 }}>Owner Name: Nguyễn Tuấn Anh</span>
-          <span style={{ fontWeight: 700 }}>Email: anhhello564@gmail.com</span>
+      <div className="flex flex-col gap-5 px-2.5">
+        <div className="flex flex-row justify-between flex-wrap">
+          <span className="font-bold">Facility ID: 123</span>
+          <span className="font-bold">Owner Name: Nguyễn Tuấn Anh</span>
+          <span className="font-bold">Email: anhhello564@gmail.com</span>
         </div>
 
-        <div style={{
-          display: 'flex',
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap'
-        }}>
-          <span style={{ fontWeight: 600 }}>Open Time: 05:00 - 23:00</span>
-          <span style={{ fontWeight: 700 }}>Created_At: 24/12/2024</span>
-          <span style={{ fontWeight: 700 }}>Updated_At: 24/12/2024</span>
+        <div className="flex flex-row justify-between flex-wrap">
+          <span className="font-semibold">Open Time: 05:00 - 23:00</span>
+          <span className="font-bold">Created_At: 24/12/2024</span>
+          <span className="font-bold">Updated_At: 24/12/2024</span>
         </div>
 
-        <div style={{
-          display: 'flex',
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap'
-        }}>
-          <span style={{ fontWeight: 700 }}>Total Field: 100</span>
-          <span style={{ fontWeight: 700 }}>Total Service: 100</span>
-          <span style={{ fontWeight: 700 }}>Total Voucher: 0</span>
+        <div className="flex flex-row justify-between flex-wrap">
+          <span className="font-bold">Total Field: 100</span>
+          <span className="font-bold">Total Service: 100</span>
+          <span className="font-bold">Total Voucher: 0</span>
         </div>
 
-        <div style={{
-          display: 'flex',
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap'
-        }}>
-          <span style={{ fontWeight: 700 }}>Total Event: 2</span>
-          <span style={{ fontWeight: 700 }}>Total Review: 50</span>
-          <span style={{ fontWeight: 700 }}>Avg Review: 4.2</span>
+        <div className="flex flex-row justify-between flex-wrap">
+          <span className="font-bold">Total Event: 2</span>
+          <span className="font-bold">Total Review: 50</span>
+          <span className="font-bold">Avg Review: 4.2</span>
         </div>
 
-        <span style={{ fontWeight: 600 }}>
+        <span className="font-semibold">
           Location: Số 34 Đường 3/2 quận 10 tp Hồ Chí Minh.
         </span>
 
-        <div style={{
-          display: 'flex',
-          flexDirection: 'row',
-          gap: '10px',
-          alignItems: 'center',
-          flexWrap: 'wrap'
-        }}>
-          <span style={{ fontWeight: 600 }}>Type Sport: </span>
-          <div style={{
-            display: 'flex',
-            flexDirection: 'row',
-            gap: '10px'
-          }}>
+        <div className="flex flex-row gap-2.5 items-center flex-wrap">
+          <span className="font-semibold">Type Sport: </span>
+          <div className="flex flex-row gap-2.5">
             {['Tennis', 'Football', 'Badminton'].map((sport) => (
-              <div key={sport} style={{
-                backgroundColor: '#e1e1e1cc',
-                borderRadius: '10px',
-                padding: '0 15px',
-                height: '19px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <span style={{
-                  fontSize: '16px',
-                  fontFamily: 'Roboto',
-                  textAlign: 'center'
-                }}>{sport}</span>
+              <div key={sport} className="bg-[#e1e1e1cc] rounded-[10px] px-[15px] h-[19px] flex items-center justify-center">
+                <span className="text-base font-roboto text-center">{sport}</span>
               </div>
             ))}
           </div>
@@ -146,10 +62,6 @@ const FacilityDetails: React.FC<FacilityDetailsProps> = ({ style }) => {
       </div>
     </div>
   );
-};
-
-FacilityDetails.defaultProps = {
-  style: {}
 };
 
 export default FacilityDetails;
