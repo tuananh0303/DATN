@@ -142,6 +142,7 @@ const HomePage = () => {
         <h2 className='text-xl tables:text-2xl font-bold'>Sự kiện</h2>
         <img src={EventImage} alt="event" className='object-contain mx-auto mt-5'/>
       </div>
+      
       <div className='py-5 border-b border-slate-300'>
         <h2 className='text-xl tables:text-2xl font-bold'>Cơ sở hàng đầu</h2>
         <div className='relative mt-5 w-72 md:w-[37rem] lg:w-[56rem] mx-auto'>
