@@ -2,7 +2,7 @@ import React from 'react';
 
 const Footer: React.FC = () => {
   return (
-    <div className="w-full min-w-[320px] h-[60px] bg-[#e6e6e6] flex justify-center items-center px-5 box-border">
+    <div className="w-full min-w-[320px] h-[50px] bg-[#e6e6e6] flex justify-center items-center px-5 box-border">
       <div className="w-full max-w-[1156px] flex flex-row justify-between items-center">
         <div className="font-roboto text-sm leading-4 text-[#191919]">
           Copyright @ 2023 Safelet. All rights reserved.

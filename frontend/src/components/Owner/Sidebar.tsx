@@ -5,9 +5,10 @@ import { ICONS } from '@/constants/owner/sidebar/icons';
 
 interface SidebarProps {
   onMenuItemClick?: (itemId: string) => void;
+  onToggle?: (collapsed: boolean) => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ onMenuItemClick = () => {} }) => {
+const Sidebar: React.FC<SidebarProps> = ({ onMenuItemClick = () => {}, onToggle = () => {} }) => {
   const [isCollapsed, setIsCollapsed] = useState(() => {
     const saved = localStorage.getItem('sidebarCollapsed');
     return saved ? JSON.parse(saved) : false;
@@ -22,6 +23,13 @@ const Sidebar: React.FC<SidebarProps> = ({ onMenuItemClick = () => {} }) => {
 
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
+    onToggle(!isCollapsed);
+
+    // Emit custom event
+    const event = new CustomEvent('sidebarStateChange', {
+      detail: { collapsed: !isCollapsed }
+    });
+    window.dispatchEvent(event);
   };
 
   const menuItems = [

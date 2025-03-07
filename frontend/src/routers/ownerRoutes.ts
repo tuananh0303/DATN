@@ -5,10 +5,10 @@ const PlaySchedule = lazy(() => import('@/pages/Owner/PlaySchedule/PlaySchedule'
 
 
 const FacilityManagement = lazy(() => import('@/pages/Owner/FacilityManager/FacilityManagement'));
-
+const CreateFacility = lazy(() => import('@/pages/Owner/FacilityManager/CreateFacility/CreateFacility'));
 
 const FieldManagement = lazy(() => import('@/pages/Owner/FieldManagement/FieldManagement'));
-const CreateandFixField = lazy(() => import('@/pages/Owner/FieldManagement/CreateandFixField/CreateandFixField'));
+const CreateField = lazy(() => import('@/pages/Owner/FieldManagement/CreateField/CreateField'));
 
 const ServiceManagement = lazy(() => import('@/pages/Owner/ServiceManagement/ServiceManagement'));
 const CreateService = lazy(() => import('@/pages/Owner/ServiceManagement/CreateService/CreateService'));  
@@ -36,10 +36,13 @@ export const ownerRoutes = [
     path: ROUTES.FACILITY_MANAGEMENT, element: FacilityManagement 
   },
   {
+    path: ROUTES.CREATE_FACILITY, element: CreateFacility
+  },
+  {
     path: ROUTES.FIELD_MANAGEMENT, element: FieldManagement 
   },
   {
-    path: ROUTES.CREATE_FIELD, element: CreateandFixField 
+    path: ROUTES.CREATE_FIELD, element: CreateField 
   },
   {
     path: ROUTES.SERVICE_MANAGEMENT, element: ServiceManagement

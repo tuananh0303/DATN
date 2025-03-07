@@ -58,7 +58,7 @@ export const ROUTES = {
   REPORT_STATISTICS: '/reports/statistics',
 
   // Settings Management
-  // SETTINGS: '/settings',
+  SETTINGS: '/settings',
   
   // Auth
   LOGIN: '/login',

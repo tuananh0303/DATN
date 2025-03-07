@@ -8,11 +8,11 @@ import { ROUTES } from './constants';
 // const ResetPassword = lazy(() => import('@/pages/Auth/ResetPassword'));
 
 // Dashboard
-const Dashboard = lazy(() => import('@/pages/Dashboard/Dashboard'));
+const Dashboard = lazy(() => import('@/pages/Dashboard/DashboardLayout'));
 
 // User Management
 const UserManagement = lazy(() => import('@/pages/UserManagement/UserManagement'));
-const UserManagementProfile = lazy(() => import('@/pages/UserManagementprofile/UserManagementProfile'));
+const UserManagementProfile = lazy(() => import('@/pages/UserManagement/UserManagementprofile/UserManagementProfile'));
 // const UserProfile = lazy(() => import('@/pages/UserProfile/UserProfile'));
 // const UserSettings = lazy(() => import('@/pages/UserSettings/UserSettings'));
 
@@ -24,13 +24,13 @@ const ApprovalManagement = lazy(() => import('@/pages/ApprovalManagement/Approva
 
 // Facility Management
 const FacilityManagement = lazy(() => import('@/pages/FacilityManagement/FacilityManagement'));
-const FacilityDetailManagement = lazy(() => import('@/pages/FacilityDetail/FacilityDetailManagement'));
+const FacilityDetailManagement = lazy(() => import('@/pages/FacilityManagement/FacilityDetail/FacilityDetailManagement'));
 // const FacilityCreate = lazy(() => import('@/pages/FacilityManagement/FacilityCreate'));
 // const FacilityEdit = lazy(() => import('@/pages/FacilityManagement/FacilityEdit'));
 
 // Field Management
 const FieldManagement = lazy(() => import('@/pages/FieldManagement/FieldManagement'));
-const FieldDetailManagement = lazy(() => import('@/pages/FieldDetail/FieldDetailManagement'));
+const FieldDetailManagement = lazy(() => import('@/pages/FieldManagement/FieldDetail/FieldDetailManagement'));
 // const FieldCreate = lazy(() => import('@/pages/FieldManagement/FieldCreate'));
 // const FieldEdit = lazy(() => import('@/pages/FieldManagement/FieldEdit'));
 
@@ -69,6 +69,8 @@ const ReviewManagement = lazy(() => import('@/pages/ReviewManagement/ReviewManag
 // const ReviewCreate = lazy(() => import('@/pages/ReviewManagement/ReviewCreate'));
 // const ReviewEdit = lazy(() => import('@/pages/ReviewManagement/ReviewEdit'));
 
+// Settings
+const Settings = lazy(() => import('@/pages/Settings/Settings'));
 
 export const routes = [
   // Auth Routes
@@ -139,5 +141,6 @@ export const routes = [
 //   { path: ROUTES.REVIEW_CREATE, element: ReviewCreate },
 //   { path: ROUTES.REVIEW_EDIT, element: ReviewEdit }, 
 
-    
+  // Settings Routes
+  { path: ROUTES.SETTINGS, element: Settings },
 ];

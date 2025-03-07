@@ -1,26 +1,41 @@
 import React from 'react';
-import Sidebar from '@/components/Sidebar';
-import ContentArea_Footer from './ContentArea_Footer';
 
-const SupportManagementLayout: React.FC = () => {
+const SupportManagement: React.FC = () => {
   return (
-    <div className="flex flex-row w-full min-h-screen">
-      {/* Sidebar */}
-      <div className="flex-none w-60">
-        <Sidebar />
+    <div className="flex flex-col w-full min-h-full bg-[#f5f6fa]">
+      {/* Main Content Area */}
+      <div className="flex-1 flex justify-center items-center flex-col p-5">
+        <img 
+          src="https://dashboard.codeparrot.ai/api/image/Z7oUuVCHtJJZ6wCw/rectangl-8.png" 
+          alt="Welcome"
+          className="w-full max-w-[334px] h-auto mb-5"
+        />
+        <h1 className="font-inter font-semibold text-2xl mb-[10px] text-center">
+          Welcome to support Management!
+        </h1>
+        <p className="font-inter font-normal text-xl m-0 text-center">
+          Bắt đầu trả lời người dùng!
+        </p>
       </div>
 
-      {/* Main Content Area */}
-      <div className="flex flex-col flex-grow">
-        {/* Content Area and Footer */}
-        <div className="flex flex-row flex-grow bg-[#f5f6fa]">
-          {/* Message List */}
-          <div className="w-[30%] border-r border-[#e0e0e0] overflow-y-auto">
-            {/* Placeholder for Message List */}
-          </div>
-          {/* Main Content */}
-          <div className="flex-grow">
-            <ContentArea_Footer />
+      {/* Footer */}
+      <div className="h-[60px] bg-[#e6e6e6] flex items-center px-5">
+        <div className="flex justify-between items-center w-full">
+          <span className="font-roboto text-sm text-[#191919]">
+            Copyright @ 2023 Safelet. All rights reserved.
+          </span>
+
+          <div className="flex items-center gap-[15px]">
+            <a href="#" className="font-roboto text-sm font-bold text-[#5858fa] no-underline">
+              Terms of Use
+            </a>
+            <div className="w-[1px] h-5 bg-black" />
+            <a href="#" className="font-roboto text-sm font-bold text-[#5858fa] no-underline">
+              Privacy Policy
+            </a>
+            <span className="font-roboto text-sm text-[#191919] ml-[15px]">
+              Hand Crafted & made with Love
+            </span>
           </div>
         </div>
       </div>
@@ -28,5 +43,5 @@ const SupportManagementLayout: React.FC = () => {
   );
 };
 
-export default SupportManagementLayout;
+export default SupportManagement;
 

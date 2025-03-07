@@ -49,6 +49,9 @@ export const useNavigation = () => {
     // goToReportAnalytics: () => navigate(ROUTES.REPORT_ANALYTICS),
     // goToReportStatistics: () => navigate(ROUTES.REPORT_STATISTICS),
 
+    // Settings
+    goToSettings: () => navigate(ROUTES.SETTINGS),
+    
     // Navigation helpers
     goBack: () => navigate(-1),
     goForward: () => navigate(1)

@@ -14,24 +14,24 @@ export const ROUTES = {
 
   // Facility Management  
   FACILITY_MANAGEMENT: '/owner/facility-management',
-  EDIT_FACILITY: '/owner/facility-management/edit',
-  CREATE_FACILITY: '/owner/facility-management/create',
+  EDIT_FACILITY: '/owner/edit-facility',
+  CREATE_FACILITY: '/owner/create-facility',
 
   // Field Management
   FIELD_MANAGEMENT: '/owner/field-management',
-  CREATE_FIELD: '/owner/field-management/create', 
+  CREATE_FIELD: '/owner/create-field', 
 
   // Service Management 
   SERVICE_MANAGEMENT: '/owner/service-management',
-  CREATE_SERVICE: '/owner/service-management/create', 
+  CREATE_SERVICE: '/owner/create-service', 
 
   // Voucher Management
   VOUCHER_MANAGEMENT: '/owner/voucher-management',
-  CREATE_VOUCHER: '/owner/voucher-management/create',
+  CREATE_VOUCHER: '/owner/create-voucher',
 
   // Event Management
   EVENT_MANAGEMENT: '/owner/event-management',
-  CREATE_EVENT: '/owner/event-management/create',
+  CREATE_EVENT: '/owner/create-event',
 
   // Review Management
   REVIEW_MANAGEMENT: '/owner/review-management',

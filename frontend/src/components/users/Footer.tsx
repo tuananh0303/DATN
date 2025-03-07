@@ -8,7 +8,7 @@ const Footer = () => {
     navigate('/')
   }
   return (
-    <footer className="px-8 tables:px-32 w-full h-fit bg-footerColor pt-5 pb-2 text-slate-300">
+    <footer className="bg-[#2C3E50] px-8 tables:px-32 w-full h-fit bg-footerColor pt-5 pb-2 text-slate-300">
       <div className='flex flex-col gap-10 md:flex-row md:justify-start xl:gap-14'>
         <div className='text-sm'>
           <img src={LogoIcon} className='w-56 cursor-pointer' onClick={handleNavigateHome} />

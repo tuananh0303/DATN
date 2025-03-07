@@ -17,7 +17,12 @@ const ROUTE_TITLES: { [key: string]: string } = {
   '/owner/chat': 'Quản lý chat',
   '/owner/review-management': 'Quản lý đánh giá',
   '/owner/report-management': 'Doanh thu',
-  '/owner/banking': 'Ngân hàng',
+  '/owner/banking': 'Ngân hàng', 
+  '/owner/create-facility': 'Quản lý cơ sở',
+  '/owner/create-field': 'Quản lý sân',
+  '/owner/create-service': 'Quản lý dịch vụ',
+  '/owner/create-voucher': 'Quản lý voucher',
+  '/owner/create-event': 'Quản lý sự kiện',
 };
 
 const LANGUAGES = [
@@ -42,7 +47,7 @@ const TopBar: React.FC<TopBarProps> = () => {
     <div className={`flex items-center justify-between bg-white border-b border-[#e8e8e8] px-[42px] min-w-[960px] h-[75px] box-border`}>
       {/*Title */}
       <div className="flex items-center gap-2.5">
-        <span className="font-sans font-bold text-[34px] tracking-[1px] text-black">
+        <span className="font-sans font-bold text-[29px] tracking-[1px] text-black">
           {currentTitle}
         </span>
       </div>
@@ -101,7 +106,7 @@ const TopBar: React.FC<TopBarProps> = () => {
           <img 
             src={ICONS.AVATAR} 
             alt="profile"
-            className="w-11 h-[57px]"
+            className="w-10 h-10 rounded-full object-cover"
           />          
         </div>
       </div>
