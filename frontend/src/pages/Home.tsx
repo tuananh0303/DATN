@@ -1,176 +1,340 @@
-import FacilityCard from '@/components/UI/FacilityCard'
-import { useState, useRef, useEffect } from 'react'
-import EventImage from '@/assets/event.png'
-import ArrowIcon from '@/assets/arrow.svg'
+import { useState, useEffect } from 'react';
+import { Input, Select, DatePicker, Card, Rate, Carousel, Row, Col } from 'antd';
+import { SearchOutlined, EnvironmentOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import type { RangePickerProps } from 'antd/es/date-picker';
+import { IMAGE } from '@/constants/user/Home/Image';
 
 
-import BadmintonIcon from '@/assets/badminton.svg'
-import BasketballIcon from '@/assets/basketball.svg'
-import FootballIcon from '@/assets/football.svg'
-import PingPongIcon from '@/assets/ping-pong.svg'
-import SwimmingIcon from '@/assets/swimming.svg'
-import AvatarImage from '@/assets/avatar-robber.jpg'
-import Testimonial from '@/components/users/Testimonial'
-import { data } from 'react-router-dom'
+const { Option } = Select;
+const { RangePicker } = DatePicker;
 
-const sportIcons = [BadmintonIcon, BasketballIcon, PingPongIcon, FootballIcon, SwimmingIcon]
-
-const DUMMYDATA = [
-  {
-    id: '01',
-    facilityName: 'Thể thao 247 - cơ sở Thủ Đức 01',
-    sportIcons: sportIcons,
-    startTime: '5:00',
-    endTime: '22:00',
-    location: 'phường linh Trung, Thủ Đức, Tp. HCM',
-    ratingScore: 4.8,
-    quantityRating: 8
-  },
-  {
-    id: '02',
-    facilityName: 'Thể thao 247 - cơ sở Thủ Đức  02',
-    sportIcons: sportIcons,
-    startTime: '5:00',
-    endTime: '22:00',
-    location: 'phường linh Trung, Thủ Đức, Tp. HCM',
-    ratingScore: 4.8,
-    quantityRating: 8
-  },
-  {
-    id: '03',
-    facilityName: 'Thể thao 247 - cơ sở Thủ Đức 03',
-    sportIcons: sportIcons,
-    startTime: '5:00',
-    endTime: '22:00',
-    location: 'phường linh Trung, Thủ Đức, Tp. HCM',
-    ratingScore: 4.8,
-    quantityRating: 8
-  },
-  {
-    id: '04',
-    facilityName: 'Thể thao 247 - cơ sở Thủ Đức 04',
-    sportIcons: sportIcons,
-    startTime: '5:00',
-    endTime: '22:00',
-    location: 'phường linh Trung, Thủ Đức, Tp. HCM',
-    ratingScore: 4.8,
-    quantityRating: 8
-  },
-  {
-    id: '05',
-    facilityName: 'Thể thao 247 - cơ sở Thủ Đức 05',
-    sportIcons: sportIcons,
-    startTime: '5:00',
-    endTime: '22:00',
-    location: 'phường linh Trung, Thủ Đức, Tp. HCM',
-    ratingScore: 4.8,
-    quantityRating: 8
-  },
-  {
-    id: '06',
-    facilityName: 'Thể thao 247 - cơ sở Thủ Đức 06',
-    sportIcons: sportIcons,
-    startTime: '5:00',
-    endTime: '22:00',
-    location: 'phường linh Trung, Thủ Đức, Tp. HCM',
-    ratingScore: 4.8,
-    quantityRating: 8
-  }
-]
-
-const testimonialData = [
-  {
-    image: AvatarImage,
-    userName: 'Dương Văn Nghĩa',
-    testimonial: 'Website được thiết kế chuyên nghiệp, giao diện thân thiện với người dùng, nội dung phong phú và tốc độ tải trang nhanh, mang lại trải nghiệm tuyệt vời cho người truy cập.'
-  },
-  {
-    image: AvatarImage,
-    userName: 'Nguyễn Tuấn Anh',
-    testimonial: 'Giao diện dễ sử dụng, đặt sân nhanh chóng và tiện lợi. Sẽ tiếp tục sử dụng dịch vụ này!'
-  },
-  {
-    image: AvatarImage,
-    userName: 'Dương Văn A',
-    testimonial: 'Nhiều lựa chọn sân bãi, giá cả hợp lý. Hỗ trợ khách hàng rất nhiệt tình!'
-  },
-  {
-    image: AvatarImage,
-    userName: 'Nguyễn Văn C',
-    testimonial: 'Nhiều lựa chọn sân bãi, giá cả hợp lý. Hỗ trợ khách hàng rất nhiệt tình!'
-  }
-]
-
-const HomePage = () => {
-  const [currentIndex, setCurrentIndex] = useState<number>(0)
-  const [width, setWidth] = useState<number>(window.innerWidth)
-
-  const handleNext = () => {
-    if (width >= 1024) {
-      setCurrentIndex(preIndex => preIndex >= DUMMYDATA.length - 3 ? 0 : preIndex + 1)
-    } else if (width >= 768) {
-      setCurrentIndex(preIndex => preIndex >= DUMMYDATA.length - 2 ? 0 : preIndex + 1)
-    } else {
-      setCurrentIndex(preIndex => preIndex >= DUMMYDATA.length - 1 ? 0 : preIndex + 1)
-    }
-  }
-
-  const handlePre = () => {
-    if (width >= 1024) {
-      setCurrentIndex(preIndex => preIndex === 0 ? DUMMYDATA.length - 3 : preIndex -1)
-    } else if (width >= 768) {
-      setCurrentIndex(preIndex => preIndex === 0 ? DUMMYDATA.length - 2 : preIndex -1)
-    } else {
-      setCurrentIndex(preIndex => preIndex === 0 ? DUMMYDATA.length - 1 : preIndex -1)
-    }
-  }
-
-  useEffect(() => {
-    const handleResize = () => {
-      setWidth(window.innerWidth)
-      setCurrentIndex(0)
-    }
-
-    window.addEventListener('resize', handleResize)
-
-    return () => {
-      window.removeEventListener('resize', handleResize)
-    }
-  }, [])
-
-  return (
-    <div className='px-8 tables:px-32'>
-      <div className='py-5 border-b border-slate-300'>
-        <h2 className='text-xl tables:text-2xl font-bold'>Sự kiện</h2>
-        <img src={EventImage} alt="event" className='object-contain mx-auto mt-5'/>
-      </div>
-      <div className='py-5 border-b border-slate-300'>
-        <h2 className='text-xl tables:text-2xl font-bold'>Cơ sở hàng đầu</h2>
-        <div className='relative mt-5 w-72 md:w-[37rem] lg:w-[56rem] mx-auto'>
-          {/* faciliti card */}
-          <div className='overflow-hidden w-full'>
-            <div className='flex flex-row gap-4 transition-transform duration-500' style={{ transform: `translateX(-${currentIndex*304}px)` }}>
-              { DUMMYDATA.map(data => <FacilityCard key={data.id} {...data} />) }
-            </div>
-          </div>
-          {/* left arrow button */}
-          <div onClick={handlePre} className='absolute top-24 -left-20 border p-2 rounded-xl border-slate-400 cursor-pointer hover:border-0 hover:bg-blue-500' >
-            <img src={ArrowIcon} className='w-10 h-10 z-10 fill-white' />
-          </div>
-          {/* right arrow button */}
-          <div onClick={handleNext} className='absolute top-24 -right-20 border p-2 rounded-xl border-slate-400 cursor-pointer hover:border-0 hover:bg-blue-500'>
-            <img src={ArrowIcon} className='w-10 h-10 z-10 fill-white rotate-180' />
-          </div>
-        </div>
-      </div>
-      <div className='py-5'>
-        <h2 className='text-xl tables:text-2xl font-bold'>Nhận xét của khách hàng</h2>
-        <div className='mt-5 flex flex-col md:flex-row md:flex-wrap justify-center gap-5 mb-10'>
-          { testimonialData.map(data => <Testimonial key={data.userName} {...data} />)}
-        </div>
-      </div>
-    </div>
-  )
+// Interface cho facility data
+interface FacilityData {
+  id: string;
+  name: string;
+  thumbnail: string;
+  operatingHours: {
+    start: string;
+    end: string;
+  };
+  sports: string[];
+  address: string;
+  rating: number;
+  priceRange: {
+    min: number;
+    max: number;
+  };
 }
 
-export default HomePage
+// Interface cho promotion/event data
+interface PromotionData {
+  id: string;
+  title: string;
+  description: string;
+  thumbnail: string;
+  validUntil: string;
+}
+
+const HomePage = () => {
+  // States
+  const [searchParams, setSearchParams] = useState({
+    sport: undefined,
+    location: '',
+    timeRange: null,
+    facilityName: '',
+  });
+
+  // Mock data - sau này sẽ được thay thế bằng API calls
+  const topFacilities: FacilityData[] = [
+    {
+      id: '1',
+      name: 'Thể thao 247 - Thủ Đức',
+      thumbnail: IMAGE.THUMBNAIL_2,
+      operatingHours: { start: '05:00', end: '22:00' },
+      sports: ['football', 'basketball', 'badminton'],
+      address: 'Phường Linh Trung, Thủ Đức, TP.HCM',
+      rating: 4.8,
+      priceRange: { min: 200000, max: 500000 },
+    },
+    {
+      id: '2',
+      name: 'Thể thao 247 - Thủ Đức',
+      thumbnail: IMAGE.THUMBNAIL_2,
+      operatingHours: { start: '05:00', end: '22:00' },
+      sports: ['football', 'basketball', 'badminton'],
+      address: 'Phường Linh Trung, Thủ Đức, TP.HCM',
+      rating: 4.8,
+      priceRange: { min: 200000, max: 500000 },
+    },
+    {
+      id: '3',
+      name: 'Thể thao 247 - Thủ Đức',
+      thumbnail: IMAGE.THUMBNAIL_2,
+      operatingHours: { start: '05:00', end: '22:00' },
+      sports: ['football', 'basketball', 'badminton'],
+      address: 'Phường Linh Trung, Thủ Đức, TP.HCM',
+      rating: 4.8,  
+      priceRange: { min: 200000, max: 500000 }, 
+    },
+    {
+      id: '4',
+      name: 'Thể thao 247 - Thủ Đức',
+      thumbnail: IMAGE.THUMBNAIL_2,
+      operatingHours: { start: '05:00', end: '22:00' }, 
+      sports: ['football', 'basketball', 'badminton'],
+      address: 'Phường Linh Trung, Thủ Đức, TP.HCM',
+      rating: 4.8,
+      priceRange: { min: 200000, max: 500000 },
+    },
+    {
+      id: '5',
+      name: 'Thể thao 247 - Thủ Đức',
+      thumbnail: IMAGE.THUMBNAIL_2,
+      operatingHours: { start: '05:00', end: '22:00' },
+      sports: ['football', 'basketball', 'badminton'],  
+      address: 'Phường Linh Trung, Thủ Đức, TP.HCM',
+      rating: 4.8,
+      priceRange: { min: 200000, max: 500000 },
+    },
+    
+    
+    
+
+    // Thêm các facilities khác...
+  ];
+
+  const promotions: PromotionData[] = [
+    {
+      id: '1',
+      title: 'Giảm 30% giờ vàng',
+      description: 'Áp dụng cho tất cả các môn thể thao từ 13h-16h',
+      thumbnail: IMAGE.THUMBNAIL_2,
+      validUntil: '2024-04-30',
+    },
+    {
+      id: '2',
+      title: 'Giảm 30% giờ vàng',
+      description: 'Áp dụng cho tất cả các môn thể thao từ 13h-16h',
+      thumbnail: IMAGE.THUMBNAIL_2,
+      validUntil: '2024-04-30',
+    },
+    {
+      id: '3',
+      title: 'Giảm 30% giờ vàng',
+      description: 'Áp dụng cho tất cả các môn thể thao từ 13h-16h',
+      thumbnail: IMAGE.THUMBNAIL_2,
+      validUntil: '2024-04-30',
+    },
+    {
+      id: '4',
+      title: 'Giảm 30% giờ vàng',
+      description: 'Áp dụng cho tất cả các môn thể thao từ 13h-16h',
+      thumbnail: IMAGE.THUMBNAIL_2,
+      validUntil: '2024-04-30',
+    },
+    {
+      id: '5',
+      title: 'Giảm 30% giờ vàng',
+      description: 'Áp dụng cho tất cả các môn thể thao từ 13h-16h',
+      thumbnail: IMAGE.THUMBNAIL_2,
+      validUntil: '2024-04-30',
+    },
+    {
+      id: '6',
+      title: 'Giảm 30% giờ vàng',
+      description: 'Áp dụng cho tất cả các môn thể thao từ 13h-16h',
+      thumbnail: IMAGE.THUMBNAIL_2,
+      validUntil: '2024-04-30',
+    },
+    
+    // Thêm các promotions khác...
+  ];
+
+  // Search section component
+  const SearchSection = () => (
+    <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 
+                    bg-white p-6 rounded-lg shadow-lg w-[80%] max-w-4xl">
+      <Row gutter={[16, 16]}>
+        <Col xs={24} md={6}>
+          <Select
+            placeholder="Chọn môn thể thao"
+            style={{ width: '100%' }}
+            onChange={(value) => setSearchParams(prev => ({ ...prev, sport: value }))}
+          >
+            <Option value="football">Bóng đá</Option>
+            <Option value="basketball">Bóng rổ</Option>
+            <Option value="badminton">Cầu lông</Option>
+            {/* Thêm các môn khác */}
+          </Select>
+        </Col>
+        <Col xs={24} md={6}>
+          <Input 
+            prefix={<EnvironmentOutlined />}
+            placeholder="Địa điểm"
+            onChange={(e) => setSearchParams(prev => ({ ...prev, location: e.target.value }))}
+          />
+        </Col>
+        <Col xs={24} md={8}>
+          <RangePicker 
+            style={{ width: '100%' }}
+            showTime
+            format="YYYY-MM-DD HH:mm"
+            onChange={(dates) => setSearchParams(prev => ({ ...prev, timeRange: dates }))}
+          />
+        </Col>
+        <Col xs={24} md={4}>
+          <button className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600">
+            Tìm kiếm
+          </button>
+        </Col>
+      </Row>
+    </div>
+  );
+
+  // Facility Card component
+  const FacilityCard = ({ facility }: { facility: FacilityData }) => (
+    <Card 
+      hoverable 
+      className="w-full max-w-sm"
+      cover={<img alt={facility.name} src={facility.thumbnail} className="h-48 object-cover" />}
+    >
+      <div className="flex justify-between items-center mb-2">
+        <span className="text-gray-600">
+          {facility.operatingHours.start} - {facility.operatingHours.end}
+        </span>
+        <Rate disabled defaultValue={facility.rating} />
+      </div>
+      <h3 className="text-lg font-semibold mb-2">{facility.name}</h3>
+      <div className="flex gap-2 mb-2">
+        {facility.sports.map(sport => (
+          <img key={sport} src={`/assets/${sport}.svg`} alt={sport} className="w-6 h-6" />
+        ))}
+      </div>
+      <p className="text-gray-600 mb-2">{facility.address}</p>
+      <p className="text-blue-600 font-semibold">
+        {facility.priceRange.min.toLocaleString()}đ - {facility.priceRange.max.toLocaleString()}đ
+      </p>
+    </Card>
+  );
+
+  return (
+    <div className="min-h-screen">
+      {/* Hero Section with Search */}
+      <div className="relative h-[500px] mb-20">
+        <div 
+          className="w-full h-full bg-cover bg-center"
+          style={{ backgroundImage: `url(${IMAGE.THUMBNAIL})` }}
+        >
+          <div className="absolute inset-0 bg-black bg-opacity-40">
+            <div className="container mx-auto px-4 h-full flex items-center">
+              <h1 className="text-white text-4xl md:text-6xl font-bold">
+                TAN SPORTS <br />Hệ thống hỗ trợ đặt sân thể thao hàng đầu
+              </h1>
+            </div>
+          </div>
+        </div>
+        <SearchSection />
+      </div>
+
+      {/* Promotions Section */}
+      <section className="container mx-auto px-4 mb-16">
+        <h2 className="text-2xl font-bold mb-8">Ưu đãi & Sự kiện</h2>
+        <Carousel 
+          autoplay
+          arrows
+          slidesToShow={4}
+          responsive={[
+            {
+              breakpoint: 1280,
+              settings: {
+                slidesToShow: 3,
+              }
+            },
+            {
+              breakpoint: 1024,
+              settings: {
+                slidesToShow: 2,
+              }
+            },
+            {
+              breakpoint: 640,
+              settings: {
+                slidesToShow: 1,
+              }
+            }
+          ]}
+        >
+          {promotions.map(promo => (
+            <div key={promo.id} className="px-2">
+              <Card 
+                hoverable
+                className="w-full"
+                cover={
+                  <div className="h-48 overflow-hidden">
+                    <img 
+                      alt={promo.title} 
+                      src={promo.thumbnail}
+                      className="w-full h-full object-cover" 
+                    />
+                  </div>
+                }
+              >
+                <Card.Meta
+                  title={promo.title}
+                  description={promo.description}
+                  className="text-sm"
+                />
+                <p className="mt-2 text-red-500 text-xs">
+                  Có hiệu lực đến: {new Date(promo.validUntil).toLocaleDateString()}
+                </p>
+              </Card>
+            </div>
+          ))}
+        </Carousel>
+      </section>
+
+      {/* Top Facilities Section */}
+      <section className="container mx-auto px-4 mb-16">
+        <h2 className="text-2xl font-bold mb-8">Cơ sở hàng đầu</h2>
+        <Carousel 
+          autoplay
+          arrows 
+          slidesToShow={4} 
+          responsive={[
+          {
+            breakpoint: 1024,
+            settings: {
+              slidesToShow: 2,
+            }
+          },
+          {
+            breakpoint: 640,
+            settings: {
+              slidesToShow: 1,
+            }
+          }
+        ]}>
+          {topFacilities.map(facility => (
+            <div key={facility.id} className="px-4">
+              <FacilityCard facility={facility} />
+            </div>
+          ))}
+        </Carousel>
+      </section>
+
+      {/* Recommended Facilities Section */}
+      <section className="container mx-auto px-4 mb-16">
+        <h2 className="text-2xl font-bold mb-8">Đề xuất cho bạn</h2>
+        <Row gutter={[16, 16]}>
+          {topFacilities.slice(0, 4).map(facility => (
+            <Col key={facility.id} xs={24} sm={12} lg={6}>
+              <FacilityCard facility={facility} />
+            </Col>
+          ))}
+        </Row>
+      </section>
+    </div>
+  );
+};
+
+export default HomePage;

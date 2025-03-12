@@ -5,24 +5,30 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        'main': ['Roboto', 'sans-serif']
+        roboto: ['Roboto', 'sans-serif'],
+        'dm-sans': ['DM Sans', 'sans-serif'],
+        inter: ['Inter', 'sans-serif'],
       },
       colors: {
         'inputField': '#F1F4F9',
-        'butonLogin': '#4880FF',
-        'footerColor': '#2C3E50'
+        'butonLogin': '#4880FF'
       },
       screens: {
-        phone: '768px',
-        tables: '992px'
+        sm: "384px",
+        md: "834px",
+        lg: "1024px",
+        xl: "1280px",
+        "2xl": "1536px",
       },
       spacing: {
         '4.5': '18px',
-        '76': '19rem',
+        '76': '29rem',
         '108': '26.75rem',
         '190.75': '47.69rem'
       }
     }
   },
-  plugins: []
+  plugins: [
+    
+  ]
 }
