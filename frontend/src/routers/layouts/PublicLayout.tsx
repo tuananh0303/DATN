@@ -1,7 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import React, { Suspense } from 'react';
-import UserHeader from '@/components/users/UserHeader/UserHeader';
-import Footer from '@/components/users/Footer';
+import Header from '@/components/Player/Header';
+import Footer from '@/components/Player/Footer';
 
 const Loading = () => (
   <div className="flex items-center justify-center h-screen">
@@ -9,12 +9,12 @@ const Loading = () => (
   </div>
 );
 
-export const UserLayout: React.FC = () => {
+export const PublicLayout: React.FC = () => {
   return (
     <Suspense fallback={<Loading />}>
-    <div className='font-main'>
-      <UserHeader />      
-        <Outlet />      
+      <div className="font-main overflow-x-hidden relative">
+        <Header />
+        <Outlet />
         <Footer />
       </div>
     </Suspense>

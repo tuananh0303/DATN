@@ -1,8 +1,23 @@
 import { ICONS } from '@/constants/owner/Content/content';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Facility, FacilityFilter, facilityService } from '@/services/facilityService';
+import { facilityService } from '@/services/facility.service';
 
+// Define the Facility interface based on the API response
+interface Facility {
+  id: string;
+  name: string;
+  location: string;
+  openTime: string;
+  closeTime: string;
+  status: 'active' | 'maintenance' | 'pending';
+  imageUrl: string[];
+}
+
+// Define the filter interface
+interface FacilityFilter {
+  status?: 'active' | 'maintenance' | 'pending';
+}
 
 const FacilityManagement: React.FC = () => {
   const navigate = useNavigate();
@@ -10,8 +25,6 @@ const FacilityManagement: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<string>('all');
- 
-
 
   useEffect(() => {
     fetchFacilities();
@@ -20,93 +33,19 @@ const FacilityManagement: React.FC = () => {
   const fetchFacilities = async () => {
     setLoading(true);
     try {
-      const filters: FacilityFilter = {
-        status: activeFilter as 'active' | 'maintenance' | 'pending'
-      };
-
+      // Call the API to get facilities
+      const response = await facilityService.getMyFacilities();
       
-
-      // TODO: Replace with actual API call
-      // const response = await facilityService.getFacilities(filters);
-      // setFacilities(response.data);
-      // setTotalPages(Math.ceil(response.total / ITEMS_PER_PAGE));
+      // Filter facilities based on activeFilter if it's not 'all'
+      let filteredFacilities = response;
+      if (activeFilter !== 'all') {
+        filteredFacilities = response.filter(
+          (facility: Facility) => facility.status === activeFilter
+        );
+      }
       
-      setFacilities([
-        {
-          name: 'Sân cầu lông Phạm Kha',
-          location: 'Số 40 Đường 3/2, Q10, tp Hồ Chí Minh',
-          openingHours: '5:00 - 23:00',
-          status: 'active',
-          image: ICONS.IMAGE_FACILITY
-        },
-        {
-          name: 'Sân cầu lông Phạm Kha',
-          location: 'Số 40 Đường 3/2, Q10, tp Hồ Chí Minh',
-          openingHours: '5:00 - 23:00',
-          status: 'active',
-          image: ICONS.IMAGE_FACILITY
-        },
-        {
-          name: 'Sân cầu lông Phạm Kha',
-          location: 'Số 40 Đường 3/2, Q10, tp Hồ Chí Minh',
-          openingHours: '5:00 - 23:00',
-          status: 'active',
-          image: ICONS.IMAGE_FACILITY
-        },
-        {
-          name: 'Sân cầu lông Phạm Kha',
-          location: 'Số 40 Đường 3/2, Q10, tp Hồ Chí Minh',
-          openingHours: '5:00 - 23:00',
-          status: 'active',
-          image: ICONS.IMAGE_FACILITY
-        },
-        {
-          name: 'Sân cầu lông Phạm Kha',
-          location: 'Số 40 Đường 3/2, Q10, tp Hồ Chí Minh',
-          openingHours: '5:00 - 23:00',
-          status: 'active',
-          image: ICONS.IMAGE_FACILITY
-        },
-        {
-          name: 'Sân cầu lông Phạm Kha',
-          location: 'Số 40 Đường 3/2, Q10, tp Hồ Chí Minh',
-          openingHours: '5:00 - 23:00',
-          status: 'active',
-          image: ICONS.IMAGE_FACILITY
-        },
-        {
-          name: 'Sân cầu lông Phạm Kha',
-          location: 'Số 40 Đường 3/2, Q10, tp Hồ Chí Minh',
-          openingHours: '5:00 - 23:00',
-          status: 'active',
-          image: ICONS.IMAGE_FACILITY
-        },
-        {
-          name: 'Sân cầu lông Phạm Kha',
-          location: 'Số 40 Đường 3/2, Q10, tp Hồ Chí Minh',
-          openingHours: '5:00 - 23:00',
-          status: 'active',
-          image: ICONS.IMAGE_FACILITY
-        },
-        {
-          name: 'Sân cầu lông Phạm Kha',
-          location: 'Số 40 Đường 3/2, Q10, tp Hồ Chí Minh',
-          openingHours: '5:00 - 23:00',
-          status: 'active',
-          image: ICONS.IMAGE_FACILITY
-        },
-        {
-          name: 'Sân cầu lông Phạm Kha',
-          location: 'Số 40 Đường 3/2, Q10, tp Hồ Chí Minh',
-          openingHours: '5:00 - 23:00',
-          status: 'active',
-          image: ICONS.IMAGE_FACILITY
-        },
-        
-      // Mock implementation
-      
-       ]);}
-      catch (error) {
+      setFacilities(filteredFacilities);
+    } catch (error) {
       console.error('Error fetching facilities:', error);
     } finally {
       setLoading(false);
@@ -117,9 +56,15 @@ const FacilityManagement: React.FC = () => {
     setSearchQuery(query);
     if (query.length >= 2) {
       try {
-        // TODO: Replace with actual API call
-        // const results = await facilityService.searchFacilities(query);
-        // setFacilities(results);
+        // For now, we'll just filter the existing facilities
+        // In a real implementation, you might want to call a search API
+        const response = await facilityService.getMyFacilities();
+        const filteredFacilities = response.filter(
+          (facility: Facility) => 
+            facility.name.toLowerCase().includes(query.toLowerCase()) ||
+            facility.location.toLowerCase().includes(query.toLowerCase())
+        );
+        setFacilities(filteredFacilities);
       } catch (error) {
         console.error('Error searching facilities:', error);
       }
@@ -148,6 +93,15 @@ const FacilityManagement: React.FC = () => {
       case 'active': return 'text-[#20b202]';
       case 'maintenance': return 'text-[#c24008]';
       case 'pending': return 'text-[#d2c209]';
+      default: return '';
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch(status) {
+      case 'active': return 'Đang hoạt động';
+      case 'maintenance': return 'Đang bảo trì';
+      case 'pending': return 'Đang chờ phê duyệt';
       default: return '';
     }
   };
@@ -203,46 +157,84 @@ const FacilityManagement: React.FC = () => {
         ))}
       </div>
 
-      {/* Facilities List Section with Scroll */}
-      <div className="bg-[#fdfdfd] rounded-[15px] overflow-hidden mb-8">
-        <div className="grid grid-cols-[300px_400px_150px_150px_150px] p-5 bg-[rgba(68,143,240,0.7)] border-b border-[#d8d8d880]">
-          {['Cơ sở', 'Vị trí', 'Giờ mở cửa', 'Trạng thái', 'Thao tác'].map((header) => (
-            <div key={header} className="font-opensans font-bold text-[15px]">{header}</div>
-          ))}
-        </div>
+      {/* Facilities List Section with Scroll - Updated to match VoucherManagement.tsx */}
+      <div className="bg-[#fdfdfd] rounded-[15px] overflow-hidden mb-8 border border-[#d8d8d880]">
+        {/* Table Container with fixed width and horizontal scroll */}
+        <div className="max-w-full">
+          <div className="relative" style={{ height: '500px' }}>
+            <div className="overflow-x-auto overflow-y-auto h-full">
+              <table className="w-full table-fixed" style={{ minWidth: '1200px' }}>
+                {/* Table Header */}
+                <thead className="border-b border-[#d8d8d880] bg-[#fafbfd] sticky top-0 z-30 bg-opacity-100">
+                  <tr>
+                    {/* Sticky Left Column */}
+                    <th className="sticky left-0 z-10 w-[300px] font-bold font-opensans px-4 py-5 text-left" style={{ background: '#448ff033' }}>
+                      Cơ sở
+                    </th>
+                    
+                    {/* Scrollable Middle Columns */}
+                    <th className="w-[400px] font-bold font-opensans px-4 py-5 text-left bg-[#448ff033]">
+                      Vị trí
+                    </th>
+                    <th className="w-[150px] font-bold font-opensans px-4 py-5 text-left bg-[#448ff033]">
+                      Giờ mở cửa
+                    </th>
+                    <th className="w-[150px] font-bold font-opensans px-4 py-5 text-left bg-[#448ff033]">
+                      Trạng thái
+                    </th>
 
-        <div className="max-h-[500px] overflow-y-auto">
-          {loading ? (
-            <div className="text-center py-4">Loading...</div>
-          ) : (
-            facilities.map((facility, index) => (
-              <div 
-                key={index} 
-                className="grid grid-cols-[300px_400px_150px_150px_50px] p-5 border-b border-[#d8d8d880] bg-white hover:bg-gray-50 transition-colors items-center"
-              >
-                <div className="flex items-center gap-[5px] font-opensans text-sm w-[300px]">
-                  <img src={facility.image} alt="Facility" className="w-[60px] h-[50px] object-cover" />
-                  <span>{facility.name}</span>
-                </div>
-                <div className="font-nunito text-sm w-[400px]">{facility.location}</div>
-                <div className="font-nunito text-sm w-[150px]">{facility.openingHours}</div>
-                <div className={`font-nunito font-bold text-sm ${getStatusColor(facility.status)} w-[150px]`}>
-                  {facility.status === 'active' && 'Đang hoạt động'}
-                  {facility.status === 'maintenance' && 'Đang bảo trì'}
-                  {facility.status === 'pending' && 'Đang chờ phê duyệt'}
-                </div>
-                <div className="flex items-center gap-2 bg-[#fafbfd] border-[0.6px] border-[#d5d5d5] rounded-lg px-2 py-1 cursor-pointer transition-colors w-[78px]">
-                  <button className=" ">
-                    <img src={ICONS.EDIT} alt="Edit" className="w-[22px] h-[22px] hover:bg-[#f0f0f0]" />
-                  </button>
-                  <div className="w-[1px] h-8 bg-[#d8d8d880] opacity-70"></div>
-                  <button className="">
-                    <img src={ICONS.BIN} alt="Delete" className="w-[22px] h-[22px] hover:bg-[#f0f0f0]" />
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
+                    {/* Sticky Right Column */}
+                    <th className="sticky right-0 z-10 bg-[#448ff033] w-[120px] font-bold font-opensans px-4 py-5 text-left">
+                      Thao tác
+                    </th>
+                  </tr>
+                </thead>
+
+                {/* Table Body */}
+                <tbody>
+                  {loading ? (
+                    <tr><td colSpan={5} className="text-center py-4">Loading...</td></tr>
+                  ) : (
+                    facilities.map((facility, index) => (
+                      <tr key={index} className="hover:bg-gray-50 border-b border-[#9a9a9a]/50">
+                        {/* Sticky Left Column */}
+                        <td className="sticky left-0 z-10 bg-[#fafbfd] w-[300px]">
+                          <div className="p-5 flex items-center gap-[5px] font-opensans text-sm">
+                            <img src={facility.imageUrl?.[0] || ICONS.IMAGE_FACILITY} alt="Facility" className="w-[60px] h-[50px] object-cover" />
+                            <span>{facility.name}</span>
+                          </div>
+                        </td>
+
+                        {/* Scrollable Middle Columns */}
+                        <td className="w-[400px] p-5 font-nunito text-sm whitespace-normal">{facility.location}</td>
+                        <td className="w-[150px] p-5 font-nunito text-sm whitespace-nowrap">
+                          {`${facility.openTime} - ${facility.closeTime}`}
+                        </td>
+                        <td className={`w-[150px] p-5 font-nunito font-bold text-sm ${getStatusColor(facility.status)} whitespace-nowrap`}>
+                          {getStatusText(facility.status)}
+                        </td>
+
+                        {/* Sticky Right Column */}
+                        <td className="sticky right-0 z-10 bg-[#fafbfd] w-[120px]">
+                          <div className="p-5">
+                            <div className="flex items-center gap-2 bg-[#fafbfd] border-[0.6px] border-[#d5d5d5] rounded-lg px-2 py-1">
+                              <button>
+                                <img src={ICONS.EDIT} alt="Edit" className="w-[22px] h-[22px] hover:bg-[#f0f0f0]" />
+                              </button>
+                              <div className="w-[1px] h-8 bg-[#d8d8d880] opacity-70"></div>
+                              <button>
+                                <img src={ICONS.BIN} alt="Delete" className="w-[22px] h-[22px] hover:bg-[#f0f0f0]" />
+                              </button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -250,4 +242,3 @@ const FacilityManagement: React.FC = () => {
 };
 
 export default FacilityManagement;
-

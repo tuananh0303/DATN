@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ROUTES } from '@/routers/constants';
 import { ICONS } from '@/constants/owner/sidebar/icons';
 
 interface SidebarProps {
@@ -33,34 +32,34 @@ const Sidebar: React.FC<SidebarProps> = ({ onMenuItemClick = () => {}, onToggle 
   };
 
   const menuItems = [
-    { id: 'calendar', label: 'Lịch đặt sân', icon: ICONS.CALENDAR, activeIcon: ICONS.CALENDAR, path: ROUTES.PLAY_SCHEDULE },
-    { id: 'facility', label: 'Quản lý cơ sở', icon: ICONS.FACILITY, activeIcon: ICONS.FACILITY, path: ROUTES.FACILITY_MANAGEMENT },
-    { id: 'field', label: 'Quản lý sân', icon: ICONS.FIELD, activeIcon: ICONS.FIELD, path: ROUTES.FIELD_MANAGEMENT },
-    { id: 'service', label: 'Quản lý dịch vụ', icon: ICONS.SERVICE, activeIcon: ICONS.SERVICE, path: ROUTES.SERVICE_MANAGEMENT },
-    { id: 'voucher', label: 'Quản lý voucher', icon: ICONS.VOUCHER, activeIcon: ICONS.VOUCHER, path: ROUTES.VOUCHER_MANAGEMENT },
-    { id: 'ads', label: 'Quản lý sự kiện', icon: ICONS.EVENT, activeIcon: ICONS.EVENT, path: ROUTES.EVENT_MANAGEMENT },
+    { id: 'calendar', label: 'Lịch đặt sân', icon: ICONS.CALENDAR, activeIcon: ICONS.CALENDAR, path: "/owner" },
+    { id: 'facility', label: 'Quản lý cơ sở', icon: ICONS.FACILITY, activeIcon: ICONS.FACILITY, path: "/owner/facility-management" },
+    { id: 'field', label: 'Quản lý sân', icon: ICONS.FIELD, activeIcon: ICONS.FIELD, path: "/owner/field-management" },
+    { id: 'service', label: 'Quản lý dịch vụ', icon: ICONS.SERVICE, activeIcon: ICONS.SERVICE, path: "/owner/service-management" },
+    { id: 'voucher', label: 'Quản lý voucher', icon: ICONS.VOUCHER, activeIcon: ICONS.VOUCHER, path: "/owner/voucher-management" },
+    { id: 'ads', label: 'Quản lý sự kiện', icon: ICONS.EVENT, activeIcon: ICONS.EVENT, path: "/owner/event-management" },
   ];
 
   const customerCareItems = [
-    { id: 'chat', label: 'Quản lý chat', icon: ICONS.CHAT, activeIcon: ICONS.CHAT, path: ROUTES.CHAT },
-    { id: 'review', label: 'Quản lý đánh giá', icon: ICONS.REVIEW, activeIcon: ICONS.REVIEW, path: ROUTES.REVIEW_MANAGEMENT },
+    { id: 'chat', label: 'Quản lý chat', icon: ICONS.CHAT, activeIcon: ICONS.CHAT, path: "/owner/chat" },
+    { id: 'review', label: 'Quản lý đánh giá', icon: ICONS.REVIEW, activeIcon: ICONS.REVIEW, path: "/owner/review-management" },
   ];
 
   // Customer Care Section
   const [isCustomerCareOpen, setCustomerCareOpen] = useState(false);
 
   const financeItems = [
-    { id: 'report', label: 'Doanh thu', icon: ICONS.REVENUE, activeIcon: ICONS.REVENUE, path: ROUTES.REPORT_MANAGEMENT },
-    { id: 'bank', label: 'Ngân hàng', icon: ICONS.BANK, activeIcon: ICONS.BANK, path: ROUTES.BANKING },
+    { id: 'report', label: 'Doanh thu', icon: ICONS.REVENUE, activeIcon: ICONS.REVENUE, path: "/owner/report-management" },
+    { id: 'bank', label: 'Ngân hàng', icon: ICONS.BANK, activeIcon: ICONS.BANK, path: "/owner/banking" },
   ];
 
   // Finance Section
   const [isFinanceOpen, setFinanceOpen] = useState(false);
 
   const bottomItems = [
-    { id: 'support', label: 'Hỗ trợ liên hệ', icon: ICONS.SUPPORT, activeIcon: ICONS.SUPPORT, path: ROUTES.ERROR },
-    { id: 'delete', label: 'Xóa tài khoản', icon: ICONS.DELETE, activeIcon: ICONS.DELETE, textColor: 'text-[#ff4b4b]', path: ROUTES.ERROR },
-    { id: 'logout', label: 'Đăng xuất', icon: ICONS.LOGOUT, activeIcon: ICONS.LOGOUT, path: ROUTES.HOME },
+    { id: 'support', label: 'Hỗ trợ liên hệ', icon: ICONS.SUPPORT, activeIcon: ICONS.SUPPORT, path: "/*" },
+    { id: 'delete', label: 'Xóa tài khoản', icon: ICONS.DELETE, activeIcon: ICONS.DELETE, textColor: 'text-[#ff4b4b]', path: "/" },
+    { id: 'logout', label: 'Đăng xuất', icon: ICONS.LOGOUT, activeIcon: ICONS.LOGOUT, path: "/" },
   ];
 
   const handleItemClick = (path: string, id: string) => {
@@ -85,7 +84,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onMenuItemClick = () => {}, onToggle 
             onClick={toggleSidebar}
           />
           {!isCollapsed && (
-            <div className="border-0 bg-transparent cursor-pointer" onClick={() => navigate(ROUTES.PLAY_SCHEDULE)}>
+            <div className="border-0 bg-transparent cursor-pointer" onClick={() => navigate("/")}>
               <img src={ICONS.BRAND} alt="Brand" className="w-[120px] h-[60px] ml-[15px]" />
             </div>
           )}

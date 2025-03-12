@@ -14,7 +14,7 @@ export default {
         'butonLogin': '#4880FF'
       },
       screens: {
-        sm: "640px",
+        sm: "384px",
         md: "834px",
         lg: "1024px",
         xl: "1280px",

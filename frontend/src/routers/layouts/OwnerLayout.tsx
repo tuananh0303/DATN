@@ -1,5 +1,10 @@
-import React, { lazy, Suspense ,useState} from 'react';
+import React, { Suspense ,useState } from 'react';
 import { Outlet } from 'react-router-dom';
+import Sidebar from '@/components/Owner/Sidebar';
+import Topbar from '@/components/Owner/Topbar';
+import Footer from '@/components/Owner/Footer';
+import { useAppSelector } from '@/hooks/reduxHooks';
+
 // Loading component
 const Loading = () => (
   <div className="flex items-center justify-center h-screen">
@@ -7,15 +12,19 @@ const Loading = () => (
   </div>
 );
 
-const Sidebar = lazy(() => import('@/components/Owner/Sidebar'));
-const Topbar = lazy(() => import('@/components/Owner/Topbar'));
-const Footer = lazy(() => import('@/components/Owner/Footer'));
 
 export const OwnerLayout: React.FC = () => {
+  const { isLoading } = useAppSelector(state => state.user);
+  
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     const saved = localStorage.getItem('sidebarCollapsed');
     return saved ? JSON.parse(saved) : false;
   });
+
+  // Show loading while authentication is being checked
+  if (isLoading) {
+    return <Loading />;
+  }
 
   return (
     <Suspense fallback={<Loading />}>
@@ -28,7 +37,9 @@ export const OwnerLayout: React.FC = () => {
           <Topbar />
           </div>
           <div className='mt-[75px]'>
-          <Outlet />                  
+          <main>
+            <Outlet />
+        </main>                
           <Footer />
           </div>  
         </div>

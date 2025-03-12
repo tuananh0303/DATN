@@ -1,87 +1,68 @@
-export interface FacilityFormData {
-  name: string;
-  description: string;
-  openTime: string;
-  closeTime: string;
-  city: string;
-  district: string;
-  ward: string;
-  address: string;
-  provinceCode?: string;
-  districtCode?: string;
-  wardCode?: string;
-}
 
-export interface ImageUploadData {
-  coverImage: File | null;
-  additionalImages: File[];
-}
-
-export interface FieldManagementData {
-  id: string;
-  name: string;
-  sportTypes: string[];  // Có thể là nhiều loại cho sân tổng hợp
-  groupName?: string;    // Tên nhóm sân mà field này thuộc về
-  basePrice: number;
-  peakHourPrice?: number;
-  size: string;
+// Update the FieldGroupData interface to match the API requirements
+export interface FieldGroupData {
+  name:string,
+  dimension: string;
   surface: string;
-  status: 'active' | 'maintenance' | 'inactive';
+  basePrice: number;
+  peakStartTime: string;
+  peakEndTime: string;
+  priceIncrease: number;
+  sportIds: number[];
+  fieldsData: Field[];
+}
+
+// Keep the Field interface simple as required by the API
+export interface Field {
+  id?: string;
+  name: string;
+}
+
+// Update the FacilityFormData to better organize the data
+export interface FacilityFormData {
+  facilityInfo: {
+    name: string;
+    description: string;
+    openTime: string;
+    closeTime: string;
+    city: string;
+    provinceCode: string;
+    district: string;
+    districtCode: string;
+    ward: string;
+    wardCode: string;
+    address: string;
+  };
+}
+
+export interface SportType {
+  id: number;
+  name: string;
 }
 
 export interface Province {
-  code: string;
+  code: string | number;
   name: string;
+  division_type: string;
+  codename: string;
+  phone_code: number;
   districts: District[];
 }
 
 export interface District {
-  code: string;
+  code: string | number;
   name: string;
+  division_type: string;
+  codename: string;
+  province_code: number;
   wards: Ward[];
 }
 
 export interface Ward {
-  code: string;
+  code: string | number;
   name: string;
+  division_type: string;
+  codename: string;
+  district_code: number;
 }
 
-export interface SportType {
-  id: string;
-  name: string;
-  defaultPricing?: number;
-  surfaceTypes: string[];
-  standardSizes: string[];
-}
-
-export interface PeakHourPricing {
-  startTime: string;
-  endTime: string;
-  priceIncrease: number; // Số tiền tăng thêm so với giá mặc định
-}
-
-export interface Court {
-  id: string;
-  sportTypeIds: string[]; // Thay đổi thành mảng để hỗ trợ sân tổng hợp
-  name: string;
-  quantity: number;
-  size: string;
-  surface: string;
-  basePrice: number; // Đổi tên từ price thành basePrice
-  peakHourPricing: PeakHourPricing[];
-  status: 'active' | 'maintenance' | 'inactive';
-}
-
-export interface CourtGroup {
-  id: string;
-  sportTypeIds: string[]; // Thay đổi thành mảng
-  name: string; // Tên nhóm sân (ví dụ: "Sân tổng hợp 1")
-  courts: Court[];
-  isMultiSport: boolean; // Flag để đánh dấu sân tổng hợp
-}
-
-export interface FormData {
-  facilityInfo: FacilityFormData;
-  images?: ImageUploadData;
-  fields?: FieldManagementData[];
-}

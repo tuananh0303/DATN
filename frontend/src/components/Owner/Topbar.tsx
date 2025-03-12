@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { ICONS } from '@/constants/owner/topbar/topbar';
+import TopbarProfile from '../TopbarProfile';
 
 interface TopBarProps {
   className?: string;
@@ -8,7 +9,7 @@ interface TopBarProps {
 
 // Định nghĩa mapping giữa route và title
 const ROUTE_TITLES: { [key: string]: string } = {
-  '/owner/play-schedule': 'Lịch đặt sân',
+  '/owner': 'Lịch đặt sân',
   '/owner/facility-management': 'Quản lý cơ sở',
   '/owner/field-management': 'Quản lý sân',
   '/owner/service-management': 'Quản lý dịch vụ',
@@ -103,11 +104,8 @@ const TopBar: React.FC<TopBarProps> = () => {
 
         {/* Profile */}
         <div className="flex items-center gap-[15px] cursor-pointer">
-          <img 
-            src={ICONS.AVATAR} 
-            alt="profile"
-            className="w-10 h-10 rounded-full object-cover"
-          />          
+          {/* User Profile */}
+          <TopbarProfile />
         </div>
       </div>
     </div>
