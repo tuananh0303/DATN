@@ -10,14 +10,14 @@ interface Facility {
   location: string;
   openTime: string;
   closeTime: string;
-  status: 'active' | 'maintenance' | 'pending';
-  imageUrl: string[];
+  status: 'approved' | 'rejected' | 'pending' | 'closed';
+  imagesUrl: string[];
 }
 
-// Define the filter interface
-interface FacilityFilter {
-  status?: 'active' | 'maintenance' | 'pending';
-}
+// // Define the filter interface
+// interface FacilityFilter {
+//   status?: 'active' | 'maintenance' | 'pending';
+// }
 
 const FacilityManagement: React.FC = () => {
   const navigate = useNavigate();
@@ -42,8 +42,7 @@ const FacilityManagement: React.FC = () => {
         filteredFacilities = response.filter(
           (facility: Facility) => facility.status === activeFilter
         );
-      }
-      
+      }      
       setFacilities(filteredFacilities);
     } catch (error) {
       console.error('Error fetching facilities:', error);
@@ -83,25 +82,28 @@ const FacilityManagement: React.FC = () => {
 
   const filterButtons = [
     { id: 'all', label: 'Tất cả cơ sở' },
-    { id: 'active', label: 'Đang hoạt động' },
-    { id: 'maintenance', label: 'Đang bảo trì' },
-    { id: 'pending', label: 'Đang chờ phê duyệt' }
+    { id: 'approved', label: 'Đang hoạt động' },
+    { id: 'closed', label: 'Đang bảo trì' },
+    { id: 'pending', label: 'Đang chờ phê duyệt' },
+    { id: 'rejected', label: 'Đã bị từ chối' }
   ];
 
   const getStatusColor = (status: string) => {
     switch(status) {
-      case 'active': return 'text-[#20b202]';
-      case 'maintenance': return 'text-[#c24008]';
+      case 'approved': return 'text-[#20b202]';
+      case 'closed': return 'text-[#f38556]';
       case 'pending': return 'text-[#d2c209]';
+      case 'rejected': return 'text-[#c24008]';
       default: return '';
     }
   };
 
   const getStatusText = (status: string) => {
     switch(status) {
-      case 'active': return 'Đang hoạt động';
-      case 'maintenance': return 'Đang bảo trì';
+      case 'approved': return 'Đang hoạt động';
+      case 'closed': return 'Đang bảo trì';
       case 'pending': return 'Đang chờ phê duyệt';
+      case 'rejected': return 'Đã bị từ chối';
       default: return '';
     }
   };
@@ -141,13 +143,13 @@ const FacilityManagement: React.FC = () => {
       </div>
 
       {/* Filter Section */}
-      <div className="grid grid-cols-4 bg-white rounded-lg mt-12 mb-8">
+      <div className="grid grid-cols-5 bg-white rounded-lg mt-12 mb-8">
         {filterButtons.map(({ id, label }) => (
           <div
             key={id}
             onClick={() => setActiveFilter(id)}
             className={`
-              px-6 py-4 text-center font-opensans font-bold text-[15px] cursor-pointer
+              px-4 py-4 text-center font-opensans font-bold text-[15px] cursor-pointer
               transition-colors hover:bg-[rgba(68,143,240,0.1)] hover:text-[#448ff0] hover:rounded-lg
               ${activeFilter === id ? 'bg-[rgba(68,143,240,0.13)] text-[#448ff0] rounded-lg' : ''}
             `}
@@ -200,7 +202,7 @@ const FacilityManagement: React.FC = () => {
                         {/* Sticky Left Column */}
                         <td className="sticky left-0 z-10 bg-[#fafbfd] w-[300px]">
                           <div className="p-5 flex items-center gap-[5px] font-opensans text-sm">
-                            <img src={facility.imageUrl?.[0] || ICONS.IMAGE_FACILITY} alt="Facility" className="w-[60px] h-[50px] object-cover" />
+                            <img src={facility.imagesUrl[0]} alt="Facility" className="w-[60px] h-[50px] object-cover" />
                             <span>{facility.name}</span>
                           </div>
                         </td>

@@ -131,9 +131,9 @@ const userSlice = createSlice({
   name: 'user',
   initialState,
   reducers: {
-    showLoginModal: (state, action: PayloadAction<string | null>) => {
+    showLoginModal: (state) => {
       state.loginModalVisible = true;
-      state.redirectPath = action.payload;
+      // state.redirectPath = action.payload;
     },
     hideLoginModal: (state) => {
       state.loginModalVisible = false;

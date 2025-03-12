@@ -31,6 +31,8 @@ interface FacilityState {
   imageMetadata: { name: string; size: number; type: string }[];
   imagesPreview: string[];
   createdFacilityId: string | null;
+  facilityList: { id: string, name: string}[];
+  facilityListLoading: boolean;
 }
 
 // Initial state
@@ -44,34 +46,11 @@ const initialState: FacilityState = {
   fieldGroups: {},
   imageMetadata: [], // Store metadata instead of File objects
   imagesPreview: [],
-  createdFacilityId: null
+  createdFacilityId: null,
+  facilityList: [],
+  facilityListLoading: false
 };
 
-// // Update the prepareFieldGroupsData function to match the API requirements
-
-// const prepareFieldGroupsData = (fieldGroups: { [key: string]: FieldGroupData[] }) => {
-//   const fieldGroupsData = [];
-  
-//   for (const sportId in fieldGroups) {
-//     for (const group of fieldGroups[sportId]) {
-//       fieldGroupsData.push({
-//         name: group.name,
-//         dimension: group.dimension,
-//         surface: group.surface,
-//         basePrice: Number(group.basePrice),
-//         peakStartTime: group.peakStartTime,
-//         peakEndTime: group.peakEndTime,
-//         priceIncrease: Number(group.priceIncrease),
-//         sportIds: [Number(sportId)],
-//         fieldsData: group.fieldsData.map(field => ({ name: field.name }))
-//       });
-//     }
-//   }
-  
-//   return fieldGroupsData;
-// };
-
-// Update the addImage action
 
 export const addImageMetadata = createAction<{ 
   name: string; 
@@ -89,6 +68,35 @@ export const createFacility = createAsyncThunk(
       return response;
     } catch (error: any) {
       return rejectWithValue(error.response?.data || 'Failed to create facility');
+    }
+  }
+);
+
+// export const fetchFacilities = createAsyncThunk(
+//   'facility/fetchFacilities',
+//   async (filter: string = 'all', { rejectWithValue }) => {
+//     try {
+//       const response = await facilityService.getMyFacilities();
+//       return response;
+//     } catch (error: any) {
+//       return rejectWithValue(error.response?.data || 'Failed to fetch facilities');
+//     }
+//   }
+// );
+
+// Thêm action để lấy danh sách cơ sở
+export const fetchFacilityList = createAsyncThunk(
+  'facility/fetchFacilityList',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await facilityService.getMyFacilities();
+      // Chỉ lấy id và name từ response
+      return response.map((facility: any) => ({
+        id: facility.id,
+        name: facility.name
+      }));
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data || 'Failed to fetch facility list');
     }
   }
 );
@@ -168,6 +176,28 @@ const facilitySlice = createSlice({
     .addCase(createFacility.rejected, (state, action) => {
       state.loading = false;
       state.error = action.payload as string;
+    })
+    // .addCase(fetchFacilities.pending, (state) => {
+    //   state.loading = true;
+    //   state.error = null;
+    // })
+    // .addCase(fetchFacilities.fulfilled, (state, action) => {
+    //   state.loading = false;
+    //   state.facility = action.payload;
+    // })
+    // .addCase(fetchFacilities.rejected, (state, action) => {
+    //   state.loading = false;
+    //   state.error = action.payload as string;
+    // })
+    .addCase(fetchFacilityList.pending, (state) => {
+      state.facilityListLoading = true;
+    })
+    .addCase(fetchFacilityList.fulfilled, (state, action) => {
+      state.facilityListLoading = false;
+      state.facilityList = action.payload;
+    })
+    .addCase(fetchFacilityList.rejected, (state) => {
+      state.facilityListLoading = false;
     });
   }
 });

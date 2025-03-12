@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import React, { useEffect, useRef, useState } from 'react';
+import { Navigate} from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '@/hooks/reduxHooks';
 import { showLoginModal } from '@/store/slices/userSlice';
 import { message } from 'antd';
@@ -13,23 +13,27 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children, 
   requiredRole 
 }) => {
+
   const { isAuthenticated, user, isLoading} = useAppSelector(state => state.user);
   const dispatch = useAppDispatch();
-  const location = useLocation();
   const [initialCheckDone, setInitialCheckDone] = useState(false);
+  const messageShownRef = useRef(false);
 
   useEffect(() => {
-    if (!isLoading){
+    console.log('useEffect running with:', { isLoading, isAuthenticated, user, requiredRole });
+    if (!isLoading) {
       setInitialCheckDone(true);
-    
-    if (!isAuthenticated) {
-      message.warning('Please log in to access this page');
-      dispatch(showLoginModal(location.pathname));
-    } else if (requiredRole && user?.role !== requiredRole) {
-      message.error(`You don't have permission to access this page. Required role: ${requiredRole}`);
+      
+      if (!isAuthenticated && !messageShownRef.current) {
+        messageShownRef.current = true;
+        message.warning('Please log in to access this page');
+        dispatch(showLoginModal());
+      } else if (requiredRole && user?.role !== requiredRole && !messageShownRef.current) {
+        messageShownRef.current = true;
+        message.error(`You don't have permission to access this page. Required role: ${requiredRole}`);
+      }
     }
-  }
-  }, [isLoading, isAuthenticated, user, requiredRole, dispatch, location.pathname]);
+  }, [isLoading, isAuthenticated, user, requiredRole, dispatch]);
 
 
   // Show loading while checking authentication

@@ -13,14 +13,13 @@ export const facilityService = {
   },
   getMyFacilities: async () => {
     const response = await api.get('/facility/my-facilities');
-    console.log('response', response);
     return response.data;
   },
   
-  // getFacilityById: async (id: string) => {
-  //   const response = await api.get(`/facility/${id}`);
-  //   return response.data;
-  // },
+  getFacilityById: async (facilityId: string) => {
+    const response = await api.get(`/facility/${facilityId}`);
+    return response.data;
+  },
   
 };
 
