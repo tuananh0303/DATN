@@ -196,7 +196,9 @@ const FacilityManagement: React.FC = () => {
                 <tbody>
                   {loading ? (
                     <tr><td colSpan={5} className="text-center py-4">Loading...</td></tr>
-                  ) : (
+                  ) : facilities.length === 0 ? (
+                    <tr><td colSpan={3} className="text-center py-4 mx-auto">Không có cơ sở thể thao nào</td></tr>
+                  ) :(
                     facilities.map((facility, index) => (
                       <tr key={index} className="hover:bg-gray-50 border-b border-[#9a9a9a]/50">
                         {/* Sticky Left Column */}
