@@ -1,19 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAppDispatch, useAppSelector } from '@/hooks/reduxHooks';
 import { ICONS } from '@/constants/owner/Content/content';
-import { Voucher, Facility, VoucherFilter, voucherService } from '@/services/voucherService';
-
+import { 
+  fetchVouchers, 
+  deleteVoucher, 
+  getVoucherStatus,
+  setSelectedFacilityId
+} from '@/store/slices/voucherSlice';
+import { fetchFacilityList } from '@/store/slices/facilitySlice';
 
 const VoucherManagement: React.FC = () => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  
+  // Redux state
+  const { vouchers, loading, error } = useAppSelector(state => state.voucher);
+  const { facilityList } = useAppSelector(state => state.facility);
   
   // States
-  const [vouchers, setVouchers] = useState<Voucher[]>([]);
-  const [facilities, setFacilities] = useState<Facility[]>([]);
   const [selectedFacility, setSelectedFacility] = useState<string>('');
   const [activeFilter, setActiveFilter] = useState<string>('all');
-  const [loading, setLoading] = useState(false);
-
 
   // Filter options
   const filterOptions = [
@@ -24,147 +31,67 @@ const VoucherManagement: React.FC = () => {
   ];
 
   useEffect(() => {
-    fetchFacilities();
-  }, []);
+    dispatch(fetchFacilityList());
+  }, [dispatch]);
 
   useEffect(() => {
-    fetchVouchers();
-  }, [selectedFacility, activeFilter]);
-
-  const fetchFacilities = async () => {
-    try {
-      // TODO: Replace with actual API call
-      // const response = await voucherService.getFacilities();
-      // setFacilities(response.data);
-      setFacilities([
-        { id: '1', name: 'Sân cầu lông Phạm Kha' },
-        { id: '2', name: 'Sân cầu lông Phạm Hùng' },
-        { id: '3', name: 'Sân cầu lông Phạm Hùng' },
-      ]);
-    } catch (error) {
-      console.error('Error fetching facilities:', error);
+    if (selectedFacility) {
+      dispatch(setSelectedFacilityId(selectedFacility));
+      dispatch(fetchVouchers(selectedFacility));
     }
-  };
-
-  const fetchVouchers = async () => {
-    setLoading(true);
-    try {
-      const filters: VoucherFilter = {
-        facilityId: selectedFacility || undefined,
-        status: activeFilter !== 'all' ? activeFilter as 'active' | 'upcoming' | 'expired' : undefined,
-      };
-
-      // TODO: Replace with actual API call
-      // const response = await voucherService.getVouchers(filters);
-      // setVouchers(response.data);
-      // setTotalPages(Math.ceil(response.total / ITEMS_PER_PAGE));
-
-      // Mock data
-      setVouchers([
-        {
-          id: 'ANH-2607',
-          name: 'Nguyễn Tuấn Anh',
-          discountType: 'fixed',
-          discountValue: '15.000đ',
-          totalCodes: 100,
-          usedCodes: 5,
-          status: 'active',
-          timeRange: '20:00 05/12/2024 - 11:00 08/12/2024',
-          minOrder: '100.000đ',
-          maxDiscount: '15.000đ'
-        },
-        {
-          id: 'ANH-2607',
-          name: 'Nguyễn Tuấn Anh',
-          discountType: 'fixed',
-          discountValue: '15.000đ',
-          totalCodes: 100,
-          usedCodes: 5,
-          status: 'active',
-          timeRange: '20:00 05/12/2024 - 11:00 08/12/2024',
-          minOrder: '100.000đ',
-          maxDiscount: '15.000đ'
-        },
-        {
-          id: 'ANH-2607',
-          name: 'Nguyễn Tuấn Anh',
-          discountType: 'fixed',
-          discountValue: '15.000đ',
-          totalCodes: 100,
-          usedCodes: 5,
-          status: 'active',
-          timeRange: '20:00 05/12/2024 - 11:00 08/12/2024',
-          minOrder: '100.000đ',
-          maxDiscount: '15.000đ'
-        },
-        {
-          id: 'ANH-2607',
-          name: 'Nguyễn Tuấn Anh',
-          discountType: 'fixed',
-          discountValue: '15.000đ',
-          totalCodes: 100,
-          usedCodes: 5,
-          status: 'active',
-          timeRange: '20:00 05/12/2024 - 11:00 08/12/2024',
-          minOrder: '100.000đ',
-          maxDiscount: '15.000đ'
-        },
-        {
-          id: 'ANH-2607',
-          name: 'Nguyễn Tuấn Anh',
-          discountType: 'fixed',
-          discountValue: '15.000đ',
-          totalCodes: 100,
-          usedCodes: 5,
-          status: 'active',
-          timeRange: '20:00 05/12/2024 - 11:00 08/12/2024',
-          minOrder: '100.000đ',
-          maxDiscount: '15.000đ'
-        },
-        {
-          id: 'ANH-2607',
-          name: 'Nguyễn Tuấn Anh',
-          discountType: 'fixed',
-          discountValue: '15.000đ',
-          totalCodes: 100,
-          usedCodes: 5,
-          status: 'active',
-          timeRange: '20:00 05/12/2024 - 11:00 08/12/2024',
-          minOrder: '100.000đ',
-          maxDiscount: '15.000đ'
-        },
-        {
-          id: 'ANH-2607',
-          name: 'Nguyễn Tuấn Anh',
-          discountType: 'fixed',
-          discountValue: '15.000đ',
-          totalCodes: 100,
-          usedCodes: 5,
-          status: 'active',
-          timeRange: '20:00 05/12/2024 - 11:00 08/12/2024',
-          minOrder: '100.000đ',
-          maxDiscount: '15.000đ'
-        },
-        // ... your existing mock data
-      ]);
-    } catch (error) {
-      console.error('Error fetching vouchers:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [dispatch, selectedFacility]);
 
   const handleCreateVoucher = () => {
     navigate('/owner/create-voucher');
   };
 
-  const getStatusColor = (status: string) => {
+  const handleDeleteVoucher = async (voucherId: string) => {
+    if (window.confirm('Bạn có chắc chắn muốn xóa voucher này không?')) {
+      try {
+        await dispatch(deleteVoucher(voucherId)).unwrap();
+        // Refresh vouchers list
+        if (selectedFacility) {
+          dispatch(fetchVouchers(selectedFacility));
+        }
+      } catch (error) {
+        console.error('Error deleting voucher:', error);
+      }
+    }
+  };
+
+  // Format date for display
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')} ${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+  };
+
+  // Format time range
+  const formatTimeRange = (startTime: string, endTime: string): string => {
+    return `${formatDate(startTime)} - ${formatDate(endTime)}`;
+  };
+
+  // Filter vouchers based on status
+  const filteredVouchers = vouchers.filter(voucher => {
+    if (activeFilter === 'all') return true;
+    
+    const status = getVoucherStatus(voucher.startTime, voucher.endTime);
+    return status === activeFilter;
+  });
+
+  const getStatusColor = (status: string) => { 
     const colors = {
       active: 'text-green-500',
       upcoming: 'text-yellow-500',
       expired: 'text-red-500'
     };
     return colors[status as keyof typeof colors] || '';
+  };
+
+  // Format discount value based on voucher type
+  const formatDiscountValue = (voucher: any): string => {
+    return voucher.voucherType === 'cash' 
+      ? `${voucher.value.toLocaleString()}đ` 
+      : `${voucher.value}%`;
   };
 
   return (
@@ -205,7 +132,7 @@ const VoucherManagement: React.FC = () => {
                      text-lg font-roboto bg-white cursor-pointer focus:outline-none"
           >
             <option value="">Chọn cơ sở của bạn</option>
-            {facilities.map((facility) => (
+            {facilityList.map((facility) => (
               <option key={facility.id} value={facility.id}>
                 {facility.name}
               </option>
@@ -238,108 +165,133 @@ const VoucherManagement: React.FC = () => {
         <div className="border-b border-black/70 mb-8"></div>
 
         {/* Vouchers Table */}
-        <div className="rounded-[15px] overflow-hidden mb-8 border border-[#d8d8d880]">
-          {/* Table Container with fixed width and horizontal scroll */}
-          <div className="max-w-full ">
-            <div className="relative" style={{ height: '500px' }}>
-              <div className="overflow-x-auto overflow-y-auto h-full">
-                <table className="w-full table-fixed " style={{ minWidth: '1410px' }}>
-                  {/* Table Header */}
-                  <thead className="border-b border-[#d8d8d880] bg-[#fafbfd] sticky top-0 z-30 bg-opacity-100">
-                    <tr>
-                      {/* Sticky Left Column */}
-                      <th className="sticky left-0 z-10   w-[250px] font-bold font-opensans px-4 py-5 text-left" style={{ background: '#448ff033' }}>
-                        Tên Voucher / Mã Voucher
-                      </th>
-                      
-                      {/* Scrollable Middle Columns */}
-                      <th className="w-[200px] font-bold font-opensans px-4 py-5 text-left bg-[#448ff033]">
-                        Loại giảm giá | Giá giảm
-                      </th>
-                      <th className="w-[180px] font-bold font-opensans px-4 py-5 text-left bg-[#448ff033]">
-                        Tổng số mã giảm giá
-                      </th>
-                      <th className="w-[120px] font-bold font-opensans px-4 py-5 text-left bg-[#448ff033]">
-                        Đã dùng
-                      </th>
-                      <th className="w-[300px] font-bold font-opensans px-4 py-5 text-left bg-[#448ff033]">
-                        Trạng thái | Thời gian dùng mã giảm giá
-                      </th>
-                      <th className="w-[120px] font-bold font-opensans px-4 py-5 text-left bg-[#448ff033]">
-                        Đơn hàng tối thiểu
-                      </th>
-                      <th className="w-[120px] font-bold font-opensans px-4 py-5 text-left bg-[#448ff033]">
-                        Giảm tối đa
-                      </th>
+        {!selectedFacility ? (
+          <div className="flex flex-col items-center justify-center h-64 bg-white rounded-lg p-6">
+            <p className="text-lg text-gray-600 mb-4">Vui lòng chọn cơ sở để xem danh sách voucher</p>
+          </div>
+        ) : loading ? (
+          <div className="flex justify-center items-center h-64">
+            <p className="text-lg">Đang tải dữ liệu...</p>
+          </div>
+        ) : error ? (
+          <div className="p-4 bg-red-100 text-red-700 rounded-lg">
+            {error}
+          </div>
+        ) : filteredVouchers.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-64 bg-white rounded-lg p-6">
+            <p className="text-lg text-gray-600 mb-4">Chưa có voucher nào</p>
+            <button
+              onClick={handleCreateVoucher}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+            >
+              + Thêm voucher mới
+            </button>
+          </div>
+        ) : (
+          <div className="rounded-[15px] overflow-hidden mb-8 border border-[#d8d8d880]">
+            {/* Table Container with fixed width and horizontal scroll */}
+            <div className="max-w-full ">
+              <div className="relative" style={{ height: '500px' }}>
+                <div className="overflow-x-auto overflow-y-auto h-full">
+                  <table className="w-full table-fixed " style={{ minWidth: '1410px' }}>
+                    {/* Table Header */}
+                    <thead className="border-b border-[#d8d8d880] bg-[#fafbfd] sticky top-0 z-30 bg-opacity-100">
+                      <tr>
+                        {/* Sticky Left Column */}
+                        <th className="sticky left-0 z-10 w-[250px] font-bold font-opensans px-4 py-5 text-left" style={{ background: '#448ff033' }}>
+                          Tên Voucher / Mã Voucher
+                        </th>
+                        
+                        {/* Scrollable Middle Columns */}
+                        <th className="w-[200px] font-bold font-opensans px-4 py-5 text-left bg-[#448ff033]">
+                          Loại giảm giá | Giá giảm
+                        </th>
+                        <th className="w-[180px] font-bold font-opensans px-4 py-5 text-left bg-[#448ff033]">
+                          Tổng số mã giảm giá
+                        </th>
+                        <th className="w-[120px] font-bold font-opensans px-4 py-5 text-left bg-[#448ff033]">
+                          Đã dùng
+                        </th>
+                        <th className="w-[300px] font-bold font-opensans px-4 py-5 text-left bg-[#448ff033]">
+                          Trạng thái | Thời gian dùng mã giảm giá
+                        </th>
+                        <th className="w-[120px] font-bold font-opensans px-4 py-5 text-left bg-[#448ff033]">
+                          Đơn hàng tối thiểu
+                        </th>
+                        <th className="w-[120px] font-bold font-opensans px-4 py-5 text-left bg-[#448ff033]">
+                          Giảm tối đa
+                        </th>
 
-                      {/* Sticky Right Column */}
-                      <th className="sticky right-0 z-10 bg-[#448ff033] w-[120px] font-bold font-opensans px-4 py-5 text-left">
-                        Thao tác
-                      </th>
-                    </tr>
-                  </thead>
+                        {/* Sticky Right Column */}
+                        <th className="sticky right-0 z-10 bg-[#448ff033] w-[120px] font-bold font-opensans px-4 py-5 text-left">
+                          Thao tác
+                        </th>
+                      </tr>
+                    </thead>
 
-                  {/* Table Body */}
-                  <tbody>
-                    {loading ? (
-                      <tr><td colSpan={8} className="text-center py-4">Loading...</td></tr>
-                    ) : (
-                      vouchers.map((voucher, index) => (
-                        <tr key={index} className="hover:bg-gray-50 border-b border-[#9a9a9a]/50">
-                          {/* Sticky Left Column */}
-                          <td className="sticky left-0 z-10 bg-[#fafbfd] w-[250px]">
-                            <div className="p-5">
-                              <div className="font-medium">{voucher.name}</div>
-                              <div className="text-gray-500">{voucher.id}</div>
-                            </div>
-                          </td>
-
-                          {/* Scrollable Middle Columns */}
-                          <td className="w-[200px] p-5 whitespace-nowrap">
-                            <div>{voucher.discountType === 'percentage' ? 'Giảm theo %' : 'Giảm theo số tiền'}</div>
-                            <div>{voucher.discountValue}</div>
-                          </td>
-                          <td className="w-[180px] p-5 font-semibold whitespace-nowrap">{voucher.totalCodes}</td>
-                          <td className="w-[120px] p-5 font-semibold whitespace-nowrap">{voucher.usedCodes}</td>
-                          <td className="w-[300px] p-5 whitespace-nowrap">
-                            <span className={`font-medium ${getStatusColor(voucher.status)}`}>
-                              {filterOptions.find(f => f.id === voucher.status)?.label}
-                            </span>
-                            <div className="text-gray-500">{voucher.timeRange}</div>
-                          </td>
-                          <td className="w-[120px] p-5 font-semibold whitespace-nowrap">{voucher.minOrder}</td>
-                          <td className="w-[120px] p-5 font-semibold whitespace-nowrap">{voucher.maxDiscount}</td>
-
-                          {/* Sticky Right Column */}
-                          <td className="sticky right-0 z-10 bg-[#fafbfd] w-[120px]">
-                            <div className="p-5">
-                              <div className="flex items-center gap-2 bg-[#fafbfd] border-[0.6px] border-[#d5d5d5] rounded-lg px-2">
-                                <button>
-                                  <img src={ICONS.DETAIL} alt="Detail" className="w-[20px] h-[20px] hover:bg-[#f0f0f0]" />
-                                </button>
-                                <div className="w-[1px] h-8 bg-[#d8d8d880] opacity-70"></div>
-                                <button>
-                                  <img src={ICONS.EDIT} alt="Edit" className="w-[20px] h-[20px] hover:bg-[#f0f0f0]" />
-                                </button>
-                                <div className="w-[1px] h-8 bg-[#d8d8d880] opacity-70"></div>
-                                <button>
-                                  <img src={ICONS.BIN} alt="Delete" className="w-[20px] h-[20px] hover:bg-[#f0f0f0]" />
-                                </button>
+                    {/* Table Body */}
+                    <tbody>
+                      {filteredVouchers.map((voucher) => {
+                        const status = getVoucherStatus(voucher.startTime, voucher.endTime);
+                        const usedCount = voucher.amount - voucher.remain;
+                        
+                        return (
+                          <tr key={voucher.id} className="hover:bg-gray-50 border-b border-[#9a9a9a]/50">
+                            {/* Sticky Left Column */}
+                            <td className="sticky left-0 z-10 bg-[#fafbfd] w-[250px]">
+                              <div className="p-5">
+                                <div className="font-medium">{voucher.name}</div>
+                                <div className="text-gray-500">{voucher.code}</div>
                               </div>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                            </td>
+
+                            {/* Scrollable Middle Columns */}
+                            <td className="w-[200px] p-5 whitespace-nowrap">
+                              <div>{voucher.voucherType === 'percent' ? 'Giảm theo %' : 'Giảm theo số tiền'}</div>
+                              <div>{formatDiscountValue(voucher)}</div>
+                            </td>
+                            <td className="w-[180px] p-5 font-semibold whitespace-nowrap">{voucher.amount}</td>
+                            <td className="w-[120px] p-5 font-semibold whitespace-nowrap">{usedCount}</td>
+                            <td className="w-[300px] p-5 whitespace-nowrap">
+                              <span className={`font-medium ${getStatusColor(status)}`}>
+                                {filterOptions.find(f => f.id === status)?.label}
+                              </span>
+                              <div className="text-gray-500">{formatTimeRange(voucher.startTime, voucher.endTime)}</div>
+                            </td>
+                            <td className="w-[120px] p-5 font-semibold whitespace-nowrap">{voucher.minPrice.toLocaleString()}đ</td>
+                            <td className="w-[120px] p-5 font-semibold whitespace-nowrap">{voucher.maxDiscount.toLocaleString()}đ</td>
+
+                            {/* Sticky Right Column */}
+                            <td className="sticky right-0 z-10 bg-[#fafbfd] w-[120px]">
+                              <div className="p-5">
+                                <div className="flex items-center gap-2 bg-[#fafbfd] border-[0.6px] border-[#d5d5d5] rounded-lg px-2">
+                                  <button>
+                                    <img src={ICONS.DETAIL} alt="Detail" className="w-[20px] h-[20px] hover:bg-[#f0f0f0]" />
+                                  </button>
+                                  <div className="w-[1px] h-8 bg-[#d8d8d880] opacity-70"></div>
+                                  <button onClick={() => navigate(`/owner/voucher-management/edit/${voucher.id}`)}>
+                                    <img src={ICONS.EDIT} alt="Edit" className="w-[20px] h-[20px] hover:bg-[#f0f0f0]" />
+                                  </button>
+                                  <div className="w-[1px] h-8 bg-[#d8d8d880] opacity-70"></div>
+                                  <button onClick={() => handleDeleteVoucher(voucher.id.toString())}>
+                                    <img src={ICONS.BIN} alt="Delete" className="w-[20px] h-[20px] hover:bg-[#f0f0f0]" />
+                                  </button>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>        
   );
 };
 
-export default VoucherManagement; 
+export default VoucherManagement;

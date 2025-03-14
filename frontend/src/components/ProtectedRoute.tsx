@@ -20,7 +20,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const messageShownRef = useRef(false);
 
   useEffect(() => {
-    console.log('useEffect running with:', { isLoading, isAuthenticated, user, requiredRole });
+    // console.log('useEffect running with:', { isLoading, isAuthenticated, user, requiredRole });
     if (!isLoading) {
       setInitialCheckDone(true);
       

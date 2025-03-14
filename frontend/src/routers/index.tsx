@@ -3,13 +3,18 @@ import { PlayerLayout } from './layouts/PlayerLayout';
 import { OwnerLayout } from './layouts/OwnerLayout';
 import { PublicLayout } from './layouts/PublicLayout';
 
-import ErrorPage from '@/pages/Error';
-import HomePage from '@/pages/Home';
+// Public pages
+import ErrorPage from '@/pages/Public/Error';
+import HomePage from '@/pages/Public/Home';
 import UserProfile from '@/pages/UserProfile';
+import DetailFacility from '@/pages/Public/DetailFacility';
+import ResultSearch from '@/pages/Public/ResultSearch';
 
+// Player pages
 import BookingPage from '@/pages/Player/Booking';
 import DetaildFacilityPage from '@/pages/Player/DetaildFacility';
 
+// Owner pages
 import PlaySchedule from '@/pages/Owner/PlaySchedule/PlaySchedule';
 import FacilityManagement from '@/pages/Owner/FacilityManager/FacilityManagement';
 import CreateFacility from '@/pages/Owner/FacilityManager/CreateFacility/CreateFacility';
@@ -44,6 +49,8 @@ const AppRouter: React.FC = () => {
       {/* public routes */}
       <Route element={<PublicLayout />}>
         <Route path='/' element={<HomePage />} />
+        <Route path='/facility/:id' element={<DetailFacility />} />
+        <Route path='/result-search' element={<ResultSearch />} />
       </Route> 
 
       {/* player routes */}
