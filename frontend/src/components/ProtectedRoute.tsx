@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Navigate} from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '@/hooks/reduxHooks';
 import { showLoginModal } from '@/store/slices/userSlice';
@@ -13,30 +13,30 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children, 
   requiredRole 
 }) => {
-
   const { isAuthenticated, user, isLoading} = useAppSelector(state => state.user);
   const dispatch = useAppDispatch();
   const [initialCheckDone, setInitialCheckDone] = useState(false);
   const messageShownRef = useRef(false);
 
+  const handleAuthenticationMessages = useCallback(() => {
+    if (!isAuthenticated && !messageShownRef.current && localStorage.getItem('access_token') === null) {
+      messageShownRef.current = true;
+      message.warning('Vui lòng đăng nhập để truy cập trang này');
+      dispatch(showLoginModal(window.location.pathname));
+    } 
+    else if (isAuthenticated && requiredRole && user?.role !== requiredRole && !messageShownRef.current) {
+      messageShownRef.current = true;
+      message.error(`Bạn không có quyền truy cập trang này. Yêu cầu vai trò: ${requiredRole}`);
+    }
+  }, [isAuthenticated, user, requiredRole, dispatch]);
+
   useEffect(() => {
-    // console.log('useEffect running with:', { isLoading, isAuthenticated, user, requiredRole });
     if (!isLoading) {
       setInitialCheckDone(true);
-      
-      if (!isAuthenticated && !messageShownRef.current) {
-        messageShownRef.current = true;
-        message.warning('Please log in to access this page');
-        dispatch(showLoginModal());
-      } else if (requiredRole && user?.role !== requiredRole && !messageShownRef.current) {
-        messageShownRef.current = true;
-        message.error(`You don't have permission to access this page. Required role: ${requiredRole}`);
-      }
+      handleAuthenticationMessages();
     }
-  }, [isLoading, isAuthenticated, user, requiredRole, dispatch]);
+  }, [isLoading, handleAuthenticationMessages]);
 
-
-  // Show loading while checking authentication
   // Hiển thị loading trong khi kiểm tra xác thực hoặc chưa hoàn tất kiểm tra ban đầu
   if (isLoading || !initialCheckDone) {
     return (
@@ -46,18 +46,20 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  // If authenticated and has the required role (or no role required), render children
-  if (isAuthenticated && (!requiredRole || user?.role === requiredRole)) {
+  // Kiểm tra cả xác thực và vai trò
+  if (isAuthenticated) {
+    // Nếu có yêu cầu vai trò và vai trò không phù hợp, chuyển hướng về trang chủ
+    if (requiredRole && user?.role !== requiredRole) {
+      return <Navigate to="/" replace />;
+    }
+    // Nếu xác thực và có vai trò phù hợp (hoặc không yêu cầu vai trò), hiển thị children
     return <>{children}</>;
   }
 
-  // If no authentication required or user is not authenticated, redirect to home page
-  // The login modal will be shown by the useEffect above
-  if (!isAuthenticated) {
-    return <Navigate to="/" replace />;
-  }
-
-  // If user doesn't have the required role, redirect to home
+  // if (!isAuthenticated) {
+  //   return <Navigate to="/" replace />;
+  // }
+  // Nếu người dùng không có vai trò cần thiết, chuyển hướng đến trang chủ
   return <Navigate to="/" replace />;
 };
 

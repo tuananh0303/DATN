@@ -3,7 +3,7 @@ import { Modal, Form, Input, Button, message } from 'antd';
 import { useAppDispatch, useAppSelector } from '@/hooks/reduxHooks';
 import { login, hideLoginModal } from '@/store/slices/userSlice';
 import RegisterModal from './RegisterModal';
-
+import { useNavigate } from 'react-router-dom';
 interface LoginModalProps {
   visible: boolean;
   onClose?: () => void;
@@ -11,20 +11,25 @@ interface LoginModalProps {
 
 const LoginModal: React.FC<LoginModalProps> = ({ visible, onClose }) => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const { isLoading, error, redirectPath } = useAppSelector(state => state.user);
   const [showRegister, setShowRegister] = useState(false);
 
   const handleLogin = async (values: { email: string; password: string }) => {
     try {
-      await dispatch(login(values)).unwrap();
+      await dispatch(login({ ...values, fromToken: false })).unwrap();
       message.success('Đăng nhập thành công');
+      // Check if there's a redirect path and navigate to it
+    if (redirectPath) {
+      navigate(redirectPath);
+    }
       if (onClose) {
         onClose();
       }
       // Redirect will be handled by the protected route component
     } catch (err) {
       console.log(err);
-      message.error(error || 'Đăng nhập thất bại. Vui lòng thử lại.');
+      message.error(error || 'Email hoặc mật khẩu không chính xác. Vui lòng thử lại.');
     }
   };
 
@@ -63,11 +68,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ visible, onClose }) => {
       footer={null}
       maskClosable={false}
     >
-      {redirectPath && (
-        <div className="mb-4 text-blue-600">
-          Login to access: {redirectPath}
-        </div>
-      )}
       <Form
         name="login-form"
         layout="vertical"
@@ -76,7 +76,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ visible, onClose }) => {
         <Form.Item
           label="Email"
           name="email"
-          rules={[{ required: true, message: 'Please enter your email' }]}
+          rules={[{ required: true, message: 'Vui lòng nhập email' }]}
         >
           <Input />
         </Form.Item>

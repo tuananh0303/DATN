@@ -203,7 +203,7 @@ const FieldManagement: React.FC = () => {
                         {formatTime(group.peakStartTime)} - {formatTime(group.peakEndTime)}
                       </div>
                       <div className="col-span-1 font-opensans text-sm">{formatPrice(group.priceIncrease)}</div>
-                      <div className="col-span-2 font-opensans text-sm">
+                      <div className="col-span-2 font-opensans text-sm">                        
                         {group.sports.map(sport => sport.name).join(', ')}
                       </div>
                       <div className="col-span-2 flex items-center gap-2 bg-[#fafbfd] border-[0.6px] border-[#d5d5d5] rounded-lg px-2 w-fit">

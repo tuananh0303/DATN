@@ -7,8 +7,13 @@ export const voucherService = {
     return response.data;
   },
     
-  getVoucher: async (facilityId: string) => {
-    const response = await api.get(`/voucher/${facilityId}`);
+  getVoucherBooking: async (facilityId: string) => {
+    const response = await api.get(`/voucher/${facilityId}/booking`);
+    return response.data;
+  },
+
+  getVoucherMyFacility: async (facilityId: string) => {
+    const response = await api.get(`/voucher/${facilityId}/all`);
     return response.data;
   },
   

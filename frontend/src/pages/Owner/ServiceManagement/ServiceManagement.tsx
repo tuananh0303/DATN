@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/hooks/reduxHooks';
 import { fetchFacilityList } from '@/store/slices/facilitySlice';
 import { fetchServices, deleteService } from '@/store/slices/serviceSlice';
+import { ICONS } from '@/constants/owner/Content/content';
+import { Modal,message } from 'antd';
 
 const ServiceManagement: React.FC = () => {
   const navigate = useNavigate();
@@ -37,17 +39,27 @@ const ServiceManagement: React.FC = () => {
 
   // Handle service deletion
   const handleDeleteService = async (serviceId: string) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa dịch vụ này không?')) {
-      try {
-        await dispatch(deleteService(serviceId)).unwrap();
-        // Refresh services list
-        if (selectedFacilityId) {
-          dispatch(fetchServices(selectedFacilityId));
+    Modal.confirm({
+      title: 'Xác nhận xóa',
+      content: 'Bạn có chắc chắn muốn xóa dịch vụ này không?',
+      okText: 'Xóa',
+      okType: 'danger',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          await dispatch(deleteService(serviceId)).unwrap();
+          
+          if (selectedFacilityId) {
+            dispatch(fetchServices(selectedFacilityId));
+          }
+          
+          message.success('Đã xóa dịch vụ thành công');
+        } catch (error) {
+          console.error('Error deleting service:', error);
+          message.error('Không thể xóa dịch vụ. Vui lòng thử lại sau.');
         }
-      } catch (error) {
-        console.error('Error deleting service:', error);
       }
-    }
+    });
   };
 
   // Filter services by search term
@@ -64,22 +76,36 @@ const ServiceManagement: React.FC = () => {
   return (
     <div className="flex flex-col p-5 bg-[#f5f6fa] min-h-screen w-full box-border">
       {/* Header and Actions */}
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Quản lý dịch vụ</h1>
-        <button
-          onClick={() => navigate('/owner/create-service')}
-          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-        >
-          + Thêm dịch vụ mới
-        </button>
+
+      <div className="bg-white p-5 rounded-lg mb-8 flex justify-between items-center flex-wrap gap-10">
+        <div className="flex-1 min-w-[300px] mb-4 lg:mb-0">
+          <h1 className="text-[26px] font-bold font-roboto tracking-wide mb-2">
+            Tạo ngay dịch vụ để tăng doanh thu cho cơ sở của bạn!!!
+          </h1>
+          <p className="text-base font-roboto tracking-wide mb-8 text-gray-600">
+            Cơ hội tăng đến 43% đơn đặt sân và 28% doanh thu khi tạo dịch vụ tiện ích cho Khách hàng.
+          </p>
+          <button 
+            onClick={()=> navigate('/owner/create-service')}
+            className="bg-[#cc440a] text-white rounded-md px-6 py-3 text-xl font-semibold 
+                     flex items-center gap-3 hover:bg-[#b33a08] transition-colors"
+          >
+            Tạo dịch vụ ngay!
+            <img src={ICONS.ARROW_RIGHT} alt="arrow" className="w-6" />
+          </button>
+        </div>
+        <div className="flex-shrink-0">
+          <img src={ICONS.SERVICE} alt="Voucher Promotion" className="w-full max-w-[500px] h-auto object-contain" />
+        </div>
       </div>
+
 
       {/* Facility Selector */}
       <div className="mb-6">
         <label className="block mb-2 font-medium">Chọn cơ sở</label>
         <div className="relative">
           <select
-            value={selectedFacilityId}
+            value={selectedFacilityId || ''}
             onChange={handleFacilitySelect}
             className="w-full appearance-none border border-gray-300 rounded-lg px-4 py-2
                      text-lg bg-white cursor-pointer focus:outline-none"

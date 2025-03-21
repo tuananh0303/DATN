@@ -52,11 +52,6 @@ const TopbarProfile: React.FC = () => {
     }
   ];
 
-  // const handleLoginSuccess = (userData: {name: string, role: 'player' | 'owner'}) => {
-  //   setShowLoginModal(false);
-  //   setShowRegisterModal(false);
-  // };
-
   const handleRegisterSuccess = () => {
     setShowRegisterModal(false);
     setShowLoginModal(true);

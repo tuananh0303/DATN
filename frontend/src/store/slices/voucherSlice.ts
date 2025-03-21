@@ -6,10 +6,10 @@ export interface Voucher {
   id: number;
   name: string;
   code: string;
-  startTime: string;
-  endTime: string;
+  startDate: string;
+  endDate: string;
   voucherType: 'cash' | 'percent';
-  value: number;
+  discount: number;
   minPrice: number;
   maxDiscount: number;
   amount: number;
@@ -20,11 +20,11 @@ export interface Voucher {
 
 export interface VoucherFormData {
   name: string;
-  code: string;
-  startTime: string;
-  endTime: string;
+  code?: string;
+  startDate: string;
+  endDate: string;
   voucherType: 'cash' | 'percent';
-  value: number;
+  discount: number;
   minPrice: number;
   maxDiscount: number;
   amount: number;
@@ -55,7 +55,19 @@ export const fetchVouchers = createAsyncThunk(
   'voucher/fetchVouchers',
   async (facilityId: string, { rejectWithValue }) => {
     try {
-      const response = await voucherService.getVoucher(facilityId);
+      const response = await voucherService.getVoucherMyFacility(facilityId);
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data || 'Failed to fetch vouchers');
+    }
+  }
+);
+
+export const fetchVouchersBooking = createAsyncThunk(
+  'voucher/fetchVouchers',
+  async (facilityId: string, { rejectWithValue }) => {
+    try {
+      const response = await voucherService.getVoucherBooking(facilityId);
       return response;
     } catch (error: any) {
       return rejectWithValue(error.response?.data || 'Failed to fetch vouchers');
@@ -100,10 +112,10 @@ export const deleteVoucher = createAsyncThunk(
 );
 
 // Helper function to determine voucher status
-export const getVoucherStatus = (startTime: string, endTime: string): 'active' | 'upcoming' | 'expired' => {
+export const getVoucherStatus = (startDate: string, endDate: string): 'active' | 'upcoming' | 'expired' => {
   const now = new Date();
-  const start = new Date(startTime);
-  const end = new Date(endTime);
+  const start = new Date(startDate);
+  const end = new Date(endDate);
   
   if (now < start) {
     return 'upcoming';

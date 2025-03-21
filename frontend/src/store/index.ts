@@ -4,7 +4,7 @@ import facilityReducer from './slices/facilitySlice';
 import fieldReducer from './slices/fieldSlice';
 import serviceReducer from './slices/serviceSlice';
 import voucherReducer from './slices/voucherSlice';
-
+import bookingReducer from './slices/bookingSlice';
 export const store = configureStore({
   reducer: {
     user: userReducer,
@@ -12,6 +12,7 @@ export const store = configureStore({
     field: fieldReducer,
     service: serviceReducer,
     voucher: voucherReducer,
+    booking: bookingReducer,
   },
 });
 
