@@ -37,6 +37,7 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
     if (onClose) {
       onClose();
     }
+    
   };
 
   return (
@@ -48,7 +49,7 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
       maskClosable={false}
     >
       <Form
-        name="register-form"
+        name={`register-form-${Date.now()}`}
         layout="vertical"
         onFinish={handleRegister}
       >
@@ -79,8 +80,7 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
               pattern: /^[0-9]{10,11}$/,
               message: 'Vui lòng nhập số điện thoại hợp lệ'
             }
-          ]}
-          // extra="Nhập số chỉ bao gồm số. Sẽ được tự động định dạng theo định dạng quốc tế (+84...)"
+          ]}          
         >
           <Input />
         </Form.Item>

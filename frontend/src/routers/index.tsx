@@ -39,12 +39,13 @@ import ChatManagement from '@/pages/Owner/ChatManagement/ChatManagement';
 import ReportManagement from '@/pages/Owner/ReportManagement/ReportManagement';
 
 import ReviewManagement from '@/pages/Owner/ReviewManagement/ReviewManagement';
-import ProtectedRoute from '@/components/ProtectedRoute';
+import ProtectedRoute from '@/components/LoginModal/ProtectedRoute';
 
 import ResultBookingVNPay from '@/pages/Player/ResultBookingVNPay';
 
 
 const AppRouter: React.FC = () => {
+
   return (
     <Routes>
       {/* public routes */}

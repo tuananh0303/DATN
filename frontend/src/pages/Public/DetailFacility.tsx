@@ -471,7 +471,7 @@ const DetailFacility: React.FC = () => {
         </Card>
       </section>
 
-      {/* Section 4: Map */}
+      {/* Section 4: Map
       <section>
         <div className="h-96 w-full">
           <img 
@@ -484,7 +484,7 @@ const DetailFacility: React.FC = () => {
             }}
           />
         </div>
-      </section>
+      </section> */}
     </div>
   );
 };

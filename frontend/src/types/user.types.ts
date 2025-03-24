@@ -16,13 +16,19 @@
     isLoading: boolean;
     error: string | null;
     loginModalVisible: boolean;
+    roleModalVisible: boolean;
+    playerRoleModalVisible: boolean;
+    ownerRoleModalVisible: boolean;
+    resetAuthChecksFlag: boolean;
+    selectedRole: 'player' | 'owner' | null;
     redirectPath: string | null;
   }
   
   export interface LoginParams {
     email: string;
     password: string;
-    fromToken: boolean;
+    requiredRole?: 'player' | 'owner';
+    fromToken: boolean;    
   }
   
   export interface RegisterData {

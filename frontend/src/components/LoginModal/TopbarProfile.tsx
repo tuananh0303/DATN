@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { Dropdown, Avatar, Button, MenuProps } from 'antd';
 import { UserOutlined, LogoutOutlined } from '@ant-design/icons';
 import { useAppSelector, useAppDispatch } from '@/hooks/reduxHooks';
-import { logout } from '@/store/slices/userSlice';
+import { logout, resetAuthChecks } from '@/store/slices/userSlice';
 import LoginModal from './LoginModal';
 import RegisterModal from './RegisterModal';
+import RoleSelectionModal from './RoleSelectionModal';
 
 const TopbarProfile: React.FC = () => {
   const navigate = useNavigate();
@@ -13,12 +14,31 @@ const TopbarProfile: React.FC = () => {
   const { user, isAuthenticated } = useAppSelector(state => state.user);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<'player' | 'owner' | null>(null);
 
   const handleLogout = () => {
     dispatch(logout());
-    navigate('/');
+    // Đặt một flag để biết người dùng vừa mới logout
+    sessionStorage.setItem('just_logged_out', 'true');
+    
+    // Kiểm tra vai trò trước khi logout
+    const currentRole = user?.role;
+    const isAtOwnerRoute = window.location.pathname.startsWith('/owner');
+    
+    // Điều hướng trước, rồi mới logout
+    if (currentRole === 'owner' && isAtOwnerRoute) {
+      navigate('/', { replace: true });
+    } else {
+      navigate('/', { replace: true });
+    }
+    
+    // Dispatch logout action sau khi đã điều hướng
+    setTimeout(() => {
+      // Đặt lại các ref này thông qua một action mới
+      dispatch(resetAuthChecks());
+    }, 100);
   };
-
   // Menu for authenticated users
   const userMenuItems: MenuProps['items'] = [
     {
@@ -52,9 +72,23 @@ const TopbarProfile: React.FC = () => {
     }
   ];
 
+  const handleLoginClick = () => {
+    setShowRoleModal(true);
+  };
+
+  const handleRegisterClick = () => {
+    setShowRegisterModal(true);
+  };
+
+  const handleRoleSelect = (role: 'player' | 'owner') => {
+    setSelectedRole(role);
+    setShowRoleModal(false);
+    setShowLoginModal(true);
+  };
+
   const handleRegisterSuccess = () => {
     setShowRegisterModal(false);
-    setShowLoginModal(true);
+    setShowRoleModal(true);
   };
 
   return (
@@ -77,32 +111,46 @@ const TopbarProfile: React.FC = () => {
           <Button 
             type="text" 
             size="small" 
-            onClick={() => setShowLoginModal(true)}
+            onClick={handleLoginClick}
           >
             Đăng nhập
           </Button>
           <Button 
             type="primary" 
             size="small" 
-            onClick={() => setShowRegisterModal(true)}
+            onClick={handleRegisterClick}
           >
             Đăng ký
           </Button>
         </div>
       )}
 
+      {/* Role Selection Modal */}
+      <RoleSelectionModal
+        visible={showRoleModal}
+        onClose={() => setShowRoleModal(false)}
+        onSelectRole={handleRoleSelect}
+      />
+
+      {/* Login Modal */}
       <LoginModal 
         visible={showLoginModal} 
-        onClose={() => setShowLoginModal(false)} 
+        onClose={() => {
+          setShowLoginModal(false);
+          setSelectedRole(null);
+        }}
+        requiredRole={selectedRole || undefined}
       />
       
       <RegisterModal 
         visible={showRegisterModal} 
-        onClose={() => setShowRegisterModal(false)}
+        onClose={() => { 
+          setShowRegisterModal(false);          
+        }}
         onSwitchToLogin={() => {
           setShowRegisterModal(false);
-          setShowLoginModal(true);
-        }}
+          setShowRoleModal(true);
+        }}        
         onSuccess={handleRegisterSuccess}
       />
     </div>

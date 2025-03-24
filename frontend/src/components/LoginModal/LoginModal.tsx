@@ -7,29 +7,38 @@ import { useNavigate } from 'react-router-dom';
 interface LoginModalProps {
   visible: boolean;
   onClose?: () => void;
+  requiredRole?: 'player' | 'owner';
 }
 
-const LoginModal: React.FC<LoginModalProps> = ({ visible, onClose }) => {
+const LoginModal: React.FC<LoginModalProps> = ({ visible, onClose, requiredRole }) => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { isLoading, error, redirectPath } = useAppSelector(state => state.user);
+  const { isLoading, redirectPath } = useAppSelector(state => state.user);
   const [showRegister, setShowRegister] = useState(false);
 
   const handleLogin = async (values: { email: string; password: string }) => {
     try {
-      await dispatch(login({ ...values, fromToken: false })).unwrap();
+       await dispatch(login({ ...values, requiredRole , fromToken: false })).unwrap();       
       message.success('Đăng nhập thành công');
       // Check if there's a redirect path and navigate to it
     if (redirectPath) {
       navigate(redirectPath);
-    }
-      if (onClose) {
-        onClose();
+    } 
+    else {
+      // Chuyển hướng dựa trên vai trò nếu không có redirectPath
+      if (requiredRole === 'owner') {
+        navigate('/owner');
+      } else if (requiredRole === 'player') {
+        navigate('/');
       }
+    }
+    if (onClose) {
+      onClose();
+    }
       // Redirect will be handled by the protected route component
-    } catch (err) {
-      console.log(err);
-      message.error(error || 'Email hoặc mật khẩu không chính xác. Vui lòng thử lại.');
+    } catch (error) {
+      // Hiển thị thông báo lỗi cụ thể từ API
+      message.error(error as string || 'Email hoặc mật khẩu không chính xác. Vui lòng thử lại.');
     }
   };
 
@@ -38,10 +47,11 @@ const LoginModal: React.FC<LoginModalProps> = ({ visible, onClose }) => {
   };
 
   const handleCancel = () => {
-    dispatch(hideLoginModal());
+    dispatch(hideLoginModal());    
     if (onClose) {
       onClose();
     }
+    setShowRegister(false);
   };
 
   const handleRegisterSuccess = () => {
@@ -62,14 +72,14 @@ const LoginModal: React.FC<LoginModalProps> = ({ visible, onClose }) => {
 
   return (
     <Modal
-      title="Đăng nhập"
+      title={`Đăng nhập ${requiredRole === 'owner' ? 'Chủ sân' : requiredRole === 'player' ? 'Người chơi' : ''}`}
       open={visible}
       onCancel={handleCancel}
       footer={null}
       maskClosable={false}
     >
       <Form
-        name="login-form"
+        name={`login-form-${Date.now()}`}
         layout="vertical"
         onFinish={handleLogin}
       >
@@ -88,6 +98,15 @@ const LoginModal: React.FC<LoginModalProps> = ({ visible, onClose }) => {
         >
           <Input.Password />
         </Form.Item>
+
+        {/* Hiển thị vai trò đã chọn */}
+        {requiredRole && (
+          <div className="mb-4 p-2 bg-blue-50 rounded-md">
+            <p className="text-sm text-blue-600">
+              Bạn đang đăng nhập với vai trò: <strong>{requiredRole === 'owner' ? 'Chủ sân' : 'Người chơi'}</strong>
+            </p>
+          </div>
+        )}
 
         <Form.Item>
           <div className="flex justify-between">

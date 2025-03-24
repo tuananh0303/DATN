@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Select } from 'antd';
-import TopbarProfile from '@/components/TopbarProfile';
+import TopbarProfile from '@/components/LoginModal/TopbarProfile';
 import Logo from '@/assets/Logo.svg';
 
 const { Option } = Select;
