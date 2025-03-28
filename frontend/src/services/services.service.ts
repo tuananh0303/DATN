@@ -22,6 +22,18 @@ export const servicesService = {
     return response.data;
   },
 
+  // get service list booking
+  getServiceListBooking: async (facilityId: string, sportId: string, startTime: string, endTime: string, date: string) => {
+    const response = await api.get(`/service/${facilityId}/availability`, {
+      params: {
+        sportId,
+        startTime,
+        endTime,
+        date
+      }
+    });
+    return response.data;
+  },
   
 };
 

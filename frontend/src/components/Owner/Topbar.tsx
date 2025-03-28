@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { ICONS } from '@/constants/owner/topbar/topbar';
-import TopbarProfile from '../TopbarProfile';
+import TopbarProfile from '../LoginModal/TopbarProfile';
 
 interface TopBarProps {
   className?: string;

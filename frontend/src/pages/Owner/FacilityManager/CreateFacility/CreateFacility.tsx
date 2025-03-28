@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '@/hooks/reduxHooks';
 // import { ICONS } from '@/constants/owner/Content/content';
 import axios from 'axios';
-import { TimePicker } from 'antd';
+import { message, TimePicker } from 'antd';
 import dayjs from 'dayjs';
 // import type { Dayjs } from 'dayjs';
 import 'antd/dist/reset.css';
@@ -31,6 +31,8 @@ import type {
   FieldGroupData ,
   SportType
 } from './interfaces/facility';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+
 
 
 const CreateFacility: React.FC = () => {
@@ -53,6 +55,8 @@ const [imagesPreview, setImagesPreview] = useState<string[]>([]);
   const [showForm, setShowForm] = useState<number | null>(null);
   const [editingGroup, setEditingGroup] = useState<FieldGroupData | null>(null);
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -64,17 +68,24 @@ const [imagesPreview, setImagesPreview] = useState<string[]>([]);
   const format = 'HH:mm';
   const progress = ((currentStep - 1) / 3) * 100;
 
-  // Fetch sports from API
-  useEffect(() => {
-    const fetchSports = async () => {
-      try {
-        const sportsData = await fieldService.getSport();
-        setSports(sportsData);
-      } catch (error) {
-        console.error('Error fetching sports:', error);
+
+  const fetchSports = async () => {
+    try {
+      const response = await fieldService.getSport();
+      // console.log(response);
+      if (response && Array.isArray(response)) {
+        setSports(response);
+      } else {
+        console.error('Invalid sports data format:', response);
+        message.error('Không thể tải dữ liệu môn thể thao');
       }
-    };
-    
+    } catch (error) {
+      console.error('Error fetching sports:', error);
+      message.error('Không thể tải dữ liệu môn thể thao');
+    }
+  };
+  // Fetch sports from API
+  useEffect(() => {    
     fetchSports();
   }, []);
 
@@ -193,6 +204,10 @@ const [imagesPreview, setImagesPreview] = useState<string[]>([]);
 
   const handleSubmitFacility = async () => {
     try {
+
+    setIsSubmitting(true); // Bắt đầu loading
+    setShowSubmitPopup(false); // Đóng popup xác nhận
+
       console.log('Submitting facility with data:', {
         formData,
         fieldGroups,
@@ -244,14 +259,17 @@ const [imagesPreview, setImagesPreview] = useState<string[]>([]);
         apiFormData.append('images', image);
       });
       
-      // Dispatch create facility action
-      dispatch(createFacility(apiFormData));
-      
+      // Dispatch create facility action và đợi kết quả
+    const result = await dispatch(createFacility(apiFormData)).unwrap();
+      // Hiển thị thông báo thành công
+    message.success('Tạo cơ sở thành công!');
       // Clear local storage and navigate back
       localStorage.removeItem('facilityDraft');
       navigate('/owner/facility-management');
     } catch (error) {
       console.error('Error creating facility:', error);
+    }finally {
+      setIsSubmitting(false); // Kết thúc loading dù thành công hay thất bại
     }
   };
 
@@ -406,6 +424,24 @@ const [imagesPreview, setImagesPreview] = useState<string[]>([]);
     setShowForm(null);
     setEditingGroup(null);
   };
+
+// Thêm hàm xử lý kéo thả
+const handleDragEnd = (result: any) => {
+  if (!result.destination) return;
+
+  const items = Array.from(imagesPreview);
+  const itemsFile = Array.from(images);
+  
+  const [reorderedPreviewItem] = items.splice(result.source.index, 1);
+  items.splice(result.destination.index, 0, reorderedPreviewItem);
+  
+  const [reorderedFileItem] = itemsFile.splice(result.source.index, 1);
+  itemsFile.splice(result.destination.index, 0, reorderedFileItem);
+
+  setImagesPreview(items);
+  setImages(itemsFile);
+};
+
 
   // Render Functions
   const renderStep1 = () => (
@@ -623,39 +659,68 @@ const [imagesPreview, setImagesPreview] = useState<string[]>([]);
         </div>
       </div>
       
-      {/* Image Preview */}
-      {imagesPreview.length > 0 && (
-        <div className="mt-6">
-          <h3 className="text-lg font-semibold mb-2">Hình ảnh đã tải lên</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      {/* Image Preview Thay thế phần render preview ảnh trong renderStep2 */}
+    
+{imagesPreview.length > 0 && (
+  <div className="mt-6">
+    <h3 className="text-lg font-semibold mb-2">Hình ảnh đã tải lên</h3>
+    <p className="text-sm text-gray-500 mb-4">Kéo thả để sắp xếp lại vị trí ảnh. Ảnh đầu tiên sẽ được sử dụng làm ảnh bìa.</p>
+    
+    <DragDropContext onDragEnd={handleDragEnd}>
+      <Droppable droppableId="images" direction="horizontal">
+        {(provided) => (
+          <div 
+            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+            {...provided.droppableProps}
+            ref={provided.innerRef}
+          >
             {imagesPreview.map((preview, index) => (
-              <div key={index} className="relative group">
-                <div className="aspect-w-16 aspect-h-9 overflow-hidden rounded-lg">
-                  <img 
-                    src={preview} 
-                    alt={`Preview ${index + 1}`} 
-                    className="object-cover w-full h-full"
-                  />
-                </div>
-                <button
-                  type="button"
-                  className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={() => handleRemoveImage(index)}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-                {index === 0 && (
-                  <div className="absolute bottom-0 left-0 right-0 bg-blue-500 text-white text-xs py-1 text-center">
-                    Ảnh bìa
+              <Draggable key={preview} draggableId={preview} index={index}>
+                {(provided, snapshot) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.draggableProps}
+                    {...provided.dragHandleProps}
+                    className={`relative group ${snapshot.isDragging ? 'z-50' : ''}`}
+                  >
+                    <div className="aspect-w-16 aspect-h-9 overflow-hidden rounded-lg">
+                      <img 
+                        src={preview} 
+                        alt={`Preview ${index + 1}`} 
+                        className="object-cover w-full h-full"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => handleRemoveImage(index)}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                    {index === 0 && (
+                      <div className="absolute bottom-0 left-0 right-0 bg-blue-500 text-white text-xs py-1 text-center">
+                        Ảnh bìa
+                      </div>
+                    )}
+                    <div className="absolute top-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                      </svg>
+                      Kéo để di chuyển
+                    </div>
                   </div>
                 )}
-              </div>
+              </Draggable>
             ))}
+            {provided.placeholder}
           </div>
-        </div>
-      )}
+        )}
+      </Droppable>
+    </DragDropContext>
+  </div>
+)}
     </div>
   );
 
@@ -834,9 +899,20 @@ return (
           type="button"
           className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
           onClick={() => setShowSubmitPopup(true)}
+          disabled={isSubmitting}
         >
-          Hoàn tất
-        </button>
+          {isSubmitting ? (
+      <>
+        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Đang xử lý...
+      </>
+    ) : (
+      'Hoàn tất'
+    )}
+  </button>
       )}
     </div>
     

@@ -3,6 +3,7 @@ import { Input, Select, DatePicker, Card, Rate, Carousel, Row, Col } from 'antd'
 import { SearchOutlined, EnvironmentOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import type { RangePickerProps } from 'antd/es/date-picker';
 import { IMAGE } from '@/constants/user/Home/Image';
+import { useNavigate } from 'react-router-dom';
 
 
 const { Option } = Select;
@@ -36,6 +37,7 @@ interface PromotionData {
 }
 
 const HomePage = () => {
+  const navigate = useNavigate();
   // States
   const [searchParams, setSearchParams] = useState({
     sport: undefined,
@@ -183,7 +185,9 @@ const HomePage = () => {
           />
         </Col>
         <Col xs={24} md={4}>
-          <button className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600">
+          <button onClick={() => {
+              navigate(`/result-search`);
+          }} className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600">
             Tìm kiếm
           </button>
         </Col>

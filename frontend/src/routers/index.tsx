@@ -12,7 +12,8 @@ import ResultSearch from '@/pages/Public/ResultSearch';
 
 // Player pages
 import BookingPage from '@/pages/Player/Booking';
-import DetaildFacilityPage from '@/pages/Player/DetaildFacility';
+import HistoryBooking from '@/pages/Player/HistoryBooking';
+import ResultBooking from '@/pages/Player/ResutlBooking';
 
 // Owner pages
 import PlaySchedule from '@/pages/Owner/PlaySchedule/PlaySchedule';
@@ -38,18 +39,19 @@ import ChatManagement from '@/pages/Owner/ChatManagement/ChatManagement';
 import ReportManagement from '@/pages/Owner/ReportManagement/ReportManagement';
 
 import ReviewManagement from '@/pages/Owner/ReviewManagement/ReviewManagement';
-import ProtectedRoute from '@/components/ProtectedRoute';
+import ProtectedRoute from '@/components/LoginModal/ProtectedRoute';
 
-
+import ResultBookingVNPay from '@/pages/Player/ResultBookingVNPay';
 
 
 const AppRouter: React.FC = () => {
+
   return (
     <Routes>
       {/* public routes */}
       <Route element={<PublicLayout />}>
         <Route path='/' element={<HomePage />} />
-        <Route path='/facility/:id' element={<DetailFacility />} />
+        <Route path='/facility/:facilityId' element={<DetailFacility />} />
         <Route path='/result-search' element={<ResultSearch />} />
       </Route> 
 
@@ -59,8 +61,10 @@ const AppRouter: React.FC = () => {
           <PlayerLayout />
         </ProtectedRoute>
       }>
-        <Route path='/user/booking' element={<BookingPage />} />
-        <Route path='/user/facilitydetail' element={<DetaildFacilityPage />} />
+        <Route path='/user/booking/:facilityId' element={<BookingPage />} />
+        <Route path='/user/history-booking' element={<HistoryBooking />} />
+        <Route path='/user/booking/result-booking/:bookingId' element={<ResultBooking />} />
+        <Route path='/user/booking/result-booking-vnpay' element={<ResultBookingVNPay />} />
         <Route path='/user/profile' element={<UserProfile />} />
       </Route>
 

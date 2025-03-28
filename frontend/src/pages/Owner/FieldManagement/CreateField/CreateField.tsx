@@ -164,19 +164,42 @@ const CreateField: React.FC = () => {
       
       for (const sportId in fieldGroups) {
         for (const group of fieldGroups[sportId]) {
-          fieldGroupsData.push({
-            name: group.name,
-            dimension: group.dimension,
-            surface: group.surface,
-            basePrice: group.basePrice,
-            peakStartTime: group.peakStartTime,
-            peakEndTime: group.peakEndTime,
-            priceIncrease: group.priceIncrease,
-            sportIds: [parseInt(sportId)],
-            fieldsData: group.fieldsData
-          });
+          // fieldGroupsData.push({
+          //   name: group.name,
+          //   dimension: group.dimension,
+          //   surface: group.surface,
+          //   basePrice: group.basePrice,
+          //   peakStartTime: group.peakStartTime,
+          //   peakEndTime: group.peakEndTime,
+          //   priceIncrease: group.priceIncrease,
+          //   sportIds: [parseInt(sportId)],
+          //   fieldsData: group.fieldsData
+          // });
+          const existingGroupIndex = fieldGroupsData.findIndex(
+            existingGroup => existingGroup.name === group.name
+          );
+          
+          if (existingGroupIndex !== -1) {
+            // Nếu nhóm sân đã tồn tại, thêm sportId vào mảng sportIds
+            if (!fieldGroupsData[existingGroupIndex].sportIds.includes(parseInt(sportId))) {
+              fieldGroupsData[existingGroupIndex].sportIds.push(parseInt(sportId));
+            }
+          } else {
+            // Nếu nhóm sân chưa tồn tại, thêm mới
+            fieldGroupsData.push({
+              name: group.name,
+              dimension: group.dimension,
+              surface: group.surface,
+              basePrice: group.basePrice,
+              peakStartTime: group.peakStartTime,
+              peakEndTime: group.peakEndTime,
+              priceIncrease: group.priceIncrease,
+              sportIds: [parseInt(sportId)],
+              fieldsData: group.fieldsData
+            });
         }
       }
+    }
       console.log('Field groups data being sent to API:', { facilityId: selectedFacilityId, data: { fieldGroupsData } });
       // Dispatch create field group action
       await dispatch(createFieldGroup({ 

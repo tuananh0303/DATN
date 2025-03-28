@@ -6,7 +6,8 @@ import {
   fetchVouchers, 
   deleteVoucher, 
   getVoucherStatus,
-  setSelectedFacilityId
+  setSelectedFacilityId,
+  Voucher
 } from '@/store/slices/voucherSlice';
 import { fetchFacilityList } from '@/store/slices/facilitySlice';
 
@@ -59,22 +60,22 @@ const VoucherManagement: React.FC = () => {
     }
   };
 
-  // Format date for display
-  const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')} ${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
-  };
+ // Format date for display - chỉ hiển thị ngày tháng năm
+const formatDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+};
 
-  // Format time range
-  const formatTimeRange = (startTime: string, endTime: string): string => {
-    return `${formatDate(startTime)} - ${formatDate(endTime)}`;
-  };
+// Format time range - chỉ hiển thị ngày tháng năm
+const formatTimeRange = (startTime: string, endTime: string): string => {
+  return `${formatDate(startTime)} - ${formatDate(endTime)}`;
+};
 
   // Filter vouchers based on status
   const filteredVouchers = vouchers.filter(voucher => {
     if (activeFilter === 'all') return true;
     
-    const status = getVoucherStatus(voucher.startTime, voucher.endTime);
+    const status = getVoucherStatus(voucher.startDate, voucher.endDate);
     return status === activeFilter;
   });
 
@@ -88,10 +89,10 @@ const VoucherManagement: React.FC = () => {
   };
 
   // Format discount value based on voucher type
-  const formatDiscountValue = (voucher: any): string => {
+  const formatDiscountValue = (voucher: Voucher): string => {
     return voucher.voucherType === 'cash' 
-      ? `${voucher.value.toLocaleString()}đ` 
-      : `${voucher.value}%`;
+      ? `${voucher.discount.toLocaleString()}đ` 
+      : `${voucher.discount}%`;
   };
 
   return (
@@ -232,7 +233,7 @@ const VoucherManagement: React.FC = () => {
                     {/* Table Body */}
                     <tbody>
                       {filteredVouchers.map((voucher) => {
-                        const status = getVoucherStatus(voucher.startTime, voucher.endTime);
+                        const status = getVoucherStatus(voucher.startDate, voucher.endDate);
                         const usedCount = voucher.amount - voucher.remain;
                         
                         return (
@@ -256,7 +257,7 @@ const VoucherManagement: React.FC = () => {
                               <span className={`font-medium ${getStatusColor(status)}`}>
                                 {filterOptions.find(f => f.id === status)?.label}
                               </span>
-                              <div className="text-gray-500">{formatTimeRange(voucher.startTime, voucher.endTime)}</div>
+                              <div className="text-gray-500">{formatTimeRange(voucher.startDate, voucher.endDate)}</div>
                             </td>
                             <td className="w-[120px] p-5 font-semibold whitespace-nowrap">{voucher.minPrice.toLocaleString()}đ</td>
                             <td className="w-[120px] p-5 font-semibold whitespace-nowrap">{voucher.maxDiscount.toLocaleString()}đ</td>

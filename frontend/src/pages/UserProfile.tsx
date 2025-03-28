@@ -1,4 +1,4 @@
-import React, { useEffect, useRef} from 'react';
+import React from 'react';
 import { useAppSelector } from '@/hooks/reduxHooks';
 import { Card, Avatar, Typography, Divider, Row, Col, Spin, Alert } from 'antd';
 import { UserOutlined, MailOutlined, PhoneOutlined, CalendarOutlined, BankOutlined } from '@ant-design/icons';

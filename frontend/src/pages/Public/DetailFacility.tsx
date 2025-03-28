@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, useParams } from 'react-router-dom';
 import { 
   Breadcrumb, 
   Card, 
@@ -13,7 +13,10 @@ import {
   List, 
   Avatar, 
   Collapse,
-  Space
+  Space,
+  Spin,
+  Empty,
+  message
 } from 'antd';
 import { 
   ClockCircleOutlined, 
@@ -23,92 +26,116 @@ import {
   CommentOutlined,
   ExpandOutlined
 } from '@ant-design/icons';
-// import { GoogleMap, useJsApiLoader } from '@react-google-maps/api';
-// import { AdvancedMarker } from '@googlemaps/adv-markers-react';
+import { facilityService } from '@/services/facility.service';
+import { fieldService } from '@/services/field.service';
+import { servicesService } from '@/services/services.service';
 
 const { Title, Text, Paragraph } = Typography;
 
-// Mock data - will be replaced with API calls later
-const facilityData = {
-  id: '1',
-  name: 'Sân Bóng Đá Mini Thống Nhất',
-  status: 'active', // active, closed, maintenance
-  images: [
-    'https://images.unsplash.com/photo-1575361204480-aadea25e6e68',
-    'https://images.unsplash.com/photo-1524015368236-bbf6f72545b6',
-    'https://images.unsplash.com/photo-1579952363873-27f3bade9f55',
-    'https://images.unsplash.com/photo-1552667466-07770ae110d0'
-  ],
-  operatingHours: {
-    start: '06:00',
-    end: '22:00'
-  },
-  address: '123 Đường Nguyễn Văn Linh, Quận 7, TP. Hồ Chí Minh',
+// Interfaces based on API responses
+interface FacilityDetail {
+  id: string;
+  name: string;
+  description: string;
+  openTime: string;
+  closeTime: string;
+  location: string;
+  status: string;
+  avgRating: number;
+  quantityRating: number;
+  imagesUrl: string[];
   owner: {
-    name: 'Nguyễn Văn A',
-    phone: '0912345678'
-  },
-  sports: ['Bóng đá', 'Bóng rổ', 'Cầu lông'],
-  description: 'Sân Bóng Đá Mini Thống Nhất là một trong những cơ sở thể thao hiện đại nhất tại Quận 7. Với hệ thống sân cỏ nhân tạo chất lượng cao, hệ thống đèn chiếu sáng hiện đại và các tiện ích đi kèm, chúng tôi cam kết mang đến trải nghiệm chơi thể thao tốt nhất cho khách hàng.',
-  fieldGroups: [
-    {
-      id: 'fg1',
-      name: 'Sân bóng đá 5 người',
-      fields: [
-        { id: 'f1', name: 'Sân số 1', surface: 'Cỏ nhân tạo', dimensions: '25m x 15m', price: 200000 },
-        { id: 'f2', name: 'Sân số 2', surface: 'Cỏ nhân tạo', dimensions: '25m x 15m', price: 200000 }
-      ]
-    },
-    {
-      id: 'fg2',
-      name: 'Sân bóng đá 7 người',
-      fields: [
-        { id: 'f3', name: 'Sân số 3', surface: 'Cỏ nhân tạo', dimensions: '40m x 20m', price: 300000 },
-        { id: 'f4', name: 'Sân số 4', surface: 'Cỏ nhân tạo', dimensions: '40m x 20m', price: 300000 }
-      ]
-    },
-    {
-      id: 'fg3',
-      name: 'Sân cầu lông',
-      fields: [
-        { id: 'f5', name: 'Sân cầu lông 1', surface: 'Gỗ', dimensions: '13.4m x 6.1m', price: 100000 },
-        { id: 'f6', name: 'Sân cầu lông 2', surface: 'Gỗ', dimensions: '13.4m x 6.1m', price: 100000 }
-      ]
-    }
-  ],
-  services: [
-    { id: 's1', name: 'Cho thuê giày', price: '30,000đ/đôi' },
-    { id: 's2', name: 'Cho thuê áo', price: '20,000đ/bộ' },
-    { id: 's3', name: 'Nước uống', price: '15,000đ/chai' },
-    { id: 's4', name: 'Phòng tắm', price: 'Miễn phí' }
-  ],
-  events: [
-    { id: 'e1', name: 'Giải đấu bóng đá cuối tuần', date: '20/05/2023', description: 'Giải đấu bóng đá 5 người dành cho các đội trong khu vực.' },
-    { id: 'e2', name: 'Khuyến mãi giờ vàng', date: '01/06/2023 - 30/06/2023', description: 'Giảm 20% giá thuê sân từ 13:00 - 16:00 các ngày trong tuần.' }
-  ],
-  reviews: [
-    { id: 'r1', user: 'Trần Văn B', avatar: 'https://randomuser.me/api/portraits/men/1.jpg', rating: 5, comment: 'Sân rất đẹp, dịch vụ tốt, nhân viên thân thiện.', date: '15/04/2023' },
-    { id: 'r2', user: 'Lê Thị C', avatar: 'https://randomuser.me/api/portraits/women/2.jpg', rating: 4, comment: 'Sân tốt, giá cả hợp lý. Chỉ có điều đôi khi hơi đông.', date: '20/03/2023' },
-    { id: 'r3', user: 'Phạm Văn D', avatar: 'https://randomuser.me/api/portraits/men/3.jpg', rating: 5, comment: 'Tuyệt vời! Sẽ quay lại nhiều lần nữa.', date: '05/05/2023' }
-  ],
-  overallRating: 4.7,
-  location: {
-    lat: 10.762622,
-    lng: 106.660172
-  }
-};
+    id: string;
+    name: string;
+    phoneNumber: string;
+    email: string;
+  };
+  sports: {
+    id: number;
+    name: string;
+  }[];
+}
+
+interface FieldGroup {
+  id: string;
+  name: string;
+  dimension: string;
+  surface: string;
+  basePrice: number;
+  peakStartTime: string;
+  peakEndTime: string;
+  priceIncrease: number;
+  sports: {
+    id: number;
+    name: string;
+  }[];
+  fields: {
+    id: number;
+    name: string;
+    status: string;
+  }[];
+}
+
+interface Service {
+  id: number;
+  name: string;
+  price: number;
+  description: string;
+  amount: number;
+  sport: {
+    id: number;
+    name: string;
+  };
+}
 
 const DetailFacility: React.FC = () => {
   const navigate = useNavigate();
-  const [mainImage, setMainImage] = useState(facilityData.images[0]);
+  const { facilityId } = useParams<{ facilityId: string }>();
   const [activeTab, setActiveTab] = useState('general');
-//   const mapLibraries = ['marker'] 
-  // Use the useJsApiLoader hook instead of LoadScript
-//   const { isLoaded } = useJsApiLoader({
-//     id: 'google-map-script',
-//     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
-//     libraries: mapLibraries
-//   });
+  
+  // States for API data
+  const [facility, setFacility] = useState<FacilityDetail | null>(null);
+  const [fieldGroups, setFieldGroups] = useState<FieldGroup[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [mainImage, setMainImage] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch facility data
+  useEffect(() => {
+    const fetchFacilityData = async () => {
+      if (!facilityId) return;
+      
+      setLoading(true);
+      try {
+        // Fetch facility details
+        const facilityData = await facilityService.getFacilityById(facilityId);
+        setFacility(facilityData);
+        
+        if (facilityData.imagesUrl && facilityData.imagesUrl.length > 0) {
+          setMainImage(facilityData.imagesUrl[0]);
+        }
+        
+        // Fetch field groups
+        const fieldGroupsData = await fieldService.getGroupField(facilityId);
+        setFieldGroups(fieldGroupsData);
+        
+        // Fetch services
+        const servicesData = await servicesService.getService(facilityId);
+        setServices(servicesData);
+        
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching facility data:', err);
+        setError('Failed to load facility data. Please try again later.');
+        message.error('Failed to load facility data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFacilityData();
+  }, [facilityId]);
 
   const handleImageClick = (image: string) => {
     setMainImage(image);
@@ -118,17 +145,19 @@ const DetailFacility: React.FC = () => {
     switch (status) {
       case 'active':
         return <Tag color="success" className="text-base px-3 py-1">Đang hoạt động</Tag>;
-      case 'closed':
-        return <Tag color="error" className="text-base px-3 py-1">Đang đóng cửa</Tag>;
+      case 'pending':
+        return <Tag color="warning" className="text-base px-3 py-1">Đang chờ</Tag>;
       case 'maintenance':
-        return <Tag color="warning" className="text-base px-3 py-1">Đang bảo trì</Tag>;
+        return <Tag color="error" className="text-base px-3 py-1">Đang bảo trì</Tag>;
       default:
         return <Tag color="default" className="text-base px-3 py-1">Không xác định</Tag>;
     }
   };
 
   const handleBookingClick = () => {
-    navigate(`/booking/${facilityData.id}`);
+    if (facility) {
+      navigate(`/user/booking/${facility.id}`);
+    }
   };
 
   // Define breadcrumb items
@@ -158,75 +187,91 @@ const DetailFacility: React.FC = () => {
       key: 'services',
       label: 'Dịch vụ',
     },
-    {
-      key: 'events',
-      label: 'Sự kiện',
-    },
   ];
 
   // Define collapse items for field groups
   const getCollapseItems = () => {
-    return facilityData.fieldGroups.map(group => ({
+    return fieldGroups.map(group => ({
       key: group.id,
       label: (
+        <div>
         <div className="flex justify-between items-center">
           <span className="text-lg font-medium">{group.name}</span>
           <span className="text-gray-500">{group.fields.length} sân</span>
         </div>
+        <div>
+          {/* Group information displayed once */}
+          <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+            <Space direction="vertical" className="w-full">
+              <div className="flex justify-between">
+                <Text strong>Thông tin chung:</Text>
+                <Text className="text-blue-600 font-semibold">
+                  {group.basePrice.toLocaleString()}đ/giờ
+                  {group.priceIncrease > 0 && 
+                    <span className="text-xs text-gray-500 ml-1">
+                      +{group.priceIncrease.toLocaleString()}đ (giờ cao điểm)
+                    </span>
+                  }
+                </Text>
+              </div>
+              <Text>Bề mặt: {group.surface}</Text>
+              <Text>Kích thước: {group.dimension}</Text>
+              {group.peakStartTime && group.peakEndTime && (
+                <Text>Giờ cao điểm: {group.peakStartTime.substring(0, 5)} - {group.peakEndTime.substring(0, 5)}</Text>
+              )}
+            </Space>
+          </div>
+        </div>
+        </div>
       ),
       children: (
-        <List
-          itemLayout="horizontal"
-          dataSource={group.fields}
-          renderItem={field => (
-            <List.Item
-              actions={[
-                <Text key="price" className="text-blue-600 font-semibold">{field.price.toLocaleString()}đ/giờ</Text>,
-                <Button key="book" type="primary" size="small" onClick={handleBookingClick}>Đặt sân</Button>
-              ]}
-            >
-              <List.Item.Meta
-                title={<Text strong>{field.name}</Text>}
-                description={
-                  <Space direction="vertical">
-                    <Text>Bề mặt: {field.surface}</Text>
-                    <Text>Kích thước: {field.dimensions}</Text>
-                  </Space>
-                }
-              />
-            </List.Item>
-          )}
-        />
+        <div>      
+          
+          {/* List of fields with simplified display */}
+          <List
+            itemLayout="horizontal"
+            dataSource={group.fields}
+            renderItem={field => (
+              <List.Item>
+                <List.Item.Meta
+                  title={<Text strong>{field.name}</Text>}
+                  description={
+                    <Text>Trạng thái: {
+                      field.status === 'active' ? 'Hoạt động' : 
+                      field.status === 'pending' ? 'Đang chờ' : 'Bảo trì'
+                    }</Text>
+                  }
+                />
+              </List.Item>
+            )}
+          />
+        </div>
       ),
     }));
   };
 
-  // Create a ref for the map
-//   const mapRef = React.useRef<google.maps.Map | null>(null);
-  
-//   // Create a ref for the marker
-//   const markerRef = React.useRef<google.maps.marker.AdvancedMarkerElement | null>(null);
-  
-//   // Handle map load
-//   const onMapLoad = React.useCallback((map: google.maps.Map) => {
-//     mapRef.current = map;
-    
-//     // Create the advanced marker when the map is loaded
-//     if (window.google && window.google.maps) {
-//       // Create a marker element
-//       const markerElement = document.createElement('div');
-//       markerElement.className = 'marker';
-//       markerElement.style.color = 'red';
-//       markerElement.innerHTML = '📍';
-      
-//       // Create the advanced marker
-//       markerRef.current = new google.maps.marker.AdvancedMarkerElement({
-//         map,
-//         position: facilityData.location,
-//         content: markerElement
-//       });
-//     }
-//   }, []);
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-6 flex justify-center items-center min-h-screen">
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  if (error || !facility) {
+    return (
+      <div className="container mx-auto px-4 py-6 flex flex-col justify-center items-center min-h-screen">
+        <Empty description={error || "Không tìm thấy thông tin cơ sở"} />
+        <Button 
+          type="primary" 
+          className="mt-4"
+          onClick={() => navigate('/')}
+        >
+          Quay lại trang tìm kiếm
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-7xl">
@@ -235,33 +280,34 @@ const DetailFacility: React.FC = () => {
         <Breadcrumb items={breadcrumbItems} className="mb-4" />
 
         <div className="flex justify-between items-center mb-6">
-          <Title level={2} className="m-0">{facilityData.name}</Title>
-          {getStatusTag(facilityData.status)}
+          <Title level={2} className="m-0">{facility.name}</Title>
+          {getStatusTag(facility.status)}
         </div>
 
-        <div className="grid grid-cols-12 gap-4">
+        <div className="grid grid-cols-12 gap-4 items-end">
           <div className="col-span-12 md:col-span-8">
             <Image
-              src={mainImage}
-              alt={facilityData.name}
+              src={mainImage || 'https://via.placeholder.com/800x400'}
+              alt={facility.name}
               className="w-full h-96 object-cover rounded-lg"
               preview={{
                 mask: <div className="flex items-center justify-center"><ExpandOutlined /> Xem ảnh lớn</div>
               }}
             />
           </div>
-          <div className="col-span-12 md:col-span-4 grid grid-cols-2 gap-4">
-            {facilityData.images.slice(1, 5).map((image, index) => (
-              <div key={index} className="relative cursor-pointer" onClick={() => handleImageClick(image)}>
+          <div className="col-span-12 md:col-span-4 grid grid-cols-2 gap-2">
+            {facility.imagesUrl.slice(1, 5).map((image, index) => (
+              <div key={index} className="relative cursor-pointer " onClick={() => handleImageClick(image)} style={{aspectRatio: '1/1'}}>
                 <Image
                   src={image}
-                  alt={`${facilityData.name} ${index + 1}`}
-                  className="w-full h-44 object-cover rounded-lg"
+                  alt={`${facility.name} ${index + 1}`}
+                  className="rounded-lg"
+                  style={{ aspectRatio: '1/1' }}
                   preview={false}
                 />
-                {index === 3 && facilityData.images.length > 5 && (
+                {index === 3 && facility.imagesUrl.length > 5 && (
                   <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
-                    <Text className="text-white text-lg font-bold">+{facilityData.images.length - 5}</Text>
+                    <Text className="text-white text-lg font-bold">+{facility.imagesUrl.length - 5}</Text>
                   </div>
                 )}
               </div>
@@ -299,7 +345,7 @@ const DetailFacility: React.FC = () => {
                     <Title level={4} className="mb-3">Giờ hoạt động</Title>
                     <div className="flex items-center">
                       <ClockCircleOutlined className="mr-2 text-blue-600" />
-                      <Text>{facilityData.operatingHours.start} - {facilityData.operatingHours.end}</Text>
+                      <Text>{facility.openTime.substring(0, 5)} - {facility.closeTime.substring(0, 5)}</Text>
                     </div>
                   </div>
 
@@ -307,7 +353,7 @@ const DetailFacility: React.FC = () => {
                     <Title level={4} className="mb-3">Địa chỉ</Title>
                     <div className="flex items-center">
                       <EnvironmentOutlined className="mr-2 text-blue-600" />
-                      <Text>{facilityData.address}</Text>
+                      <Text>{facility.location}</Text>
                     </div>
                   </div>
 
@@ -315,11 +361,11 @@ const DetailFacility: React.FC = () => {
                     <Title level={4} className="mb-3">Thông tin liên hệ</Title>
                     <div className="flex items-center mb-2">
                       <UserOutlined className="mr-2 text-blue-600" />
-                      <Text>{facilityData.owner.name}</Text>
+                      <Text>{facility.owner.name}</Text>
                     </div>
                     <div className="flex items-center">
                       <PhoneOutlined className="mr-2 text-blue-600" />
-                      <Text>{facilityData.owner.phone}</Text>
+                      <Text>{facility.owner.phoneNumber}</Text>
                     </div>
                   </div>
                 </div>
@@ -328,15 +374,15 @@ const DetailFacility: React.FC = () => {
                   <div className="mb-6">
                     <Title level={4} className="mb-3">Môn thể thao</Title>
                     <div className="flex flex-wrap gap-2">
-                      {facilityData.sports.map((sport, index) => (
-                        <Tag key={index} color="blue" className="px-3 py-1 text-base">{sport}</Tag>
+                      {facility.sports.map(sport => (
+                        <Tag key={sport.id} color="blue" className="px-3 py-1 text-base">{sport.name}</Tag>
                       ))}
                     </div>
                   </div>
 
                   <div>
                     <Title level={4} className="mb-3">Mô tả</Title>
-                    <Paragraph>{facilityData.description}</Paragraph>
+                    <Paragraph>{facility.description}</Paragraph>
                   </div>
                 </div>
               </div>
@@ -346,51 +392,47 @@ const DetailFacility: React.FC = () => {
           {activeTab === 'fields' && (
             <div>
               <Title level={4} className="mb-4">Danh sách sân</Title>
-              <Collapse 
-                defaultActiveKey={['fg1']} 
-                className="mb-4"
-                items={getCollapseItems()}
-              />
+              {fieldGroups.length > 0 ? (
+                <Collapse 
+                  defaultActiveKey={[fieldGroups[0]?.id]} 
+                  className="mb-4"
+                  items={getCollapseItems()}
+                />
+              ) : (
+                <Empty description="Không có thông tin sân" />
+              )}
             </div>
           )}
 
           {activeTab === 'services' && (
             <div>
               <Title level={4} className="mb-4">Dịch vụ</Title>
-              <List
-                itemLayout="horizontal"
-                dataSource={facilityData.services}
-                renderItem={service => (
-                  <List.Item
-                    actions={[
-                      <Text key="price" className="text-blue-600 font-semibold">{service.price}</Text>
-                    ]}
-                  >
-                    <List.Item.Meta
-                      title={<Text strong>{service.name}</Text>}
-                    />
-                  </List.Item>
-                )}
-              />
-            </div>
-          )}
-
-          {activeTab === 'events' && (
-            <div>
-              <Title level={4} className="mb-4">Sự kiện</Title>
-              <List
-                itemLayout="vertical"
-                dataSource={facilityData.events}
-                renderItem={event => (
-                  <List.Item>
-                    <List.Item.Meta
-                      title={<Text strong>{event.name}</Text>}
-                      description={<Text type="secondary">Thời gian: {event.date}</Text>}
-                    />
-                    <Paragraph>{event.description}</Paragraph>
-                  </List.Item>
-                )}
-              />
+              {services.length > 0 ? (
+                <List
+                  itemLayout="horizontal"
+                  dataSource={services}
+                  renderItem={service => (
+                    <List.Item
+                      actions={[
+                        <Text key="price" className="text-blue-600 font-semibold">{service.price.toLocaleString()}đ</Text>
+                      ]}
+                    >
+                      <List.Item.Meta
+                        title={<Text strong>{service.name}</Text>}
+                        description={
+                          <Space direction="vertical">
+                            <Text>{service.description}</Text>
+                            <Text>Số lượng: {service.amount}</Text>
+                            <Text>Môn thể thao: {service.sport.name}</Text>
+                          </Space>
+                        }
+                      />
+                    </List.Item>
+                  )}
+                />
+              ) : (
+                <Empty description="Không có thông tin dịch vụ" />
+              )}
             </div>
           )}
         </div>
@@ -403,9 +445,9 @@ const DetailFacility: React.FC = () => {
           
           <div className="flex items-center mb-6">
             <div className="mr-8 text-center">
-              <Title level={1} className="m-0 text-blue-600">{facilityData.overallRating}</Title>
-              <Rate disabled defaultValue={facilityData.overallRating} allowHalf />
-              <Text className="block mt-2">{facilityData.reviews.length} đánh giá</Text>
+              <Title level={1} className="m-0 text-blue-600">{facility.avgRating || 0}</Title>
+              <Rate disabled defaultValue={facility.avgRating || 0} allowHalf />
+              <Text className="block mt-2">{facility.quantityRating || 0} đánh giá</Text>
             </div>
             <Divider type="vertical" className="h-20" />
             <div>
@@ -414,33 +456,14 @@ const DetailFacility: React.FC = () => {
             </div>
           </div>
 
-          <Divider />
-
-          <List
-            itemLayout="vertical"
-            dataSource={facilityData.reviews}
-            renderItem={review => (
-              <List.Item>
-                <List.Item.Meta
-                  avatar={<Avatar src={review.avatar} size={48} />}
-                  title={
-                    <div className="flex items-center">
-                      <Text strong className="mr-2">{review.user}</Text>
-                      <Rate disabled defaultValue={review.rating} className="text-sm" />
-                    </div>
-                  }
-                  description={<Text type="secondary">{review.date}</Text>}
-                />
-                <Paragraph>{review.comment}</Paragraph>
-              </List.Item>
-            )}
-          />
+          {facility.quantityRating === 0 && (
+            <Empty description="Chưa có đánh giá nào" />
+          )}
 
           <div className="mt-4 text-center">
             <Button 
               type="default" 
               icon={<CommentOutlined />}
-              onClick={() => setActiveTab('reviews')}
             >
               Viết đánh giá
             </Button>
@@ -448,16 +471,20 @@ const DetailFacility: React.FC = () => {
         </Card>
       </section>
 
-      {/* Section 4: Map */}
+      {/* Section 4: Map
       <section>
-      <div className="h-96 w-full">
-  <img 
-    src={`https://maps.googleapis.com/maps/api/staticmap?center=${facilityData.location.lat},${facilityData.location.lng}&zoom=15&size=600x400&markers=color:red%7C${facilityData.location.lat},${facilityData.location.lng}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`}
-    alt="Bản đồ vị trí cơ sở"
-    className="w-full h-full object-cover"
-  />
-</div>
-      </section>
+        <div className="h-96 w-full">
+          <img 
+            src={`https://maps.googleapis.com/maps/api/staticmap?center=${facility.location}&zoom=15&size=600x400&markers=color:red%7C${facility.location}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`}
+            alt="Bản đồ vị trí cơ sở"
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              // Fallback if Google Maps API key is not set or there's an error
+              e.currentTarget.src = "https://via.placeholder.com/800x400?text=Map+not+available";
+            }}
+          />
+        </div>
+      </section> */}
     </div>
   );
 };
