@@ -65,7 +65,7 @@ const App: React.FC = () => {
       )}
       {playerRoleModalVisible && (
         <PlayerRoleModal
-          visible={playerRoleModalVisible}
+          visible={playerRoleModalVisible} 
           onClose={() => dispatch(hidePlayerRoleModal())}
           onLogin={handlePlayerLogin}
         />
