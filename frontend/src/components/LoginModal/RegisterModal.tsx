@@ -2,7 +2,7 @@ import React from 'react';
 import { Modal, Form, Input, Button, Select, message } from 'antd';
 import { useAppDispatch, useAppSelector } from '@/hooks/reduxHooks';
 import { register } from '@/store/slices/userSlice';
-import { RegisterData } from '@/types/user.types';
+import { RegisterData } from '@/types/user.type';
 
 interface RegisterModalProps {
   visible: boolean;

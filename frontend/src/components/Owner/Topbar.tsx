@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, matchPath } from 'react-router-dom';
 import { ICONS } from '@/constants/owner/topbar/topbar';
 import TopbarProfile from '../LoginModal/TopbarProfile';
 
@@ -11,7 +11,7 @@ interface TopBarProps {
 const ROUTE_TITLES: { [key: string]: string } = {
   '/owner': 'Lịch đặt sân',
   '/owner/facility-management': 'Quản lý cơ sở',
-  '/owner/field-management': 'Quản lý sân',
+  '/owner/field-group-management': 'Quản lý nhóm sân',
   '/owner/service-management': 'Quản lý dịch vụ',
   '/owner/voucher-management': 'Quản lý voucher',
   '/owner/event-management': 'Quản lý sự kiện',
@@ -20,11 +20,17 @@ const ROUTE_TITLES: { [key: string]: string } = {
   '/owner/report-management': 'Doanh thu',
   '/owner/banking': 'Ngân hàng', 
   '/owner/create-facility': 'Quản lý cơ sở',
-  '/owner/create-field': 'Quản lý sân',
+  '/owner/create-field-group': 'Quản lý nhóm sân',
   '/owner/create-service': 'Quản lý dịch vụ',
   '/owner/create-voucher': 'Quản lý voucher',
   '/owner/create-event': 'Quản lý sự kiện',
+  '/owner/edit-facility/:facilityId': 'Chỉnh sửa cơ sở',
+  '/owner/edit-field/:fieldId': 'Chỉnh sửa sân',
+  '/owner/facility-management/:facilityId': 'Chi tiết cơ sở',
 };
+
+// Định nghĩa danh sách các pattern route để kiểm tra
+const ROUTE_PATTERNS = Object.keys(ROUTE_TITLES);
 
 const LANGUAGES = [
   { code: 'vi', name: 'Vietnamese', flag: ICONS.VIETNAM },
@@ -36,8 +42,18 @@ const TopBar: React.FC<TopBarProps> = () => {
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState(LANGUAGES[0]);
 
-  // Lấy title dựa trên current route
-  const currentTitle = ROUTE_TITLES[location.pathname] || 'Lịch đặt sân';
+  // Lấy title dựa trên current route, sử dụng matchPath để kiểm tra các route có tham số
+  const getRouteTitle = () => {
+    // Kiểm tra các pattern từ cụ thể đến tổng quát
+    for (const pattern of ROUTE_PATTERNS) {
+      if (matchPath({ path: pattern }, location.pathname)) {
+        return ROUTE_TITLES[pattern];
+      }
+    }
+    return 'Lịch đặt sân'; // Mặc định
+  };
+
+  const currentTitle = getRouteTitle();
 
   const handleLanguageSelect = (language: typeof LANGUAGES[0]) => {
     setSelectedLanguage(language);

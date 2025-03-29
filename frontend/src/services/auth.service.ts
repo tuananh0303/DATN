@@ -1,6 +1,6 @@
 import api from './api';
 import { ApiError } from '@/types/errors';
-import { RegisterData } from '@/types/user.types';
+import { RegisterData } from '@/types/user.type';
 
 // API Endpoints
 export const authService = {

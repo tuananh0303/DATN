@@ -55,12 +55,44 @@ const TopbarProfile: React.FC = () => {
       key: 'owner-dashboard',
       label: 'Trang chủ chủ sân',
       onClick: () => navigate('/owner')
-    }] : []),
+    },
+    {
+      key: 'owner-notifications',
+      label: 'Thông báo',
+      onClick: () => navigate('/owner/notifications')
+    },
+    {
+      key: 'owner-messages',
+      label: 'Tin nhắn',
+      onClick: () => navigate('/owner/messages')
+    },
+    {
+      key: 'owner-revenue',
+      label: 'Doanh thu',
+      onClick: () => navigate('/owner/revenue')
+    }  
+    ] : []),
     ...(user?.role === 'player' ? [{
+      key: 'messages',
+      label: 'Tin nhắn',
+      onClick: () => navigate('/user/messages')
+    },
+    {
+      key: 'notifications',
+      label: 'Thông báo',
+      onClick: () => navigate('/user/notifications')
+    },
+    {
       key: 'bookings',
       label: 'Lịch sử đặt sân',
       onClick: () => navigate('/user/booking')
-    }] : []),
+    },
+    {
+      key: 'favorite',
+      label: 'Danh sách yêu thích',
+      onClick: () => navigate('/user/favorite')
+    }
+  ] : []),
     {
       type: 'divider'
     },

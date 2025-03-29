@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Input, Select, DatePicker, Card, Rate, Carousel, Row, Col } from 'antd';
-import { SearchOutlined, EnvironmentOutlined, ClockCircleOutlined } from '@ant-design/icons';
-import type { RangePickerProps } from 'antd/es/date-picker';
+import { EnvironmentOutlined } from '@ant-design/icons';
 import { IMAGE } from '@/constants/user/Home/Image';
 import { useNavigate } from 'react-router-dom';
 

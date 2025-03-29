@@ -23,10 +23,10 @@ const App: React.FC = () => {
         // Reset các biến ref trong ProtectedRoute
         dispatch(resetAuthChecks());
       }
-    }, 2000); // 2 giây là đủ để đảm bảo quá trình logout hoàn tất
+    }, 1000); // 2 giây là đủ để đảm bảo quá trình logout hoàn tất
     
     return () => clearTimeout(timer);
-  }, []);
+  }, [dispatch]);
 
   // Xử lý đóng modal vai trò
   const handleCloseRoleModal = () => {
