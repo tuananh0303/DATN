@@ -399,8 +399,11 @@ const FieldGroupForm: React.FC<FieldGroupFormProps> = ({
                   min={0}
                   max={999999999}
                   step={10000}
-                  stringMode
-                  formatter={(value) => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : ''}
+                  formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+                  parser={(value: string | undefined) => {
+                  if (!value) return 0;
+                  return Number(value.replace(/\./g, ''));
+                }}
                 />
               </Form.Item>
             </Col>
@@ -636,8 +639,11 @@ const FieldGroupForm: React.FC<FieldGroupFormProps> = ({
                   min={0}
                   max={999999999}
                   step={10000}
-                  stringMode
-                  formatter={(value) => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : ''}
+                  formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+                parser={(value: string | undefined) => {
+                  if (!value) return 0;
+                  return Number(value.replace(/\./g, ''));
+                }}
                 />
               </Form.Item>
             </Col>
@@ -671,8 +677,11 @@ const FieldGroupForm: React.FC<FieldGroupFormProps> = ({
                             min={0}
                             max={999999999}
                             step={10000}
-                            stringMode
-                            formatter={(value) => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : ''}
+                            formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+                parser={(value: string | undefined) => {
+                  if (!value) return 0;
+                  return Number(value.replace(/\./g, ''));
+                }}
                           />
                         </Form.Item>
                       </Col>
@@ -699,8 +708,11 @@ const FieldGroupForm: React.FC<FieldGroupFormProps> = ({
                             min={0}
                             max={999999999}
                             step={10000}
-                            stringMode
-                            formatter={(value) => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : ''}
+                            formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+                parser={(value: string | undefined) => {
+                  if (!value) return 0;
+                  return Number(value.replace(/\./g, ''));
+                }}
                           />
                         </Form.Item>
                       </Col>

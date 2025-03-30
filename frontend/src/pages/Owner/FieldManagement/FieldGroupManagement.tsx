@@ -1,37 +1,81 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Table, Select, Card, Tag, Space, Tooltip, Typography, Modal, Dropdown, Form, Input } from 'antd';
-import { EditOutlined, DeleteOutlined, EyeOutlined, ExclamationCircleOutlined, PlusOutlined, ArrowRightOutlined, PlusCircleOutlined } from '@ant-design/icons';
+import { Button, Select, Card, Typography, Modal, Form } from 'antd';
+import { ExclamationCircleOutlined, PlusOutlined, ArrowRightOutlined } from '@ant-design/icons';
 import { mockFieldGroups } from '@/mocks/field/Groupfield_Field';
 import { mockFacilitiesDropdown } from '@/mocks/facility/mockFacilities';
 import { FieldGroup, Field } from '@/types/field.type';
 import fieldImage from '@/assets/Owner/content/field.png';
-import { formatPrice, formatTime, getStatusTag } from '../../../utils/statusUtils.tsx';
-import FieldGroupDetail from './FieldGroupDetail.tsx';
-import FieldGroupEdit from './FieldGroupEdit.tsx';
+
+// Component imports
+import FieldGroupTable from './components/FieldGroupTable';
+import AddFieldModal from './components/AddFieldModal';
+import FieldGroupDetail from './components/FieldGroupDetail';
+import FieldGroupEdit from './components/FieldGroupEdit';
 
 const { Title, Text } = Typography;
 const { confirm } = Modal;
 
+// Key cho localStorage
+const SELECTED_FACILITY_KEY = 'owner_selected_facility_id';
+
 const FieldGroupManagement: React.FC = () => {
   const navigate = useNavigate();
+  const [form] = Form.useForm();
   
   // Local state
-  const [selectedFacilityId, setSelectedFacilityId] = useState<string>('1');
-  const [fieldGroups, setFieldGroups] = useState<FieldGroup[]>(mockFieldGroups);
+  const [selectedFacilityId, setSelectedFacilityId] = useState<string>('');
+  const [fieldGroups, setFieldGroups] = useState<FieldGroup[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Modal states
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
+  const [addFieldModalVisible, setAddFieldModalVisible] = useState(false);
   const [currentFieldGroup, setCurrentFieldGroup] = useState<FieldGroup | null>(null);
+  const [currentFieldGroupId, setCurrentFieldGroupId] = useState<string>('');
 
-  // Handle create field button click
-  const handleCreateField = () => {
-    navigate('/owner/create-field-group');
+  // Lấy facilityId từ localStorage hoặc sử dụng cơ sở đầu tiên
+  useEffect(() => {
+    const savedFacilityId = localStorage.getItem(SELECTED_FACILITY_KEY);
+    const initialFacilityId = savedFacilityId || (mockFacilitiesDropdown.length > 0 ? mockFacilitiesDropdown[0].id : '');
+    
+    if (initialFacilityId) {
+      setSelectedFacilityId(initialFacilityId);
+      fetchFieldGroups();
+    }
+  }, []);
+
+  // Fetch field groups based on facility ID
+  const fetchFieldGroups = () => {
+    setLoading(true);
+    setError(null);
+    
+    // Simulate API call with setTimeout
+    setTimeout(() => {
+      try {
+        // In real implementation, this would be an API call filtered by facilityId
+        setFieldGroups(mockFieldGroups);
+        setLoading(false);
+      } catch (error) {
+        setError('Có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại sau.');
+        setLoading(false);
+        console.error('Error fetching field groups:', error);
+      }
+    }, 500);
   };
 
   // Handle facility change
   const handleFacilityChange = (value: string) => {
     setSelectedFacilityId(value);
-    // Trong thực tế, bạn sẽ gọi API để lấy danh sách fieldGroups dựa vào facilityId
+    localStorage.setItem(SELECTED_FACILITY_KEY, value);
+    fetchFieldGroups();
+  };
+
+  // Navigate to create field group page
+  const handleCreateField = () => {
+    navigate('/owner/create-field-group');
   };
 
   // Toggle field status
@@ -49,12 +93,8 @@ const FieldGroupManagement: React.FC = () => {
       okType: currentStatus === 'active' ? 'danger' : 'primary',
       cancelText: 'Hủy',
       onOk() {
-        // Trong thực tế, bạn sẽ gọi API để kiểm tra và cập nhật
-        // Giả lập kiểm tra booking
+        // Check for existing bookings (mock implementation)
         if (currentStatus === 'active') {
-          // Kiểm tra có booking nào không (thực tế sẽ gọi API)
-          // Sử dụng ID của field để xác định xem field có booking không
-          // Ở đây ta giả lập rằng field có ID là "1" hoặc "3" đang có booking
           const hasBooking = ["1", "3"].includes(fieldId);
 
           if (hasBooking) {
@@ -76,7 +116,7 @@ const FieldGroupManagement: React.FC = () => {
           }
         }
 
-        // Nếu không có booking hoặc đang mở sân, tiến hành cập nhật
+        // Update field status if no booking conflicts
         const updatedFieldGroups = fieldGroups.map(group => {
           if (group.id === fieldGroupId) {
             const updatedFields = group.fields.map(field => {
@@ -94,7 +134,7 @@ const FieldGroupManagement: React.FC = () => {
         });
         setFieldGroups(updatedFieldGroups);
         
-        // Hiển thị thông báo thành công
+        // Show success message
         Modal.success({
           title: `${actionText.charAt(0).toUpperCase() + actionText.slice(1)} sân thành công`,
           content: currentStatus === 'active' 
@@ -115,9 +155,7 @@ const FieldGroupManagement: React.FC = () => {
       okType: 'danger',
       cancelText: 'Hủy',
       onOk() {
-        // Trong thực tế, bạn sẽ gọi API để kiểm tra và xóa
-        // Giả lập kiểm tra booking
-        // Ở đây ta giả lập rằng field có ID là "1" hoặc "3" đang có booking
+        // Check for existing bookings (mock implementation)
         const hasBooking = ["1", "3"].includes(fieldId);
 
         if (hasBooking) {
@@ -138,7 +176,7 @@ const FieldGroupManagement: React.FC = () => {
           return;
         }
 
-        // Nếu không có booking, tiến hành xóa
+        // Delete field if no booking conflicts
         const updatedFieldGroups = fieldGroups.map(group => {
           if (group.id === fieldGroupId) {
             return {
@@ -150,7 +188,7 @@ const FieldGroupManagement: React.FC = () => {
         });
         setFieldGroups(updatedFieldGroups);
         
-        // Hiển thị thông báo thành công
+        // Show success message
         Modal.success({
           title: 'Xóa sân thành công',
           content: 'Sân đã được xóa khỏi hệ thống.'
@@ -184,7 +222,7 @@ const FieldGroupManagement: React.FC = () => {
     );
     setFieldGroups(updatedFieldGroups);
     
-    // Hiển thị thông báo thành công
+    // Show success message
     Modal.success({
       title: 'Cập nhật thành công',
       content: 'Thông tin nhóm sân đã được cập nhật thành công.'
@@ -201,123 +239,120 @@ const FieldGroupManagement: React.FC = () => {
       okType: 'danger',
       cancelText: 'Hủy',
       onOk() {
-        // Trong thực tế, bạn sẽ gọi API để xóa
         setFieldGroups(fieldGroups.filter(group => group.id !== id));
       },
     });
   };
 
-  // Render peak time information
-  const renderPeakTimes = (fieldGroup: FieldGroup) => {
-    const peakTimes = [];
+  // // Render peak time information
+  // const renderPeakTimes = (fieldGroup: FieldGroup) => {
+  //   const peakTimes = [];
     
-    if (fieldGroup.peakStartTime1 && fieldGroup.peakEndTime1) {
-      peakTimes.push(
-        <div key="peak1">
-          {formatTime(fieldGroup.peakStartTime1)} - {formatTime(fieldGroup.peakEndTime1)}: {formatPrice(fieldGroup.priceIncrease1)}
-        </div>
-      );
-    }
+  //   if (fieldGroup.peakStartTime1 && fieldGroup.peakEndTime1) {
+  //     peakTimes.push(
+  //       <div key="peak1">
+  //         {formatTime(fieldGroup.peakStartTime1)} - {formatTime(fieldGroup.peakEndTime1)}: {formatPrice(fieldGroup.priceIncrease1)}
+  //       </div>
+  //     );
+  //   }
     
-    if (fieldGroup.peakStartTime2 && fieldGroup.peakEndTime2 && fieldGroup.priceIncrease2) {
-      peakTimes.push(
-        <div key="peak2">
-          {formatTime(fieldGroup.peakStartTime2)} - {formatTime(fieldGroup.peakEndTime2)}: {formatPrice(fieldGroup.priceIncrease2)}
-        </div>
-      );
-    }
+  //   if (fieldGroup.peakStartTime2 && fieldGroup.peakEndTime2 && fieldGroup.priceIncrease2) {
+  //     peakTimes.push(
+  //       <div key="peak2">
+  //         {formatTime(fieldGroup.peakStartTime2)} - {formatTime(fieldGroup.peakEndTime2)}: {formatPrice(fieldGroup.priceIncrease2)}
+  //       </div>
+  //     );
+  //   }
     
-    if (fieldGroup.peakStartTime3 && fieldGroup.peakEndTime3 && fieldGroup.priceIncrease3) {
-      peakTimes.push(
-        <div key="peak3">
-          {formatTime(fieldGroup.peakStartTime3)} - {formatTime(fieldGroup.peakEndTime3)}: {formatPrice(fieldGroup.priceIncrease3)}
-        </div>
-      );
-    }
+  //   if (fieldGroup.peakStartTime3 && fieldGroup.peakEndTime3 && fieldGroup.priceIncrease3) {
+  //     peakTimes.push(
+  //       <div key="peak3">
+  //         {formatTime(fieldGroup.peakStartTime3)} - {formatTime(fieldGroup.peakEndTime3)}: {formatPrice(fieldGroup.priceIncrease3)}
+  //       </div>
+  //     );
+  //   }
     
-    if (peakTimes.length === 0) {
-      return <span>-</span>;
-    }
+  //   if (peakTimes.length === 0) {
+  //     return <span>-</span>;
+  //   }
     
-    // Luôn hiển thị dropdown và số lượng giờ cao điểm kể cả chỉ có 1 giờ
-    return (
-      <Dropdown
-        menu={{
-          items: peakTimes.map((time, index) => ({
-            key: `peak-${index}`,
-            label: <div>{time}</div>,
-          })),
-        }}
-        placement="bottomLeft"
-        arrow
-      >
-        <Button type="link" style={{ padding: '0', height: 'auto' }}>
-          {peakTimes[0]} <span style={{ color: '#1890ff', fontWeight: 'bold' }}>[{peakTimes.length}]</span>
-        </Button>
-      </Dropdown>
-    );
-  };
+  //   // Luôn hiển thị dropdown và số lượng giờ cao điểm kể cả chỉ có 1 giờ
+  //   return (
+  //     <Dropdown
+  //       menu={{
+  //         items: peakTimes.map((time, index) => ({
+  //           key: `peak-${index}`,
+  //           label: <div>{time}</div>,
+  //         })),
+  //       }}
+  //       placement="bottomLeft"
+  //       arrow
+  //     >
+  //       <Button type="link" style={{ padding: '0', height: 'auto' }}>
+  //         {peakTimes[0]} <span style={{ color: '#1890ff', fontWeight: 'bold' }}>[{peakTimes.length}]</span>
+  //       </Button>
+  //     </Dropdown>
+  //   );
+  // };
 
-  // Render sports information
-  const renderSports = (fieldGroup: FieldGroup) => {
-    const sports = fieldGroup.sports;
+  // // Render sports information
+  // const renderSports = (fieldGroup: FieldGroup) => {
+  //   const sports = fieldGroup.sports;
     
-    if (sports.length === 0) {
-      return <span>-</span>;
-    }
+  //   if (sports.length === 0) {
+  //     return <span>-</span>;
+  //   }
     
-    if (sports.length === 1) {
-      return (
-        <Tag 
-          color="blue" 
-          style={{ margin: '2px', borderRadius: '4px', padding: '2px 8px' }}
-        >
-          {sports[0].name}
-        </Tag>
-      );
-    }
+  //   if (sports.length === 1) {
+  //     return (
+  //       <Tag 
+  //         color="blue" 
+  //         style={{ margin: '2px', borderRadius: '4px', padding: '2px 8px' }}
+  //       >
+  //         {sports[0].name}
+  //       </Tag>
+  //     );
+  //   }
     
-    // Nếu có từ 2 loại sân trở lên, hiển thị "Tổng hợp"
-    return (
-      <Dropdown
-        menu={{
-          items: sports.map(sport => ({
-            key: `sport-${sport.id}`,
-            label: (
-              <Tag 
-                color="blue" 
-                style={{ margin: '2px', borderRadius: '4px', padding: '2px 8px' }}
-              >
-                {sport.name}
-              </Tag>
-            ),
-          })),
-        }}
-        placement="bottomLeft"
-        arrow
-      >
-        <Button type="link" style={{ padding: '0', height: 'auto' }}>
-          <Tag 
-            color="purple" 
-            style={{ margin: '2px', borderRadius: '4px', padding: '2px 8px' }}
-          >
-            Tổng hợp <span style={{ color: 'purple', fontWeight: 'bold', marginLeft: '4px' }}>[{sports.length}]</span>
-          </Tag>
-        </Button>
-      </Dropdown>
-    );
-  };
+  //   // Nếu có từ 2 loại sân trở lên, hiển thị "Tổng hợp"
+  //   return (
+  //     <Dropdown
+  //       menu={{
+  //         items: sports.map(sport => ({
+  //           key: `sport-${sport.id}`,
+  //           label: (
+  //             <Tag 
+  //               color="blue" 
+  //               style={{ margin: '2px', borderRadius: '4px', padding: '2px 8px' }}
+  //             >
+  //               {sport.name}
+  //             </Tag>
+  //           ),
+  //         })),
+  //       }}
+  //       placement="bottomLeft"
+  //       arrow
+  //     >
+  //       <Button type="link" style={{ padding: '0', height: 'auto' }}>
+  //         <Tag 
+  //           color="purple" 
+  //           style={{ margin: '2px', borderRadius: '4px', padding: '2px 8px' }}
+  //         >
+  //           Tổng hợp <span style={{ color: 'purple', fontWeight: 'bold', marginLeft: '4px' }}>[{sports.length}]</span>
+  //         </Tag>
+  //       </Button>
+  //     </Dropdown>
+  //   );
+  // };
 
-  // Add new field
-  const [addFieldModalVisible, setAddFieldModalVisible] = useState(false);
-  const [currentFieldGroupId, setCurrentFieldGroupId] = useState<string>('');
-  const [form] = Form.useForm();
-
+  // Show modal to add a new field
   const showAddFieldModal = (fieldGroupId: string) => {
     setCurrentFieldGroupId(fieldGroupId);
     setAddFieldModalVisible(true);
+    form.resetFields();
   };
 
+  // Handle add field confirmation
   const handleAddField = () => {
     confirm({
       title: 'Xác nhận thêm sân mới',
@@ -333,16 +368,15 @@ const FieldGroupManagement: React.FC = () => {
       okType: 'primary',
       cancelText: 'Hủy',
       onOk() {
-        // Tiếp tục xử lý thêm sân
         form.validateFields().then(values => {
-          // Tạo sân mới với ID ngẫu nhiên
+          // Create new field with random ID
           const newField: Field = {
             id: `field-${Date.now()}`,
             name: values.fieldName,
             status: 'active'
           };
 
-          // Cập nhật state
+          // Update state with new field
           const updatedFieldGroups = fieldGroups.map(group => {
             if (group.id === currentFieldGroupId) {
               return {
@@ -357,7 +391,7 @@ const FieldGroupManagement: React.FC = () => {
           setAddFieldModalVisible(false);
           form.resetFields();
 
-          // Hiển thị thông báo thành công
+          // Show success message
           Modal.success({
             title: 'Thêm sân thành công',
             content: `Sân "${values.fieldName}" đã được thêm vào nhóm sân.`
@@ -365,149 +399,6 @@ const FieldGroupManagement: React.FC = () => {
         });
       },
     });
-  };
-
-  // Columns for main table
-  const columns = [
-    {
-      title: 'Tên nhóm sân',
-      dataIndex: 'name',
-      key: 'name',
-      render: (text: string) => <Text strong>{text}</Text>,
-    },
-    {
-      title: 'Kích thước',
-      dataIndex: 'dimension',
-      key: 'dimension',
-    },
-    {
-      title: 'Mặt sân',
-      dataIndex: 'surface',
-      key: 'surface',
-    },
-    {
-      title: 'Giá sân',
-      dataIndex: 'basePrice',
-      key: 'basePrice',
-      render: (price: number) => formatPrice(price),
-    },
-    {
-      title: 'Giờ cao điểm',
-      key: 'peakTimes',
-      render: (record: FieldGroup) => renderPeakTimes(record),
-    },
-    {
-      title: 'Loại hình sân',
-      key: 'sports',
-      render: (record: FieldGroup) => renderSports(record),
-    },
-    {
-      title: 'Thao tác',
-      key: 'action',
-      render: (record: FieldGroup) => (
-        <Space size="middle">
-          <Tooltip title="Xem chi tiết">
-            <Button 
-              type="text" 
-              icon={<EyeOutlined style={{ color: '#1890ff' }} />} 
-              onClick={(e) => {
-                e.stopPropagation();
-                handleViewFieldGroup(record.id);
-              }}
-            />
-          </Tooltip>
-          <Tooltip title="Chỉnh sửa">
-            <Button 
-              type="text" 
-              icon={<EditOutlined style={{ color: '#52c41a' }} />} 
-              onClick={(e) => {
-                e.stopPropagation();
-                handleEditFieldGroup(record.id);
-              }}
-            />
-          </Tooltip>
-          <Tooltip title="Xóa">
-            <Button 
-              type="text" 
-              danger 
-              icon={<DeleteOutlined style={{ color: '#ff4d4f' }} />} 
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDeleteFieldGroup(record.id);
-              }}
-            />
-          </Tooltip>
-        </Space>
-      ),
-    },
-  ];
-
-  // Expanded row render function
-  const expandedRowRender = (record: FieldGroup) => {
-    const fieldColumns = [
-      { 
-        title: 'Tên sân', 
-        dataIndex: 'name', 
-        key: 'name' 
-      },
-      { 
-        title: 'Trạng thái', 
-        dataIndex: 'status', 
-        key: 'status',
-        render: (status: string) => getStatusTag(status),
-      },
-      {
-        title: (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span>Thao tác</span>
-            <Button 
-              type="primary" 
-              size="small"
-              icon={<PlusCircleOutlined />} 
-              onClick={(e) => {
-                e.stopPropagation();
-                showAddFieldModal(record.id);
-              }}
-            >
-              Thêm sân
-            </Button>
-          </div>
-        ),
-        key: 'action',
-        render: (text: string, field: Field) => (
-          <Space>
-            <Button 
-              type={field.status === 'active' ? 'default' : 'primary'} 
-              size="small"
-              danger={field.status === 'active'}
-              style={{ width: '100px' }}
-              onClick={() => toggleFieldStatus(record.id, field.id, field.status)}
-            >
-              {field.status === 'active' ? 'Đóng sân' : 'Mở sân'}
-            </Button>
-            <Button
-              type="primary"
-              danger
-              size="small"
-              icon={<DeleteOutlined />}
-              style={{ width: '100px' }}
-              onClick={() => handleDeleteField(record.id, field.id)}
-            >
-              Xóa sân
-            </Button>
-          </Space>
-        ),
-      },
-    ];
-
-    return (
-      <Table 
-        columns={fieldColumns} 
-        dataSource={record.fields} 
-        pagination={false} 
-        rowKey="id"
-      />
-    );
   };
 
   return (
@@ -547,10 +438,11 @@ const FieldGroupManagement: React.FC = () => {
         {/* Facility Dropdown */}
         <div className="mb-6">
           <Select
-            value={selectedFacilityId}
-            onChange={handleFacilityChange}
-            style={{ width: '100%' }}
             placeholder="Chọn cơ sở của bạn"
+            style={{ width: '100%' }}
+            value={selectedFacilityId || undefined}
+            onChange={handleFacilityChange}
+            popupMatchSelectWidth={false}
           >
             {mockFacilitiesDropdown.map((facility) => (
               <Select.Option key={facility.id} value={facility.id}>
@@ -561,51 +453,51 @@ const FieldGroupManagement: React.FC = () => {
         </div>
 
         {/* Field Groups Table */}
-        <Table
-          columns={columns}
-          dataSource={fieldGroups}
-          rowKey="id"
-          expandable={{
-            expandedRowRender,
-            expandRowByClick: true,
-          }}
-          pagination={{ pageSize: 10 }}
-          scroll={{ x: 1100 }}
-        />
+        {selectedFacilityId ? (
+          loading ? (
+            <div className="flex justify-center items-center h-64">
+              <p className="text-lg">Đang tải dữ liệu...</p>
+            </div>
+          ) : error ? (
+            <div className="p-4 bg-red-100 text-red-700 rounded-lg">
+              {error}
+            </div>
+          ) : fieldGroups.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-64 bg-white rounded-lg p-6">
+              <p className="text-lg text-gray-600 mb-4">Chưa có nhóm sân nào</p>
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={handleCreateField}
+              >
+                Tạo nhóm sân mới
+              </Button>
+            </div>
+          ) : (
+            <FieldGroupTable 
+              fieldGroups={fieldGroups}
+              onViewFieldGroup={handleViewFieldGroup}
+              onEditFieldGroup={handleEditFieldGroup}
+              onDeleteFieldGroup={handleDeleteFieldGroup}
+              onAddField={showAddFieldModal}
+              onToggleFieldStatus={toggleFieldStatus}
+              onDeleteField={handleDeleteField}
+            />
+          )
+        ) : (
+          <div className="flex flex-col items-center justify-center h-64 bg-white rounded-lg p-6">
+            <p className="text-lg text-gray-600 mb-4">Vui lòng chọn cơ sở để xem danh sách nhóm sân</p>
+          </div>
+        )}
       </Card>
 
       {/* Add Field Modal */}
-      <Modal
-        title="Thêm sân mới"
-        open={addFieldModalVisible}
-        onCancel={() => setAddFieldModalVisible(false)}
-        onOk={handleAddField}
-        okText="Tiếp tục"
-        cancelText="Hủy"
-      >
-        <Form
-          form={form}
-          layout="vertical"
-        >
-          <Form.Item
-            name="fieldName"
-            label="Tên sân"
-            rules={[
-              { required: true, message: 'Vui lòng nhập tên sân' },
-              { min: 2, message: 'Tên sân phải có ít nhất 2 ký tự' }
-            ]}
-          >
-            <Input placeholder="Nhập tên sân (VD: Sân số 1)" />
-          </Form.Item>
-          
-          <div style={{ marginTop: '16px', padding: '10px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
-            <Text type="secondary">
-              Lưu ý: Việc thêm sân mới đồng nghĩa với việc bạn xác nhận sân này có thực và thuộc quyền quản lý của cơ sở. 
-              Bạn chịu hoàn toàn trách nhiệm về tính xác thực của thông tin này.
-            </Text>
-          </div>
-        </Form>
-      </Modal>
+      <AddFieldModal
+        visible={addFieldModalVisible}
+        onClose={() => setAddFieldModalVisible(false)}
+        onAddField={handleAddField}
+        form={form}
+      />
 
       {/* FieldGroup Detail Modal */}
       <FieldGroupDetail 

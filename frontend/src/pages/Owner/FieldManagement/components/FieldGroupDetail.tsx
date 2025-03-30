@@ -1,7 +1,7 @@
 import React from 'react';
 import { Modal, Typography, Row, Col, Card, Tag, Table } from 'antd';
 import { FieldGroup } from '@/types/field.type';
-import { getStatusTag, formatPrice, formatTime } from '../../../utils/statusUtils.tsx';
+import { getStatusTag, formatPrice, formatTime } from '@/utils/statusUtils';
 import { getSportNameInVietnamese } from '@/utils/translateSport';
 
 const { Title, Text } = Typography;

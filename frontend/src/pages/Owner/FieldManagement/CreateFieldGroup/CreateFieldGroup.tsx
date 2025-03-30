@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Select, Card, Typography, Button, Table, Empty, notification, Spin, Checkbox, Tag, Alert } from 'antd';
-import { PlusOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { PlusOutlined, InfoCircleOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { mockFacilitiesDropdown } from '@/mocks/facility/mockFacilities';
 import { getSportNameInVietnamese } from '@/utils/translateSport';
 import { sportService } from '@/services/sport.service';
@@ -9,7 +9,7 @@ import { FieldGroup, FieldGroupFormData, Field } from '@/types/field.type';
 import FieldGroupForm from './components/FieldGroupForm';
 import { mockFieldGroups } from '@/mocks/field/Groupfield_Field';
 import { COMPATIBLE_SPORT_GROUPS } from '@/mocks/default/defaultData';
-
+import { useNavigate } from 'react-router-dom';
 const { Title, Text } = Typography;
 const { Option } = Select;
 const { CheckableTag } = Tag;
@@ -64,7 +64,8 @@ const mockFieldGroupsBySport: Record<string, FieldGroup[]> = {
 
 const CreateFieldGroup: React.FC = () => {
   const isMounted = useRef<boolean>(false);
-  
+  const navigate = useNavigate();
+
   // States
   const [selectedFacilityId, setSelectedFacilityId] = useState<string>('');
   const [sports, setSports] = useState<Sport[]>([]);
@@ -225,6 +226,11 @@ const CreateFieldGroup: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-4">
+        <Button 
+            icon={<ArrowLeftOutlined />} 
+            onClick={() => navigate('/owner/field-group-management')}
+            type="text"
+          />    
           <Title level={2} style={{ margin: 0 }}>Tạo nhóm sân mới</Title>
         </div>
       </div>

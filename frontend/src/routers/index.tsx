@@ -28,13 +28,13 @@ import FieldGroupManagement from '@/pages/Owner/FieldManagement/FieldGroupManage
 import CreateFieldGroup from '@/pages/Owner/FieldManagement/CreateFieldGroup/CreateFieldGroup';
 
 import ServiceManagement from '@/pages/Owner/ServiceManagement/ServiceManagement';
-// import CreateService from '@/pages/Owner/ServiceManagement/CreateService/CreateService';
+import CreateService from '@/pages/Owner/ServiceManagement/CreateService';
 
-// import VoucherManagement from '@/pages/Owner/VoucherManagement/VoucherManagement';
-// import CreateVoucher from '@/pages/Owner/VoucherManagement/CreateVoucher/CreateVoucher';
+import VoucherManagement from '@/pages/Owner/VoucherManagement/VoucherManagement';
+import CreateVoucher from '@/pages/Owner/VoucherManagement/CreateVoucher';
 
 import EventManagement from '@/pages/Owner/EventManagement/EventManagement';
-import CreateEvent from '@/pages/Owner/EventManagement/CreateEvent/CreateEvent';
+import CreateEvent from '@/pages/Owner/EventManagement/CreateEvent';
 
 import Banking from '@/pages/Owner/Banking/Banking';
 
@@ -86,10 +86,10 @@ const AppRouter: React.FC = () => {
         <Route path='/owner/create-field-group' element={<CreateFieldGroup />} />        
 
         <Route path='/owner/service-management' element={<ServiceManagement />} />
-        {/* <Route path='/owner/create-service' element={<CreateService />} /> */}
+        <Route path='/owner/create-service' element={<CreateService />} />
 
-        {/* <Route path='/owner/voucher-management' element={<VoucherManagement />} /> */}
-        {/* <Route path='/owner/create-voucher' element={<CreateVoucher />} /> */}
+        <Route path='/owner/voucher-management' element={<VoucherManagement />} />
+        <Route path='/owner/create-voucher' element={<CreateVoucher />} />
 
         <Route path='/owner/event-management' element={<EventManagement />} />
         <Route path='/owner/create-event' element={<CreateEvent />} />  

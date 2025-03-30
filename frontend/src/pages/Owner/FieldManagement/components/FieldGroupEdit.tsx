@@ -181,13 +181,12 @@ const FieldGroupEdit: React.FC<FieldGroupEditProps> = ({ open, onClose, onSave, 
                 style={{ width: '100%' }}
                 addonAfter="VNĐ"
                 placeholder="Nhập giá sân cơ bản"
-                min={0}
-                max={999999999}
+                min={0}                
                 step={10000}
-                formatter={(value) => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : ''}
-                parser={(value) => {
-                  const parsed = value ? Number(value.replace(/\./g, '')) : 0;
-                  return parsed > 999999999 ? 999999999 : parsed;
+                formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+                parser={(value: string | undefined) => {
+                  if (!value) return 0;
+                  return Number(value.replace(/\./g, ''));
                 }}
                 precision={0}
               />
@@ -269,11 +268,13 @@ const FieldGroupEdit: React.FC<FieldGroupEditProps> = ({ open, onClose, onSave, 
               <InputNumber
                 style={{ width: '100%' }}
                 addonAfter="VNĐ"
-                min={0}
-                max={999999999}
+                min={0}                
                 step={10000}
-                formatter={(value) => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : ''}
-                parser={(value) => value ? Number(value.replace(/\./g, '')) : 0}                
+                formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+                parser={(value: string | undefined) => {
+                  if (!value) return 0;
+                  return Number(value.replace(/\./g, ''));
+                }}               
               />
             </Form.Item>
           </Col>
@@ -294,11 +295,13 @@ const FieldGroupEdit: React.FC<FieldGroupEditProps> = ({ open, onClose, onSave, 
               <InputNumber
                 style={{ width: '100%' }}
                 addonAfter="VNĐ"
-                min={0}
-                max={999999999}
+                min={0}                
                 step={10000}
-                formatter={(value) => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : ''}
-                parser={(value) => value ? Number(value.replace(/\./g, '')) : 0}
+                formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+                parser={(value: string | undefined) => {
+                  if (!value) return 0;
+                  return Number(value.replace(/\./g, ''));
+                }}
               />
             </Form.Item>
           </Col>
@@ -319,11 +322,13 @@ const FieldGroupEdit: React.FC<FieldGroupEditProps> = ({ open, onClose, onSave, 
               <InputNumber
                 style={{ width: '100%' }}
                 addonAfter="VNĐ"
-                min={0}
-                max={999999999}
+                min={0}                
                 step={10000}
-                formatter={(value) => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : ''}
-                parser={(value) => value ? Number(value.replace(/\./g, '')) : 0}
+                formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+                parser={(value: string | undefined) => {
+                  if (!value) return 0;
+                  return Number(value.replace(/\./g, ''));
+                }}
               />
             </Form.Item>
           </Col>
