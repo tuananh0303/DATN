@@ -4,7 +4,7 @@ import { Form, Input, InputNumber, Select, DatePicker, Button, Card, Typography,
 import { ArrowLeftOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { VoucherFormData } from '@/types/voucher.type';
-import { mockFacilitiesDropdown } from '@/mocks/voucher/voucherData';
+import { mockFacilitiesDropdown } from '@/mocks/facility/mockFacilities';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -100,7 +100,8 @@ const CreateVoucher: React.FC = () => {
           discount: finalValues.discount,
           minPrice: finalValues.minPrice,
           maxDiscount: finalValues.maxDiscount,
-          amount: finalValues.amount
+          amount: finalValues.amount,
+          facilityId: selectedFacilityId,
         };
 
         // Simulate API call

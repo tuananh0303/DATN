@@ -55,6 +55,7 @@ const FieldGroupManagement: React.FC = () => {
     // Simulate API call with setTimeout
     setTimeout(() => {
       try {
+        
         // In real implementation, this would be an API call filtered by facilityId
         setFieldGroups(mockFieldGroups);
         setLoading(false);

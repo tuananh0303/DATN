@@ -14,6 +14,7 @@ export const mockVouchers: Voucher[] = [
     maxDiscount: 50000,
     amount: 100,
     remain: 78,
+    facilityId: '1',
     createdAt: '2025-03-30T10:00:00Z',
     updatedAt: '2025-03-30T10:00:00Z'
   },
@@ -29,6 +30,7 @@ export const mockVouchers: Voucher[] = [
     maxDiscount: 200000,
     amount: 50,
     remain: 42,
+    facilityId: '2',
     createdAt: '2023-10-28T14:00:00Z',
     updatedAt: '2023-10-28T14:00:00Z'
   },
@@ -44,6 +46,7 @@ export const mockVouchers: Voucher[] = [
     maxDiscount: 100000,
     amount: 30,
     remain: 30,
+    facilityId: '1',
     createdAt: '2023-11-01T08:30:00Z',
     updatedAt: '2023-11-01T08:30:00Z'
   },
@@ -59,6 +62,7 @@ export const mockVouchers: Voucher[] = [
     maxDiscount: 100000,
     amount: 40,
     remain: 5,
+    facilityId: '3',
     createdAt: '2023-10-10T09:15:00Z',
     updatedAt: '2023-10-10T09:15:00Z'
   },
@@ -74,6 +78,7 @@ export const mockVouchers: Voucher[] = [
     maxDiscount: 50000,
     amount: 60,
     remain: 60,
+    facilityId: '2',
     createdAt: '2023-11-05T11:45:00Z',
     updatedAt: '2023-11-05T11:45:00Z'
   },
@@ -89,14 +94,9 @@ export const mockVouchers: Voucher[] = [
     maxDiscount: 150000,
     amount: 25,
     remain: 10,
+    facilityId: '4',
     createdAt: '2023-09-25T10:30:00Z',
     updatedAt: '2023-09-25T10:30:00Z'
   }
 ];
 
-// Mock facilities data for dropdown
-export const mockFacilitiesDropdown = [
-  { id: '1', name: 'Sân bóng đá Thống Nhất' },
-  { id: '2', name: 'Sân Tennis Phú Nhuận' },
-  { id: '3', name: 'Sân bóng rổ Tân Bình' }
-];

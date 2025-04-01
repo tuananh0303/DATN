@@ -21,8 +21,8 @@ import ResultSearch from '@/pages/Public/ResultSearch';
 // Owner pages
 import PlaySchedule from '@/pages/Owner/PlaySchedule/PLaySchedule';
 
-// import FacilityManagement from '@/pages/Owner/FacilityManagement/FacilityManagement';
-// import CreateFacility from '@/pages/Owner/FacilityManagement/CreateFacility/CreateFacility';
+import FacilityManagement from '@/pages/Owner/FacilityManagement/FacilityManagement';
+import CreateFacility from '@/pages/Owner/FacilityManagement/CreateFacility/CreateFacility';
 
 import FieldGroupManagement from '@/pages/Owner/FieldManagement/FieldGroupManagement';
 import CreateFieldGroup from '@/pages/Owner/FieldManagement/CreateFieldGroup/CreateFieldGroup';
@@ -79,8 +79,8 @@ const AppRouter: React.FC = () => {
       }>
         <Route path='/owner' element={<PlaySchedule />} />
 
-        {/* <Route path='/owner/facility-management' element={<FacilityManagement />} /> */}
-        {/* <Route path='/owner/create-facility' element={<CreateFacility />} />            */}
+        <Route path='/owner/facility-management' element={<FacilityManagement />} />
+        <Route path='/owner/create-facility' element={<CreateFacility />} />           
 
         <Route path='/owner/field-group-management' element={<FieldGroupManagement />} />
         <Route path='/owner/create-field-group' element={<CreateFieldGroup />} />        

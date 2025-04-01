@@ -40,6 +40,7 @@ const CreateService: React.FC<CreateServiceProps> = ({ onCancel, onSubmit }) => 
   const handleAddService = () => {
     form.validateFields().then(values => {
       const newService: ServiceFormData = {
+        facilityId: selectedFacilityId,
         name: values.name,
         price: values.price,
         description: values.description,

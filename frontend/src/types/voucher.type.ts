@@ -10,6 +10,7 @@ export interface Voucher {
     maxDiscount: number;
     amount: number;
     remain: number;
+    facilityId: string;
     createdAt: string;
     updatedAt: string;
   }
@@ -24,6 +25,7 @@ export interface Voucher {
     minPrice: number;
     maxDiscount: number;
     amount: number;
+    facilityId: string;
   }
 
   export interface VoucherFilter {

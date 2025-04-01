@@ -14,6 +14,7 @@ export interface Service {
     status: ServiceStatus;
     unit: string;
     serviceType: ServiceType;
+    facilityId: string;
     inUseCount?: number;
     bookedCount?: number;
     lastUpdated?: Date;
@@ -29,6 +30,7 @@ export interface Service {
     unit: string;
     serviceType: ServiceType;
     status: ServiceStatus;
+    facilityId: string;
   }
   
   // Interface để định nghĩa kiểu dữ liệu cho giá trị form cập nhật
@@ -41,6 +43,7 @@ export interface Service {
     serviceType: ServiceType;
     status: ServiceStatus;
     unit: string;
+    facilityId?: string;
   }
   
   export interface ServiceState {

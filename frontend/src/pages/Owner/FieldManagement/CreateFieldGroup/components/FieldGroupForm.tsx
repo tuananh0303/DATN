@@ -290,7 +290,7 @@ const FieldGroupForm: React.FC<FieldGroupFormProps> = ({
         peakEndTime3: values.peakTime3 ? values.peakTime3[1].format('HH:mm:ss') : '',
         priceIncrease3: values.priceIncrease3 || 0,
         sportIds: values.sportIds || [sport.id],
-        fieldsData,
+        fields: fieldsData,
       };
       
       // Show confirmation modal

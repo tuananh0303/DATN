@@ -52,7 +52,8 @@ export const mockFieldGroups: FieldGroup[] = [
         id: 3,
         name: 'Bóng chuyền',
       }
-    ]
+    ],
+    facilityId: '1'
   },
   {
     id: '2',
@@ -97,7 +98,8 @@ export const mockFieldGroups: FieldGroup[] = [
         id: 1,
         name: 'Bóng đá',
       }
-    ]
+    ],
+    facilityId: '2'
   },
   {
     id: '3',
@@ -136,6 +138,7 @@ export const mockFieldGroups: FieldGroup[] = [
         id: 2,
         name: 'Bóng rổ',
       }
-    ]
+    ],
+    facilityId: '3'
   }
 ];
