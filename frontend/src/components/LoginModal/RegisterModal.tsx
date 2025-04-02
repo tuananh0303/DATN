@@ -23,7 +23,7 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
   const handleRegister = async (values: RegisterData) => {
     try {
       await dispatch(register(values)).unwrap();
-      message.success('Đăng ký tài khoản thành công!');
+      // message.success('Đăng ký tài khoản thành công!');
       if (onSuccess) {
         onSuccess();
       }

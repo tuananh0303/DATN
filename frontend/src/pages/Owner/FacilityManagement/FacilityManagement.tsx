@@ -30,9 +30,13 @@ import { facilityService } from '@/services/facility.service';
 import FacilityDetail from './components/FacilityDetail';
 import FacilityEdit from './components/FacilityEdit';
 import OperatingHoursDisplay from '@/components/shared/OperatingHoursDisplay';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '@/store';
+import { fetchOwnerFacilities } from '@/store/slices/facilitySlice';
 
 const FacilityManagement: React.FC = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
   
   // Local state
   const [facilities, setFacilities] = useState<Facility[]>([]);
@@ -59,10 +63,21 @@ const FacilityManagement: React.FC = () => {
   const fetchFacilities = async (page: number, pageSize: number, status: string = 'all', query: string = '') => {
     try {
       setLoading(true);
-      // Trong thực tế, API sẽ hỗ trợ pagination với params: page, pageSize, status, query
+      // Get the userId from localStorage to fetch facilities for this owner
+      const userId = localStorage.getItem('userId');
+      
+      if (!userId) {
+        message.error('Không thể xác định người dùng hiện tại, vui lòng đăng nhập lại');
+        return;
+      }
+      
+      // Use the service which now uses the real API with fallback to mock data
       const response = await facilityService.getMyFacilities(page, pageSize, status, query);
       
-      // Nếu API đã hỗ trợ pagination thì sẽ có response.data và response.total
+      // Also dispatch the Redux action (this is optional, based on if other components need this data)
+      dispatch(fetchOwnerFacilities(userId));
+      
+      // Update local state with the data
       setFacilities(response.data || response);
       setFilteredFacilities(response.data || response);
       setTotalItems(response.total || response.data.length);

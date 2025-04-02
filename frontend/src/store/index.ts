@@ -4,6 +4,7 @@ import fieldGroupReducer from './slices/fieldSlice';
 import serviceReducer from './slices/serviceSlice';
 import voucherReducer from './slices/voucherSlice';
 import eventReducer from './slices/eventSlice';
+import facilityReducer from './slices/facilitySlice';
 
 export const store = configureStore({
   reducer: {
@@ -12,6 +13,7 @@ export const store = configureStore({
     service: serviceReducer,
     voucher: voucherReducer,
     event: eventReducer,
+    facility: facilityReducer,
   },
 });
 

@@ -1,6 +1,6 @@
 import api from './api';
 import { ApiError } from '@/types/errors';
-import { RegisterData } from '@/types/user.type';
+import { RegisterData, UpdateInfo } from '@/types/user.type';
 
 // API Endpoints
 export const authService = {
@@ -33,7 +33,6 @@ export const authService = {
     };
             
       const response = await api.post('/auth/register', formattedData);
-      console.log('Registration response:', response.data);
       return response.data;
     } catch (error: unknown) {
       const apiError = error as ApiError;
@@ -48,16 +47,21 @@ export const authService = {
   },
   
   getMyInfo: async () => {
-    const response = await api.get('/people/my-info');
+    const response = await api.get('/person/my-info');
     return response.data;
   },
 
-  updateAvatar: async (avatar: File) => {
-    const response = await api.patch('/people/update-avatar', { avatar }, {
+  updateAvatar: async (formData: FormData) => {
+    const response = await api.put('/person/update-avatar', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
+    return response.data;
+  },
+
+  updateInfo: async (data: UpdateInfo) => {
+    const response = await api.put('/person/update-infor', data);
     return response.data;
   },
   

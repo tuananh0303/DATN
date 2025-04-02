@@ -12,7 +12,8 @@ import {
   Empty, 
   Divider,
   Table,
-  Timeline
+  Timeline,
+  message
 } from 'antd';
 import { 
   EnvironmentOutlined, 
@@ -27,8 +28,8 @@ import { Facility, VerificationHistoryItem } from '@/types/facility.type';
 import { Service } from '@/types/service.type';
 import { Event, EventDetail, EventPrize } from '@/types/event.type';
 import { Voucher } from '@/types/voucher.type';
-import { facilityService } from '@/services/facility.service';
 import { getSportNameInVietnamese } from '@/utils/translateSport';
+// Chỉ import các hàm mock để dùng khi fallback
 import { 
   getFacilityFieldGroups, 
   getFacilityServices, 
@@ -37,6 +38,9 @@ import {
   getFacilityVerificationHistory
 } from '@/mocks/facility/mockFacilities';
 import OperatingHoursDisplay from '@/components/shared/OperatingHoursDisplay';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '@/store';
+import { fetchFacilityById } from '@/store/slices/facilitySlice';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -47,22 +51,32 @@ interface FacilityDetailProps {
 }
 
 const FacilityDetail: React.FC<FacilityDetailProps> = ({ facilityId, onClose, onEdit }) => {
+  const dispatch = useDispatch<AppDispatch>();
+  const { facility: reduxFacility, isLoading: reduxLoading, error: reduxError } = useSelector((state: RootState) => state.facility);
+  
   const [facility, setFacility] = useState<Facility | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>('info');
   const [mainImage, setMainImage] = useState<string>('');
+  
+  // Add an effect to handle Redux errors
+  useEffect(() => {
+    if (reduxError) {
+      setError(reduxError);
+      message.error('Không thể tải thông tin cơ sở: ' + reduxError);
+    }
+  }, [reduxError]);
   
   // Fetch facility data
   useEffect(() => {
     const fetchFacilityData = async () => {
       try {
         setLoading(true);
-        const data = await facilityService.getFacilityById(facilityId);
-        setFacility(data);
         
-        if (data.imagesUrl && data.imagesUrl.length > 0) {
-          setMainImage(data.imagesUrl[0]);
-        }
+        // Chỉ sử dụng Redux để fetch dữ liệu
+        await dispatch(fetchFacilityById(facilityId));
+        // Không gọi service.getFacilityById nữa để tránh trùng lặp
       } catch (error) {
         console.error('Failed to fetch facility details:', error);
       } finally {
@@ -73,14 +87,26 @@ const FacilityDetail: React.FC<FacilityDetailProps> = ({ facilityId, onClose, on
     if (facilityId) {
       fetchFacilityData();
     }
-  }, [facilityId]);
+  }, [facilityId, dispatch]);
   
-  // Get mock data for this facility
-  const verificationHistory: VerificationHistoryItem[] = getFacilityVerificationHistory(facilityId);
-  const fieldGroups = getFacilityFieldGroups(facilityId);
-  const facilityServices: Service[] = getFacilityServices(facilityId);
-  const facilityEvents: Event[] = getFacilityEvents(facilityId);
-  const facilityVouchers: Voucher[] = getFacilityVouchers(facilityId);
+  // Also add a useEffect to update component state when Redux state changes
+  useEffect(() => {
+    if (reduxFacility && reduxFacility.id === facilityId) {
+      setFacility(reduxFacility);
+      if (reduxFacility.imagesUrl && reduxFacility.imagesUrl.length > 0) {
+        setMainImage(reduxFacility.imagesUrl[0]);
+      }
+      setLoading(reduxLoading);
+    }
+  }, [reduxFacility, reduxLoading, facilityId]);
+  
+  // Get data for this facility
+  // Sử dụng dữ liệu từ API với fallback về mock data
+  const fieldGroups = facility?.fieldGroups || getFacilityFieldGroups(facilityId);
+  const facilityServices = facility?.services || getFacilityServices(facilityId);
+  const facilityEvents = facility?.events || getFacilityEvents(facilityId);
+  const facilityVouchers = facility?.vouchers || getFacilityVouchers(facilityId);
+  const verificationHistory: VerificationHistoryItem[] = facility?.verificationHistory || getFacilityVerificationHistory(facilityId);
   
   const getStatusTag = (status: string) => {
     switch(status) {
@@ -114,8 +140,17 @@ const FacilityDetail: React.FC<FacilityDetailProps> = ({ facilityId, onClose, on
   
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-12">
+      <div className="flex justify-center items-center h-64">
         <Spin size="large" />
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-64 flex-col">
+        <Empty description={`Lỗi khi tải dữ liệu: ${error}`} />
+        <Button className="mt-4" onClick={() => onClose()}>Đóng</Button>
       </div>
     );
   }

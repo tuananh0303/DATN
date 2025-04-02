@@ -39,3 +39,13 @@ export interface RegisterData {
   password: string; 
   retypePassword: string;
 }
+
+export interface UpdateInfo {
+  name?: string;
+  email?: string;
+  phoneNumber?: string;
+  gender?: string;
+  dob?: Date | string;
+  bankAccount?: string;
+}
+

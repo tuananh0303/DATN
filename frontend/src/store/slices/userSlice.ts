@@ -69,6 +69,7 @@ export const logout = createAsyncThunk(
   async () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
+    localStorage.removeItem('userId');
     return null;
   }
 );
@@ -125,6 +126,11 @@ const userSlice = createSlice({
       state.isAuthenticated = true;
       state.user = action.payload;
       state.loginModalVisible = false;
+      
+      // Lưu userId vào localStorage
+      if (action.payload && action.payload.id) {
+        localStorage.setItem('userId', action.payload.id);
+      }
     });
     builder.addCase(login.rejected, (state, action) => {
       state.isLoading = false;

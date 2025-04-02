@@ -1,5 +1,6 @@
 import { Facility, FacilityStatusChange, VerificationHistoryItem, FacilityFormData, License } from '@/types/facility.type';
 import { mockFacilities, mockVerificationHistory } from '@/mocks/facility/mockFacilities';
+import api from './api';
 
 // Interface cho response khi gọi API với pagination
 export interface PaginatedResponse<T> {
@@ -14,58 +15,92 @@ export interface FacilityNameCheckResponse {
   exists: boolean;
 }
 
-// Mock facility service with methods
+// Facility service with real API calls and fallback to mock data
 class FacilityService {
   // Get all facilities owned by the user with pagination support
   async getMyFacilities(page: number = 1, pageSize: number = 10, status: string = 'all', query: string = ''): Promise<PaginatedResponse<Facility>> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        let filteredData = [...mockFacilities];
-        
-        // Apply filters
-        if (status !== 'all') {
-          filteredData = filteredData.filter(facility => facility.status === status);
-        }
-        
-        // Apply search
-        if (query) {
-          const lowerCaseQuery = query.toLowerCase();
-          filteredData = filteredData.filter(facility => 
-            facility.name.toLowerCase().includes(lowerCaseQuery) || 
-            facility.location.toLowerCase().includes(lowerCaseQuery)
-          );
-        }
-        
-        // Calculate total before pagination
-        const total = filteredData.length;
-        
-        // Apply pagination
-        const startIndex = (page - 1) * pageSize;
-        const paginatedData = filteredData.slice(startIndex, startIndex + pageSize);
-        
-        resolve({
-          data: paginatedData,
-          total,
-          page,
-          pageSize
-        });
-      }, 500);
-    });
+    try {
+      // Get current user ID from local storage
+      const userId = localStorage.getItem('userId');
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
+
+      // Call real API
+      const response = await api.get(`/facility/owner/${userId}`, {
+        params: { page, pageSize, status: status !== 'all' ? status : undefined, query: query || undefined }
+      });
+
+      // Format the response to match our expected structure
+      const facilities = response.data;
+      return {
+        data: facilities,
+        total: facilities.length,
+        page,
+        pageSize
+      };
+    } catch (error) {
+      console.error('API call failed, falling back to mock data:', error);
+      
+      // Fallback to mock data
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          let filteredData = [...mockFacilities];
+          
+          // Apply filters
+          if (status !== 'all') {
+            filteredData = filteredData.filter(facility => facility.status === status);
+          }
+          
+          // Apply search
+          if (query) {
+            const lowerCaseQuery = query.toLowerCase();
+            filteredData = filteredData.filter(facility => 
+              facility.name.toLowerCase().includes(lowerCaseQuery) || 
+              facility.location.toLowerCase().includes(lowerCaseQuery)
+            );
+          }
+          
+          // Calculate total before pagination
+          const total = filteredData.length;
+          
+          // Apply pagination
+          const startIndex = (page - 1) * pageSize;
+          const paginatedData = filteredData.slice(startIndex, startIndex + pageSize);
+          
+          resolve({
+            data: paginatedData,
+            total,
+            page,
+            pageSize
+          });
+        }, 500);
+      });
+    }
   }
 
   // Get a facility by ID
   async getFacilityById(id: string): Promise<Facility> {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const facility = mockFacilities.find(facility => facility.id === id);
-        
-        if (facility) {
-          resolve(facility);
-        } else {
-          reject(new Error('Facility not found'));
-        }
-      }, 500);
-    });
+    try {
+      // Call real API
+      const response = await api.get(`/facility/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('API call failed, falling back to mock data:', error);
+      
+      // Fallback to mock data
+      return new Promise((resolve, reject) => {
+        setTimeout(() => {
+          const facility = mockFacilities.find(facility => facility.id === id);
+          
+          if (facility) {
+            resolve(facility);
+          } else {
+            reject(new Error('Facility not found'));
+          }
+        }, 500);
+      });
+    }
   }
 
   // Create a new facility - updated to accept FormData or FacilityFormData
@@ -199,28 +234,29 @@ class FacilityService {
     return Promise.resolve(verificationData?.history || []);
   }
 
+  // Change status of a facility (active/inactive)
   async changeFacilityStatus(statusChange: FacilityStatusChange): Promise<void> {
     return new Promise((resolve) => {
       setTimeout(() => {
-        // In a real implementation, this would call an API to change the facility status
-        console.log('Changed facility status:', statusChange);
+        // In a real implementation, this would call an API to change the status
+        console.log('Status change request:', statusChange);
         resolve();
       }, 500);
     });
   }
 
-  // Check if facility name exists
+  // Check if a facility name already exists
   async checkFacilityNameExists(name: string): Promise<FacilityNameCheckResponse> {
     return new Promise((resolve) => {
       setTimeout(() => {
-        // Trong thực tế, sẽ gọi API để kiểm tra
-        const exists = mockFacilities.some(facility => 
-          facility.name.toLowerCase() === name.toLowerCase()
-        );
+        // In a real implementation, this would call an API to check if the name exists
+        const exists = mockFacilities.some(f => 
+          f.name.toLowerCase() === name.toLowerCase());
         resolve({ exists });
-      }, 500);
+      }, 300);
     });
   }
 }
 
+// Export instance of the service
 export const facilityService = new FacilityService();

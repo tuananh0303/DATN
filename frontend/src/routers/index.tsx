@@ -13,8 +13,8 @@ import DetailFacility from '@/pages/Public/DetailFacility';
 import ResultSearch from '@/pages/Public/ResultSearch';
 
 // Player pages
-// import BookingPage from '@/pages/Player/Booking';
-// import HistoryBooking from '@/pages/Player/HistoryBooking';
+import BookingPage from '@/pages/Player/Booking';
+import HistoryBooking from '@/pages/Player/HistoryBooking';
 // import ResultBooking from '@/pages/Player/ResutlBooking';
 // import ResultBookingVNPay from '@/pages/Player/ResultBookingVNPay';
 
@@ -64,8 +64,8 @@ const AppRouter: React.FC = () => {
           <PlayerLayout />
         </ProtectedRoute>
       }>
-        {/* <Route path='/user/booking/:facilityId' element={<BookingPage />} /> */}
-        {/* <Route path='/user/history-booking' element={<HistoryBooking />} /> */}
+        <Route path='/user/booking/:facilityId' element={<BookingPage />} />
+        <Route path='/user/history-booking' element={<HistoryBooking />} />
         {/* <Route path='/user/booking/result-booking/:bookingId' element={<ResultBooking />} /> */}
         {/* <Route path='/user/booking/result-booking-vnpay' element={<ResultBookingVNPay />} /> */}
         <Route path='/user/profile' element={<UserProfile />} />

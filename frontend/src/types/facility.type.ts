@@ -1,5 +1,9 @@
 import { FieldGroupFormData } from "./field.type";
 import { Sport } from "./sport.type";
+import { Service } from "./service.type";
+import { Event } from "./event.type";
+import { Voucher } from "./voucher.type";
+import { FieldGroup } from "./field.type";
 
 
 // Cấu trúc cơ bản của một cơ sở
@@ -24,6 +28,18 @@ export interface Facility {
     updatedAt: string;
     certificate: Certificate;
     license: License[];
+    // Các trường có thể có thêm từ API chi tiết
+    fieldGroups?: FieldGroup[];
+    services?: Service[];
+    events?: Event[];
+    vouchers?: Voucher[];
+    verificationHistory?: VerificationHistoryItem[];
+    owner?: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+    };
   }
 
   // Type cho thông tin cơ bản khi tạo mới cơ sở
