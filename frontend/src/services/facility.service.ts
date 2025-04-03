@@ -1,5 +1,4 @@
-import { Facility, FacilityStatusChange, VerificationHistoryItem, FacilityFormData, License } from '@/types/facility.type';
-import { mockFacilities, mockVerificationHistory } from '@/mocks/facility/mockFacilities';
+import { Facility, FacilityStatusChange, FacilityFormData } from '@/types/facility.type';
 import api from './api';
 
 // Interface cho response khi gọi API với pagination
@@ -15,7 +14,13 @@ export interface FacilityNameCheckResponse {
   exists: boolean;
 }
 
-// Facility service with real API calls and fallback to mock data
+// Interface cho dropdown item
+export interface FacilityDropdownItem {
+  id: string;
+  name: string;
+}
+
+// Facility service with real API calls
 class FacilityService {
   // Get all facilities owned by the user with pagination support
   async getMyFacilities(page: number = 1, pageSize: number = 10, status: string = 'all', query: string = ''): Promise<PaginatedResponse<Facility>> {
@@ -26,10 +31,31 @@ class FacilityService {
         throw new Error('User not authenticated');
       }
 
+      console.log(`Service: Fetching facilities for userId=${userId}, status=${status}, query=${query}`);
+
+      // Prepare params object for API request
+      const params: Record<string, string | number | undefined> = { 
+        page, 
+        pageSize 
+      };
+      
+      // Only add status param if it's not 'all'
+      if (status !== 'all') {
+        params.status = status;
+      }
+      
+      // Only add query param if it's not empty
+      if (query && query.trim() !== '') {
+        params.query = query;
+      }
+      
+      console.log('Request params:', params);
+
       // Call real API
-      const response = await api.get(`/facility/owner/${userId}`, {
-        params: { page, pageSize, status: status !== 'all' ? status : undefined, query: query || undefined }
-      });
+      const response = await api.get(`/facility/owner/${userId}`, { params });
+
+      console.log('API response status:', response.status);
+      console.log('Total facilities received:', response.data.length || 0);
 
       // Format the response to match our expected structure
       const facilities = response.data;
@@ -40,42 +66,8 @@ class FacilityService {
         pageSize
       };
     } catch (error) {
-      console.error('API call failed, falling back to mock data:', error);
-      
-      // Fallback to mock data
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          let filteredData = [...mockFacilities];
-          
-          // Apply filters
-          if (status !== 'all') {
-            filteredData = filteredData.filter(facility => facility.status === status);
-          }
-          
-          // Apply search
-          if (query) {
-            const lowerCaseQuery = query.toLowerCase();
-            filteredData = filteredData.filter(facility => 
-              facility.name.toLowerCase().includes(lowerCaseQuery) || 
-              facility.location.toLowerCase().includes(lowerCaseQuery)
-            );
-          }
-          
-          // Calculate total before pagination
-          const total = filteredData.length;
-          
-          // Apply pagination
-          const startIndex = (page - 1) * pageSize;
-          const paginatedData = filteredData.slice(startIndex, startIndex + pageSize);
-          
-          resolve({
-            data: paginatedData,
-            total,
-            page,
-            pageSize
-          });
-        }, 500);
-      });
+      console.error('API call failed in getMyFacilities:', error);
+      throw error;
     }
   }
 
@@ -86,175 +78,194 @@ class FacilityService {
       const response = await api.get(`/facility/${id}`);
       return response.data;
     } catch (error) {
-      console.error('API call failed, falling back to mock data:', error);
-      
-      // Fallback to mock data
-      return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          const facility = mockFacilities.find(facility => facility.id === id);
-          
-          if (facility) {
-            resolve(facility);
-          } else {
-            reject(new Error('Facility not found'));
-          }
-        }, 500);
-      });
+      console.error('API call failed:', error);
+      throw error;
     }
   }
 
-  // Create a new facility - updated to accept FormData or FacilityFormData
-  async createFacility(data: FormData | FacilityFormData): Promise<Facility> {
-    // In a real implementation, would make API call to create facility
-    // For mock, we just return the data with an ID
-    return new Promise(resolve => {
-      setTimeout(() => {
-        // Handle different input types
-        let facilityInfo;
-        let certificate;
-        let license: License[];
+  // Create a new facility - real API implementation
+  async createFacility(data: FormData | FacilityFormData): Promise<{ message: string }> {
+    try {
+      // If it's not a FormData object, we need to create one
+      let formDataToSend: FormData;
+      
+      if (!(data instanceof FormData)) {
+        formDataToSend = new FormData();
         
-        if (data instanceof FormData) {
-          // Extract data from FormData
-          const facilityInfoJson = data.get('facilityInfo');
-          facilityInfo = facilityInfoJson ? JSON.parse(facilityInfoJson.toString()) : {};
-          certificate = { verified: '', temporary: 'temp-url' };
-          license = [];
-        } else {
-          // Use FacilityFormData directly
-          facilityInfo = data.facilityInfo;
-          // Create certificate and license objects from file objects
-          certificate = { 
-            verified: '', 
-            temporary: data.certificateFile ? URL.createObjectURL(data.certificateFile) : '' 
-          };
-          license = data.licenseFiles.map(licenseFile => ({
-            verified: '',
-            temporary: URL.createObjectURL(licenseFile.file),
-            sportId: licenseFile.sportId
-          }));
+        // Add facility info as JSON
+        formDataToSend.append('facilityInfo', JSON.stringify(data.facilityInfo));
+        
+        // Add images
+        data.imageFiles.forEach((file) => {
+          formDataToSend.append('images', file);
+        });
+        
+        // Add certificate if exists
+        if (data.certificateFile) {
+          formDataToSend.append('certificate', data.certificateFile);
         }
         
-        // Convert input data to Facility
-        const newFacility = {
-          id: `new-${Date.now()}`,
-          name: facilityInfo.name,
-          description: facilityInfo.description,
-          location: facilityInfo.location,
-          openTime1: facilityInfo.openTime1,
-          closeTime1: facilityInfo.closeTime1,
-          openTime2: facilityInfo.openTime2 || '',
-          closeTime2: facilityInfo.closeTime2 || '',
-          openTime3: facilityInfo.openTime3 || '',
-          closeTime3: facilityInfo.closeTime3 || '',
-          numberOfShifts: facilityInfo.numberOfShifts,
-          sports: [], // Would be populated from API
-          status: 'pending',
-          avgRating: 0,
-          numberOfRatings: 0,
-          imagesUrl: [], // Would be populated from uploaded images URLs
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          certificate,
-          license
-        } as Facility;
-        
-        resolve(newFacility);
-      }, 1000);
-    });
+        // Add licenses if exist
+        if (data.licenseFiles && data.licenseFiles.length > 0) {
+          data.licenseFiles.forEach((licenseFile) => {
+            formDataToSend.append('licenses', licenseFile.file);
+          });
+          
+          // Add sport licenses mapping
+          const sportLicenses = {
+            sportIds: data.licenseFiles.map(license => license.sportId)
+          };
+          formDataToSend.append('sportLicenses', JSON.stringify(sportLicenses));
+        } else {
+          // Empty sport licenses if no licenses
+          formDataToSend.append('sportLicenses', JSON.stringify({}));
+        }
+      } else {
+        formDataToSend = data;
+      }
+      
+      const response = await api.post('/facility/create', formDataToSend, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('API call failed:', error);
+      throw error;
+    }
   }
   
-  // Upload facility images
+  // Upload facility images - real API implementation
   async uploadFacilityImages(facilityId: string, images: File[]): Promise<string[]> {
-    return new Promise(resolve => {
-      setTimeout(() => {
-        // Mock URLs for uploaded images
-        const imageUrls = images.map((_, index) => 
-          `https://example.com/facilities/${facilityId}/images/image${index + 1}.jpg`
-        );
-        resolve(imageUrls);
-      }, 1000);
-    });
+    try {
+      const formData = new FormData();
+      images.forEach((image) => {
+        formData.append('images', image);
+      });
+
+      const response = await api.put(`/facility/${facilityId}/update-images`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      return response.data.urls || [];
+    } catch (error) {
+      console.error('API call failed:', error);
+      throw error;
+    }
   }
   
-  // Upload certificate document - using the file parameter
+  // Upload certificate document
   async uploadCertificate(facilityId: string, file: File): Promise<string> {
-    return new Promise(resolve => {
-      setTimeout(() => {
-        // Here we would actually use the file for upload
-        console.log(`Uploading certificate file: ${file.name} for facility: ${facilityId}`);
-        const url = `https://example.com/facilities/${facilityId}/certificates/cert-${Date.now()}.pdf`;
-        resolve(url);
-      }, 800);
-    });
+    try {
+      const formData = new FormData();
+      formData.append('certificate', file);
+      
+      const response = await api.post(`/facility/${facilityId}/upload-certificate`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      return response.data.url;
+    } catch (error) {
+      console.error('API call failed:', error);
+      throw error;
+    }
   }
   
-  // Upload license document - using the file parameter
+  // Upload license document
   async uploadLicense(facilityId: string, sportId: number, file: File): Promise<string> {
-    return new Promise(resolve => {
-      setTimeout(() => {
-        // Here we would actually use the file for upload
-        console.log(`Uploading license file: ${file.name} for sport: ${sportId} in facility: ${facilityId}`);
-        const url = `https://example.com/facilities/${facilityId}/licenses/sport-${sportId}-${Date.now()}.pdf`;
-        resolve(url);
-      }, 800);
-    });
+    try {
+      const formData = new FormData();
+      formData.append('license', file);
+      formData.append('sportId', sportId.toString());
+      
+      const response = await api.post(`/facility/${facilityId}/upload-license`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      return response.data.url;
+    } catch (error) {
+      console.error('API call failed:', error);
+      throw error;
+    }
   }
 
   // Update an existing facility
   async updateFacility(id: string, facilityData: Partial<Facility>): Promise<Facility> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // In a real implementation, this would call an API to update the facility
-        console.log('Updated facility:', facilityData);
-        
-        // Mock response by combining with existing facility data
-        const existingFacility = mockFacilities.find(f => f.id === id);
-        const updatedFacility = {...existingFacility, ...facilityData, id} as Facility;
-        
-        resolve(updatedFacility);
-      }, 500);
-    });
+    try {
+      const response = await api.patch(`/facility/${id}`, facilityData);
+      return response.data;
+    } catch (error) {
+      console.error('API call failed:', error);
+      throw error;
+    }
   }
 
   // Delete a facility
   async deleteFacility(id: string): Promise<void> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // In a real implementation, this would call an API to delete the facility
-        console.log(`Deleted facility with ID: ${id}`);
-        resolve();
-      }, 500);
-    });
+    try {
+      await api.delete(`/facility/${id}`);
+    } catch (error) {
+      console.error('API call failed:', error);
+      throw error;
+    }
   }
 
-  // Get verification history for a facility
-  async getFacilityVerificationHistory(id: string): Promise<VerificationHistoryItem[]> {
-    const verificationData = mockVerificationHistory.find(item => item.facilityId === id);
-    return Promise.resolve(verificationData?.history || []);
-  }
 
   // Change status of a facility (active/inactive)
   async changeFacilityStatus(statusChange: FacilityStatusChange): Promise<void> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // In a real implementation, this would call an API to change the status
-        console.log('Status change request:', statusChange);
-        resolve();
-      }, 500);
-    });
+    try {
+      await api.patch(`/facility/${statusChange.facilityId}/status`, {
+        status: statusChange.newStatus,
+        note: statusChange.note
+      });
+    } catch (error) {
+      console.error('API call failed:', error);
+      throw error;
+    }
   }
 
   // Check if a facility name already exists
   async checkFacilityNameExists(name: string): Promise<FacilityNameCheckResponse> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // In a real implementation, this would call an API to check if the name exists
-        const exists = mockFacilities.some(f => 
-          f.name.toLowerCase() === name.toLowerCase());
-        resolve({ exists });
-      }, 300);
-    });
+    try {
+      const response = await api.get('/facility/check-name', {
+        params: { name }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('API call failed:', error);
+      throw error;
+    }
+  }
+
+  // Delete facility images
+  async deleteFacilityImages(facilityId: string, images: string[]): Promise<{ message: string }> {
+    try {
+      const response = await api.delete(`/facility/${facilityId}/delete-image`, {
+        data: { images }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('API call failed:', error);
+      throw error;
+    }
+  }
+  
+  // Get facilities for dropdown
+  async getFacilitiesDropdown(): Promise<FacilityDropdownItem[]> {
+    try {
+      const response = await api.get('/facility/drop-down');
+      return response.data;
+    } catch (error) {
+      console.error('API call failed:', error);
+      return [];
+    }
   }
 }
 

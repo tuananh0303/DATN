@@ -63,7 +63,12 @@ const BasicInfoForm = forwardRef<BasicInfoFormRef, BasicInfoFormProps>(({
   
   // Expose form methods to parent
   useImperativeHandle(ref, () => ({
-    validateFields: () => form.validateFields()
+    validateFields: async () => {
+      const values = await form.validateFields();
+      // Khi validate, đồng thời cập nhật formData
+      await handleSubmit(values);
+      return values;
+    }
   }));
   
   // Fetch provinces on mount
@@ -148,6 +153,18 @@ const BasicInfoForm = forwardRef<BasicInfoFormRef, BasicInfoFormProps>(({
     }
   }, [formData, form]);
   
+  // Theo dõi thay đổi form và tự động lưu
+  const handleFormValuesChange = (_changedValues: Partial<BasicInfoFormValues>, allValues: BasicInfoFormValues) => {
+    // Chỉ cập nhật khi đã có thông tin cơ bản
+    if (allValues.name && allValues.description) {
+      const timer = setTimeout(() => {
+        handleSubmit(allValues);
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  };
+  
   // Handle form submission
   const handleSubmit = async (values: BasicInfoFormValues) => {
     try {
@@ -157,19 +174,19 @@ const BasicInfoForm = forwardRef<BasicInfoFormRef, BasicInfoFormProps>(({
       let wardName = '';
       
       // Find province name
-      const province = provinces.find(p => p.code.toString() === values.provinceCode);
+      const province = provinces.find(p => p.code?.toString() === values.provinceCode);
       if (province) {
         provinceName = province.name;
       }
       
       // Find district name
-      const district = districts.find(d => d.code.toString() === values.districtCode);
+      const district = districts.find(d => d.code?.toString() === values.districtCode);
       if (district) {
         districtName = district.name;
       }
       
       // Find ward name
-      const ward = wards.find(w => w.code.toString() === values.wardCode);
+      const ward = wards.find(w => w.code?.toString() === values.wardCode);
       if (ward) {
         wardName = ward.name;
       }
@@ -196,6 +213,7 @@ const BasicInfoForm = forwardRef<BasicInfoFormRef, BasicInfoFormProps>(({
       
       // Update form data with new facility info
       updateFormData({ facilityInfo });
+      console.log("Đã cập nhật facilityInfo:", facilityInfo);
     } catch (error) {
       console.error('Error processing form submission:', error);
     }
@@ -334,6 +352,7 @@ const BasicInfoForm = forwardRef<BasicInfoFormRef, BasicInfoFormProps>(({
             range: '${label} phải nằm trong khoảng ${min} và ${max}',
           },
         }}
+        onValuesChange={handleFormValuesChange}
       >
         <Row gutter={16}>
           <Col span={24}>

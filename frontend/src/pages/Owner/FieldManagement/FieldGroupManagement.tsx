@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Select, Card, Typography, Modal, Form } from 'antd';
+import { Button, Select, Card, Typography, Modal, Form, message } from 'antd';
 import { ExclamationCircleOutlined, PlusOutlined, ArrowRightOutlined } from '@ant-design/icons';
-import { mockFieldGroups } from '@/mocks/field/Groupfield_Field';
-import { mockFacilitiesDropdown } from '@/mocks/facility/mockFacilities';
-import { FieldGroup, Field } from '@/types/field.type';
+import { FieldGroup } from '@/types/field.type';
 import fieldImage from '@/assets/Owner/content/field.png';
+import { fieldService } from '@/services/field.service';
+import { facilityService } from '@/services/facility.service';
+import { FacilityDropdownItem } from '@/services/facility.service';
 
 // Component imports
 import FieldGroupTable from './components/FieldGroupTable';
@@ -28,6 +29,7 @@ const FieldGroupManagement: React.FC = () => {
   const [fieldGroups, setFieldGroups] = useState<FieldGroup[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [facilities, setFacilities] = useState<FacilityDropdownItem[]>([]);
   
   // Modal states
   const [detailModalVisible, setDetailModalVisible] = useState(false);
@@ -36,42 +38,55 @@ const FieldGroupManagement: React.FC = () => {
   const [currentFieldGroup, setCurrentFieldGroup] = useState<FieldGroup | null>(null);
   const [currentFieldGroupId, setCurrentFieldGroupId] = useState<string>('');
 
-  // Lấy facilityId từ localStorage hoặc sử dụng cơ sở đầu tiên
+  // Lấy danh sách cơ sở từ API
   useEffect(() => {
-    const savedFacilityId = localStorage.getItem(SELECTED_FACILITY_KEY);
-    const initialFacilityId = savedFacilityId || (mockFacilitiesDropdown.length > 0 ? mockFacilitiesDropdown[0].id : '');
-    
-    if (initialFacilityId) {
-      setSelectedFacilityId(initialFacilityId);
-      fetchFieldGroups();
-    }
+    const fetchFacilities = async () => {
+      try {
+        const facilityList = await facilityService.getFacilitiesDropdown();
+        setFacilities(facilityList);
+
+        // Lấy facilityId từ localStorage hoặc sử dụng cơ sở đầu tiên
+        const savedFacilityId = localStorage.getItem(SELECTED_FACILITY_KEY);
+        const initialFacilityId = savedFacilityId || (facilityList.length > 0 ? facilityList[0].id : '');
+        
+        if (initialFacilityId) {
+          setSelectedFacilityId(initialFacilityId);
+          fetchFieldGroups(initialFacilityId);
+        }
+      } catch (err) {
+        console.error('Error fetching facilities:', err);
+        message.error('Không thể tải danh sách cơ sở. Vui lòng thử lại sau.');
+      }
+    };
+
+    fetchFacilities();
   }, []);
 
   // Fetch field groups based on facility ID
-  const fetchFieldGroups = () => {
+  const fetchFieldGroups = async (facilityId?: string) => {
+    const targetFacilityId = facilityId || selectedFacilityId;
+    if (!targetFacilityId) return;
+
     setLoading(true);
     setError(null);
     
-    // Simulate API call with setTimeout
-    setTimeout(() => {
-      try {
-        
-        // In real implementation, this would be an API call filtered by facilityId
-        setFieldGroups(mockFieldGroups);
-        setLoading(false);
-      } catch (error) {
-        setError('Có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại sau.');
-        setLoading(false);
-        console.error('Error fetching field groups:', error);
-      }
-    }, 500);
+    try {
+      const data = await fieldService.getFieldGroupsByFacilityId(targetFacilityId);
+      setFieldGroups(data);
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching field groups:', err);
+      setError('Có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại sau.');
+      setLoading(false);
+      message.error('Không thể tải danh sách nhóm sân. Vui lòng thử lại sau.');
+    }
   };
 
   // Handle facility change
   const handleFacilityChange = (value: string) => {
     setSelectedFacilityId(value);
     localStorage.setItem(SELECTED_FACILITY_KEY, value);
-    fetchFieldGroups();
+    fetchFieldGroups(value);
   };
 
   // Navigate to create field group page
@@ -88,8 +103,9 @@ const FieldGroupManagement: React.FC = () => {
       title: `Bạn có chắc chắn muốn ${actionText} sân này?`,
       icon: <ExclamationCircleOutlined />,
       content: currentStatus === 'active' 
-        ? 'Hệ thống sẽ kiểm tra xem có lịch đặt sân nào tại sân này không. Nếu có, bạn sẽ không thể đóng sân.' 
-        : 'Khi mở lại sân, khách hàng sẽ có thể đặt sân này.',
+        ? 'Hệ thống sẽ kiểm tra xem có lịch đặt sân này không. Nếu có, bạn sẽ không thể đóng sân.' 
+        : 'Khi mở lại sân, khách hàng sẽ có thể đặt sân này từ bây giờ.'
+      ,
       okText: `${actionText.charAt(0).toUpperCase() + actionText.slice(1)} sân`,
       okType: currentStatus === 'active' ? 'danger' : 'primary',
       cancelText: 'Hủy',
@@ -155,45 +171,54 @@ const FieldGroupManagement: React.FC = () => {
       okText: 'Xóa',
       okType: 'danger',
       cancelText: 'Hủy',
-      onOk() {
-        // Check for existing bookings (mock implementation)
-        const hasBooking = ["1", "3"].includes(fieldId);
+      onOk: async () => {
+        try {
+          // Check for existing bookings (mock implementation)
+          const hasBooking = ["1", "3"].includes(fieldId);
 
-        if (hasBooking) {
-          Modal.error({
-            title: 'Không thể xóa sân',
-            content: (
-              <div>
-                <p>Sân này đang có lịch đặt. Bạn không thể xóa sân khi có lịch đặt.</p>
-                <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
-                  <p><strong>Chi tiết lịch đặt:</strong></p>
-                  <p>- Đơn #{fieldId}001: Ngày 25/10/2023, 15:00 - 17:00</p>
-                  <p>- Đơn #{fieldId}002: Ngày 26/10/2023, 09:00 - 11:00</p>
+          if (hasBooking) {
+            Modal.error({
+              title: 'Không thể xóa sân',
+              content: (
+                <div>
+                  <p>Sân này đang có lịch đặt. Bạn không thể xóa sân khi có lịch đặt.</p>
+                  <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+                    <p><strong>Chi tiết lịch đặt:</strong></p>
+                    <p>- Đơn #{fieldId}001: Ngày 25/10/2023, 15:00 - 17:00</p>
+                    <p>- Đơn #{fieldId}002: Ngày 26/10/2023, 09:00 - 11:00</p>
+                  </div>
+                  <p style={{ marginTop: '10px' }}>Vui lòng liên hệ với khách hàng để hủy lịch đặt trước khi xóa sân.</p>
                 </div>
-                <p style={{ marginTop: '10px' }}>Vui lòng liên hệ với khách hàng để hủy lịch đặt trước khi xóa sân.</p>
-              </div>
-            )
-          });
-          return;
-        }
-
-        // Delete field if no booking conflicts
-        const updatedFieldGroups = fieldGroups.map(group => {
-          if (group.id === fieldGroupId) {
-            return {
-              ...group,
-              fields: group.fields.filter(field => field.id !== fieldId)
-            };
+              )
+            });
+            return;
           }
-          return group;
-        });
-        setFieldGroups(updatedFieldGroups);
-        
-        // Show success message
-        Modal.success({
-          title: 'Xóa sân thành công',
-          content: 'Sân đã được xóa khỏi hệ thống.'
-        });
+
+          // Call API to delete field
+          await fieldService.deleteField(Number(fieldId));
+          
+          // Update local state
+          const updatedFieldGroups = fieldGroups.map(group => {
+            if (group.id === fieldGroupId) {
+              return {
+                ...group,
+                fields: group.fields.filter(field => field.id !== fieldId)
+              };
+            }
+            return group;
+          });
+          
+          setFieldGroups(updatedFieldGroups);
+          
+          // Show success message
+          Modal.success({
+            title: 'Xóa sân thành công',
+            content: 'Sân đã được xóa khỏi hệ thống.'
+          });
+        } catch (err) {
+          console.error('Error deleting field:', err);
+          message.error('Không thể xóa sân. Sân có thể đang có lịch đặt hoặc đã xảy ra lỗi.');
+        }
       },
     });
   };
@@ -216,18 +241,24 @@ const FieldGroupManagement: React.FC = () => {
     }
   };
 
-  // Handle save edited field group
-  const handleSaveFieldGroup = (updatedFieldGroup: FieldGroup) => {
-    const updatedFieldGroups = fieldGroups.map(group => 
-      group.id === updatedFieldGroup.id ? updatedFieldGroup : group
-    );
-    setFieldGroups(updatedFieldGroups);
-    
-    // Show success message
-    Modal.success({
-      title: 'Cập nhật thành công',
-      content: 'Thông tin nhóm sân đã được cập nhật thành công.'
-    });
+  // Handle save field group after edit
+  const handleSaveFieldGroup = async (updatedFieldGroup: FieldGroup) => {
+    try {
+      // Call API to update field group
+      await fieldService.updateFieldGroup(updatedFieldGroup.id, updatedFieldGroup);
+      
+      // Update local state
+      const updatedFieldGroups = fieldGroups.map(group => 
+        group.id === updatedFieldGroup.id ? updatedFieldGroup : group
+      );
+      
+      setFieldGroups(updatedFieldGroups);
+      setEditModalVisible(false);
+      message.success('Cập nhật nhóm sân thành công');
+    } catch (err) {
+      console.error('Error updating field group:', err);
+      message.error('Không thể cập nhật nhóm sân. Vui lòng thử lại sau.');
+    }
   };
 
   // Handle delete field group
@@ -235,171 +266,115 @@ const FieldGroupManagement: React.FC = () => {
     confirm({
       title: 'Bạn có chắc chắn muốn xóa nhóm sân này?',
       icon: <ExclamationCircleOutlined />,
-      content: 'Hành động này không thể hoàn tác',
+      content: 'Hệ thống sẽ kiểm tra xem có lịch đặt sân nào tại nhóm sân này không. Nếu có, bạn sẽ không thể xóa nhóm sân.',
       okText: 'Xóa',
       okType: 'danger',
       cancelText: 'Hủy',
-      onOk() {
-        setFieldGroups(fieldGroups.filter(group => group.id !== id));
+      onOk: async () => {
+        try {
+          // Mock check for existing bookings
+          const fieldGroup = fieldGroups.find(group => group.id === id);
+          const hasActiveBookings = fieldGroup?.fields.some(field => 
+            ["1", "3", "5"].includes(field.id)
+          );
+
+          if (hasActiveBookings) {
+            Modal.error({
+              title: 'Không thể xóa nhóm sân',
+              content: (
+                <div>
+                  <p>Nhóm sân này đang có lịch đặt. Bạn không thể xóa nhóm sân khi có lịch đặt.</p>
+                  <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+                    <p><strong>Chi tiết lịch đặt:</strong></p>
+                    <p>- Đơn #10001: Ngày 25/10/2023, 15:00 - 17:00</p>
+                    <p>- Đơn #10002: Ngày 26/10/2023, 09:00 - 11:00</p>
+                  </div>
+                  <p style={{ marginTop: '10px' }}>Vui lòng liên hệ với khách hàng để hủy lịch đặt trước khi xóa nhóm sân.</p>
+                </div>
+              )
+            });
+            return;
+          }
+
+          // Call API to delete field group
+          await fieldService.deleteFieldGroup(id);
+          
+          // Update local state
+          setFieldGroups(fieldGroups.filter(group => group.id !== id));
+          
+          // Show success message
+          Modal.success({
+            title: 'Xóa nhóm sân thành công',
+            content: 'Nhóm sân đã được xóa khỏi hệ thống.'
+          });
+        } catch (err) {
+          console.error('Error deleting field group:', err);
+          message.error('Không thể xóa nhóm sân. Nhóm sân có thể đang có lịch đặt hoặc đã xảy ra lỗi.');
+        }
       },
     });
   };
 
-  // // Render peak time information
-  // const renderPeakTimes = (fieldGroup: FieldGroup) => {
-  //   const peakTimes = [];
-    
-  //   if (fieldGroup.peakStartTime1 && fieldGroup.peakEndTime1) {
-  //     peakTimes.push(
-  //       <div key="peak1">
-  //         {formatTime(fieldGroup.peakStartTime1)} - {formatTime(fieldGroup.peakEndTime1)}: {formatPrice(fieldGroup.priceIncrease1)}
-  //       </div>
-  //     );
-  //   }
-    
-  //   if (fieldGroup.peakStartTime2 && fieldGroup.peakEndTime2 && fieldGroup.priceIncrease2) {
-  //     peakTimes.push(
-  //       <div key="peak2">
-  //         {formatTime(fieldGroup.peakStartTime2)} - {formatTime(fieldGroup.peakEndTime2)}: {formatPrice(fieldGroup.priceIncrease2)}
-  //       </div>
-  //     );
-  //   }
-    
-  //   if (fieldGroup.peakStartTime3 && fieldGroup.peakEndTime3 && fieldGroup.priceIncrease3) {
-  //     peakTimes.push(
-  //       <div key="peak3">
-  //         {formatTime(fieldGroup.peakStartTime3)} - {formatTime(fieldGroup.peakEndTime3)}: {formatPrice(fieldGroup.priceIncrease3)}
-  //       </div>
-  //     );
-  //   }
-    
-  //   if (peakTimes.length === 0) {
-  //     return <span>-</span>;
-  //   }
-    
-  //   // Luôn hiển thị dropdown và số lượng giờ cao điểm kể cả chỉ có 1 giờ
-  //   return (
-  //     <Dropdown
-  //       menu={{
-  //         items: peakTimes.map((time, index) => ({
-  //           key: `peak-${index}`,
-  //           label: <div>{time}</div>,
-  //         })),
-  //       }}
-  //       placement="bottomLeft"
-  //       arrow
-  //     >
-  //       <Button type="link" style={{ padding: '0', height: 'auto' }}>
-  //         {peakTimes[0]} <span style={{ color: '#1890ff', fontWeight: 'bold' }}>[{peakTimes.length}]</span>
-  //       </Button>
-  //     </Dropdown>
-  //   );
-  // };
-
-  // // Render sports information
-  // const renderSports = (fieldGroup: FieldGroup) => {
-  //   const sports = fieldGroup.sports;
-    
-  //   if (sports.length === 0) {
-  //     return <span>-</span>;
-  //   }
-    
-  //   if (sports.length === 1) {
-  //     return (
-  //       <Tag 
-  //         color="blue" 
-  //         style={{ margin: '2px', borderRadius: '4px', padding: '2px 8px' }}
-  //       >
-  //         {sports[0].name}
-  //       </Tag>
-  //     );
-  //   }
-    
-  //   // Nếu có từ 2 loại sân trở lên, hiển thị "Tổng hợp"
-  //   return (
-  //     <Dropdown
-  //       menu={{
-  //         items: sports.map(sport => ({
-  //           key: `sport-${sport.id}`,
-  //           label: (
-  //             <Tag 
-  //               color="blue" 
-  //               style={{ margin: '2px', borderRadius: '4px', padding: '2px 8px' }}
-  //             >
-  //               {sport.name}
-  //             </Tag>
-  //           ),
-  //         })),
-  //       }}
-  //       placement="bottomLeft"
-  //       arrow
-  //     >
-  //       <Button type="link" style={{ padding: '0', height: 'auto' }}>
-  //         <Tag 
-  //           color="purple" 
-  //           style={{ margin: '2px', borderRadius: '4px', padding: '2px 8px' }}
-  //         >
-  //           Tổng hợp <span style={{ color: 'purple', fontWeight: 'bold', marginLeft: '4px' }}>[{sports.length}]</span>
-  //         </Tag>
-  //       </Button>
-  //     </Dropdown>
-  //   );
-  // };
-
-  // Show modal to add a new field
+  // Show modal to add new fields to a field group
   const showAddFieldModal = (fieldGroupId: string) => {
     setCurrentFieldGroupId(fieldGroupId);
     setAddFieldModalVisible(true);
-    form.resetFields();
   };
 
-  // Handle add field confirmation
+  // Handle adding new fields to a field group
   const handleAddField = () => {
-    confirm({
-      title: 'Xác nhận thêm sân mới',
-      icon: <ExclamationCircleOutlined />,
-      content: (
-        <div>
-          <p>Bạn xác nhận muốn thêm sân mới vào nhóm sân này?</p>
-          <p style={{ marginTop: '10px', fontWeight: 'bold' }}>Lưu ý:</p>
-          <p>Việc thêm sân mới đồng nghĩa với việc bạn xác nhận sân này có thực và thuộc quyền quản lý của cơ sở. Bạn chịu hoàn toàn trách nhiệm về tính xác thực của thông tin này.</p>
-        </div>
-      ),
-      okText: 'Xác nhận thêm',
-      okType: 'primary',
-      cancelText: 'Hủy',
-      onOk() {
-        form.validateFields().then(values => {
-          // Create new field with random ID
-          const newField: Field = {
-            id: `field-${Date.now()}`,
-            name: values.fieldName,
-            status: 'active'
-          };
-
-          // Update state with new field
-          const updatedFieldGroups = fieldGroups.map(group => {
-            if (group.id === currentFieldGroupId) {
-              return {
-                ...group,
-                fields: [...group.fields, newField]
-              };
+    form
+      .validateFields()
+      .then((values) => {
+        const fields = values.fields.map((field: string) => ({ name: field }));
+        
+        confirm({
+          title: 'Xác nhận thêm sân mới',
+          icon: <ExclamationCircleOutlined />,
+          content: (
+            <div>
+              <p>Bạn xác nhận muốn thêm sân mới vào nhóm sân này?</p>
+              <ul>
+                {fields.map((field: { name: string }, index: number) => (
+                  <li key={index}>{field.name}</li>
+                ))}
+              </ul>
+              <p style={{ marginTop: '10px', fontWeight: 'bold' }}>Lưu ý:</p>
+              <p>Việc thêm sân mới đồng nghĩa với việc bạn xác nhận sân này có thực và thuộc quyền quản lý của cơ sở. Bạn chịu hoàn toàn trách nhiệm về tính xác thực của thông tin này.</p>
+            </div>
+          ),
+          okText: 'Xác nhận thêm',
+          okType: 'primary',
+          cancelText: 'Hủy',
+          onOk: async () => {
+            try {
+              // Call API to create fields
+              await fieldService.createFields(currentFieldGroupId, fields);
+              
+              // Refresh the field groups data
+              fetchFieldGroups();
+              
+              // Reset and close modal
+              form.resetFields();
+              setAddFieldModalVisible(false);
+              
+              // Show success message
+              Modal.success({
+                title: 'Thêm sân thành công',
+                content: `${fields.length > 1 
+                  ? `${fields.length} sân` 
+                  : `Sân "${fields[0].name}"`} đã được thêm vào nhóm sân.`
+              });
+            } catch (err) {
+              console.error('Error adding fields:', err);
+              message.error('Không thể thêm sân. Vui lòng thử lại sau.');
             }
-            return group;
-          });
-
-          setFieldGroups(updatedFieldGroups);
-          setAddFieldModalVisible(false);
-          form.resetFields();
-
-          // Show success message
-          Modal.success({
-            title: 'Thêm sân thành công',
-            content: `Sân "${values.fieldName}" đã được thêm vào nhóm sân.`
-          });
+          },
         });
-      },
-    });
+      })
+      .catch((info) => {
+        console.log('Validate Failed:', info);
+      });
   };
 
   return (
@@ -445,7 +420,7 @@ const FieldGroupManagement: React.FC = () => {
             onChange={handleFacilityChange}
             popupMatchSelectWidth={false}
           >
-            {mockFacilitiesDropdown.map((facility) => (
+            {facilities.map((facility) => (
               <Select.Option key={facility.id} value={facility.id}>
                 {facility.name}
               </Select.Option>

@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Select, Card, Typography, Button, Table, Empty, notification, Spin, Checkbox, Tag, Alert } from 'antd';
-import { PlusOutlined, InfoCircleOutlined, ArrowLeftOutlined } from '@ant-design/icons';
-import { mockFacilitiesDropdown } from '@/mocks/facility/mockFacilities';
+import { Select, Card, Typography, Button, Table, Empty, notification, Spin, Checkbox, Tag, Modal } from 'antd';
+import { PlusOutlined, ArrowLeftOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import { getSportNameInVietnamese } from '@/utils/translateSport';
 import { sportService } from '@/services/sport.service';
+import { fieldService } from '@/services/field.service';
+import { facilityService } from '@/services/facility.service';
 import { Sport } from '@/types/sport.type';
-import { FieldGroup, FieldGroupFormData, Field } from '@/types/field.type';
+import { FieldGroup, FieldGroupFormData } from '@/types/field.type';
+import { FacilityDropdownItem } from '@/services/facility.service';
 import FieldGroupForm from './components/FieldGroupForm';
-import { mockFieldGroups } from '@/mocks/field/Groupfield_Field';
-import { COMPATIBLE_SPORT_GROUPS } from '@/mocks/default/defaultData';
 import { useNavigate } from 'react-router-dom';
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -39,29 +39,6 @@ const COMPOSITE_SPORT: Sport = {
   // Thêm các thuộc tính khác nếu cần
 };
 
-// Mock data field groups tương ứng với từng loại hình thể thao
-const mockFieldGroupsBySport: Record<string, FieldGroup[]> = {
-  // Cho các loại thể thao riêng, chỉ hiển thị các nhóm sân CHỨA DUY NHẤT loại thể thao đó
-  football: mockFieldGroups.filter(group => group.sports.length === 1 && group.sports.some(sport => 
-    sport.name.toLowerCase() === 'football' || sport.name.toLowerCase() === 'bóng đá')),
-  basketball: mockFieldGroups.filter(group => group.sports.length === 1 && group.sports.some(sport => 
-    sport.name.toLowerCase() === 'basketball' || sport.name.toLowerCase() === 'bóng rổ')),
-  volleyball: mockFieldGroups.filter(group => group.sports.length === 1 && group.sports.some(sport => 
-    sport.name.toLowerCase() === 'volleyball' || sport.name.toLowerCase() === 'bóng chuyền')),
-  tennis: mockFieldGroups.filter(group => group.sports.length === 1 && group.sports.some(sport => 
-    sport.name.toLowerCase() === 'tennis')),
-  badminton: mockFieldGroups.filter(group => group.sports.length === 1 && group.sports.some(sport => 
-    sport.name.toLowerCase() === 'badminton' || sport.name.toLowerCase() === 'cầu lông')),
-  tabletennis: mockFieldGroups.filter(group => group.sports.length === 1 && group.sports.some(sport => 
-    sport.name.toLowerCase() === 'tabletennis' || sport.name.toLowerCase() === 'bóng bàn')),
-  pickleball: mockFieldGroups.filter(group => group.sports.length === 1 && group.sports.some(sport => 
-    sport.name.toLowerCase() === 'pickleball')),
-  golf: mockFieldGroups.filter(group => group.sports.length === 1 && group.sports.some(sport => 
-    sport.name.toLowerCase() === 'golf')),
-  // Đối với "Tổng hợp", hiển thị tất cả các nhóm sân có từ 2 môn trở lên
-  composite: mockFieldGroups.filter(group => group.sports.length > 1),
-};
-
 const CreateFieldGroup: React.FC = () => {
   const isMounted = useRef<boolean>(false);
   const navigate = useNavigate();
@@ -73,22 +50,34 @@ const CreateFieldGroup: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isAddModalVisible, setIsAddModalVisible] = useState<boolean>(false);
   const [currentSportForModal, setCurrentSportForModal] = useState<Sport | null>(null);
+  const [facilities, setFacilities] = useState<FacilityDropdownItem[]>([]);
+  const [fieldGroups, setFieldGroups] = useState<Record<string, FieldGroup[]>>({});
+  const [loadingFieldGroups, setLoadingFieldGroups] = useState<boolean>(false);
   
-  // Fetch sports data
+  // Fetch facilities and sports data
   useEffect(() => {
     // Sử dụng cờ để tránh fetch 2 lần trong Strict Mode
     if (!isMounted.current) {
       isMounted.current = true;
       
-      const fetchSports = async () => {
+      const fetchInitialData = async () => {
         setIsLoading(true);
         try {
-          // sportService.getSport() đã trả về response.data rồi
-          const data = await sportService.getSport();          
+          // Fetch facilities
+          const facilitiesData = await facilityService.getFacilitiesDropdown();
+          setFacilities(facilitiesData);
+          
+          // Set default facility if available
+          if (facilitiesData.length > 0) {
+            setSelectedFacilityId(facilitiesData[0].id);
+          }
+          
+          // Fetch sports
+          const sportsData = await sportService.getSport();          
           // Kiểm tra data có phải là mảng và có phần tử không
-          if (Array.isArray(data) && data.length > 0) {
+          if (Array.isArray(sportsData) && sportsData.length > 0) {
             // Thêm mục "Tổng hợp" vào danh sách thể thao
-            setSports([...data, COMPOSITE_SPORT]);
+            setSports([...sportsData, COMPOSITE_SPORT]);
           } else {
             // Chỉ sử dụng mock data khi API trả về mảng rỗng
             setSports([...MOCK_SPORTS, COMPOSITE_SPORT]);
@@ -96,9 +85,9 @@ const CreateFieldGroup: React.FC = () => {
         } catch (error) {
           notification.error({
             message: 'Lỗi',
-            description: 'Không thể tải danh sách loại hình thể thao'
+            description: 'Không thể tải danh sách cơ sở hoặc loại hình thể thao'
           });
-          console.error('Error fetching sports:', error);
+          console.error('Error fetching initial data:', error);
           // Sử dụng mock data khi API bị lỗi
           setSports([...MOCK_SPORTS, COMPOSITE_SPORT]);
         } finally {
@@ -106,9 +95,56 @@ const CreateFieldGroup: React.FC = () => {
         }
       };
       
-      fetchSports();
+      fetchInitialData();
     }
   }, []);
+
+  // Fetch field groups when facility changes
+  useEffect(() => {
+    if (selectedFacilityId) {
+      fetchFieldGroupsByFacility();
+    }
+  }, [selectedFacilityId]);
+  
+  // Fetch field groups for selected facility
+  const fetchFieldGroupsByFacility = async () => {
+    if (!selectedFacilityId) return;
+    
+    setLoadingFieldGroups(true);
+    try {
+      const fieldGroupsData = await fieldService.getFieldGroupsByFacilityId(selectedFacilityId);
+      
+      // Organize field groups by sport
+      const fieldGroupsBySport: Record<string, FieldGroup[]> = {
+        composite: []
+      };
+      
+      // Process each field group to categorize by sport
+      fieldGroupsData.forEach(group => {
+        // Groups with multiple sports go to composite
+        if (group.sports.length > 1) {
+          fieldGroupsBySport.composite.push(group);
+        } else if (group.sports.length === 1) {
+          // For single sport field groups
+          const sportName = group.sports[0].name.toLowerCase();
+          if (!fieldGroupsBySport[sportName]) {
+            fieldGroupsBySport[sportName] = [];
+          }
+          fieldGroupsBySport[sportName].push(group);
+        }
+      });
+      
+      setFieldGroups(fieldGroupsBySport);
+    } catch (error) {
+      console.error('Error fetching field groups:', error);
+      notification.error({
+        message: 'Lỗi',
+        description: 'Không thể tải danh sách nhóm sân'
+      });
+    } finally {
+      setLoadingFieldGroups(false);
+    }
+  };
   
   // Handle facility selection
   const handleFacilityChange = (value: string) => {
@@ -136,7 +172,7 @@ const CreateFieldGroup: React.FC = () => {
   // Lấy danh sách nhóm sân cho một loại thể thao cụ thể
   const getFieldGroupsForSport = (sport: Sport): FieldGroup[] => {
     const sportName = sport.name.toLowerCase();
-    return mockFieldGroupsBySport[sportName] || [];
+    return fieldGroups[sportName] || [];
   };
   
   // Lấy tên hiển thị cho loại thể thao
@@ -161,19 +197,59 @@ const CreateFieldGroup: React.FC = () => {
   };
   
   // Handle form submission
-  const handleFormSubmit = (formData: FieldGroupFormData) => {
-    // In real app, you would save the field group data
-    console.log('Form data:', formData);
+  const handleFormSubmit = async (formData: FieldGroupFormData) => {
+    if (!selectedFacilityId) {
+      notification.warning({
+        message: 'Chưa chọn cơ sở',
+        description: 'Vui lòng chọn cơ sở trước khi tạo nhóm sân.'
+      });
+      return;
+    }
     
-    notification.success({
-      message: 'Thành công',
-      description: 'Đã tạo nhóm sân mới thành công!'
+    // Add facilityId to the formData
+    formData.facilityId = selectedFacilityId;
+    
+    // Show confirmation modal
+    Modal.confirm({
+      title: 'Xác nhận tạo nhóm sân',
+      icon: <ExclamationCircleOutlined />,
+      content: (
+        <div>
+          <p>Bạn có chắc chắn muốn tạo nhóm sân <strong>{formData.name}</strong> với các thông tin sau không?</p>
+          <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+            <p><strong>Kích thước:</strong> {formData.dimension}</p>
+            <p><strong>Mặt sân:</strong> {formData.surface}</p>
+            <p><strong>Giá cơ bản:</strong> {formData.basePrice.toLocaleString('de-DE')} VNĐ</p>
+            <p><strong>Số sân:</strong> {formData.fields.length}</p>
+          </div>
+        </div>
+      ),
+      okText: 'Tạo nhóm sân',
+      okType: 'primary',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          // Call API to create field group
+          await fieldService.createFieldGroups(selectedFacilityId, [formData]);
+          
+          notification.success({
+            message: 'Thành công',
+            description: 'Đã tạo nhóm sân mới thành công!'
+          });
+          
+          // Close modal and refresh field groups
+          setIsAddModalVisible(false);
+          fetchFieldGroupsByFacility();
+          
+        } catch (error) {
+          console.error('Error creating field group:', error);
+          notification.error({
+            message: 'Lỗi',
+            description: 'Không thể tạo nhóm sân. Vui lòng thử lại sau.'
+          });
+        }
+      }
     });
-    
-    setIsAddModalVisible(false);
-    
-    // Optionally navigate back to field management
-    // navigate('/owner/field-management');
   };
   
   // Column definition for existing field groups table
@@ -199,27 +275,30 @@ const CreateFieldGroup: React.FC = () => {
       key: 'basePrice',
       render: (price: number) => `${price.toLocaleString('de-DE')} VNĐ`,
     },
-    {
-      title: 'Số sân',
-      dataIndex: 'fields',
-      key: 'fieldCount',
-      render: (fields: Field[]) => fields.length,
-    },
-    {
-      title: 'Loại hình thể thao',
-      dataIndex: 'sports',
-      key: 'sports',
-      render: (sports: Sport[]) => (
-        <div className="flex flex-wrap gap-1">
-          {sports.map(sport => (
-            <Tag key={sport.id} color="blue">
-              {getSportNameInVietnamese(sport.name)}
-            </Tag>
-          ))}
-        </div>
-      ),
-    },
   ];
+  
+  // Render field groups table with loading state
+  const renderFieldGroupsTable = (sport: Sport) => {
+    const groups = getFieldGroupsForSport(sport);
+    
+    if (loadingFieldGroups) {
+      return <Spin tip="Đang tải dữ liệu..." />;
+    }
+    
+    if (groups.length === 0) {
+      return <Empty description="Không có nhóm sân nào" />;
+    }
+    
+    return (
+      <Table
+        dataSource={groups}
+        columns={columns}
+        rowKey="id"
+        pagination={false}
+        size="small"
+      />
+    );
+  };
   
   return (
     <div className="p-6 md:p-8">
@@ -245,7 +324,7 @@ const CreateFieldGroup: React.FC = () => {
             onChange={handleFacilityChange}
             value={selectedFacilityId || undefined}
           >
-            {mockFacilitiesDropdown.map(facility => (
+            {facilities.map(facility => (
               <Option key={facility.id} value={facility.id}>
                 {facility.name}
               </Option>
@@ -328,115 +407,29 @@ const CreateFieldGroup: React.FC = () => {
               ))}
             </div>
             
-            {/* Hiển thị danh sách nhóm sân cho từng loại thể thao */}
-            {selectedSports.length > 0 ? (
-              <div className="space-y-6">
-                {selectedSports.map(sport => {
-                  const sportFieldGroups = getFieldGroupsForSport(sport);
-                  return (
-                    <div key={sport.id} className="border rounded-lg p-4">
-                      <div className="flex justify-between items-center mb-4">
-                        <Title level={5} style={{ margin: 0 }}>
-                          Danh sách nhóm sân {getSportDisplayName(sport)}
-                        </Title>
-                        
-                        <Button 
-                          type="primary" 
-                          icon={<PlusOutlined />} 
-                          onClick={() => showAddModal(sport)}
-                        >
-                          Thêm nhóm sân {getSportDisplayName(sport)}
-                        </Button>
-                      </div>
-                      
-                      {/* Add suggested combinations for composite sport */}
-                      {sport.id === COMPOSITE_SPORT.id && (
-                        <Alert
-                          type="info"
-                          message={
-                            <div className="mb-4">
-                              <div className="font-medium mb-2">
-                                <InfoCircleOutlined className="mr-2" />
-                                Gợi ý các loại sân tổng hợp phổ biến
-                              </div>
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                                {COMPATIBLE_SPORT_GROUPS.map(group => (
-                                  <Card 
-                                    key={group.id} 
-                                    size="small" 
-                                    className="cursor-pointer hover:shadow-md"
-                                    onClick={() => {
-                                      // Find sport IDs matching the sport names
-                                      const sportIds = group.sports
-                                        .map(sportName => {
-                                          const matchingSport = MOCK_SPORTS.find(
-                                            s => s.name.toLowerCase() === sportName.toLowerCase()
-                                          );
-                                          return matchingSport?.id;
-                                        })
-                                        .filter(Boolean) as number[];
-                                      
-                                      if (sportIds.length > 0) {
-                                        // Open add modal with preselected sports
-                                        setCurrentSportForModal(COMPOSITE_SPORT);
-                                        setIsAddModalVisible(true);
-                                      }
-                                    }}
-                                  >
-                                    <div className="font-medium text-sm">{group.name}</div>
-                                    <div className="text-xs text-gray-500">{group.description}</div>
-                                    <div className="flex flex-wrap gap-1 mt-1">
-                                      {group.sports.map((sportName, idx) => {
-                                        const matchingSport = MOCK_SPORTS.find(
-                                          s => s.name.toLowerCase() === sportName.toLowerCase()
-                                        );
-                                        return matchingSport ? (
-                                          <Tag key={idx} color="blue">
-                                            {getSportNameInVietnamese(matchingSport.name)}
-                                          </Tag>
-                                        ) : null;
-                                      })}
-                                    </div>
-                                  </Card>
-                                ))}
-                              </div>
-                            </div>
-                          }
-                        />
-                      )}
-                      
-                      {sportFieldGroups.length > 0 ? (
-                        <Table 
-                          dataSource={sportFieldGroups}
-                          columns={columns}
-                          rowKey="id"
-                          pagination={false}
-                          size="small"
-                        />
-                      ) : (
-                        <Empty 
-                          description={`Chưa có nhóm sân ${getSportDisplayName(sport)} nào`}
-                          image={Empty.PRESENTED_IMAGE_SIMPLE}
-                        >
-                          <Button 
-                            type="primary" 
-                            icon={<PlusOutlined />} 
-                            onClick={() => showAddModal(sport)}
-                          >
-                            Thêm nhóm sân {getSportDisplayName(sport)} đầu tiên
-                          </Button>
-                        </Empty>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <Empty 
-                description="Chưa có nhóm sân nào thuộc loại hình này tại cơ sở đã chọn"
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-              />
-            )}
+            {/* Hiển thị danh sách nhóm sân và nút thêm */}
+            {selectedSports.map(sport => {
+              const sportName = getSportDisplayName(sport);
+              
+              return (
+                <div className="mb-8" key={`sport-${sport.id}`}>
+                  <div className="flex justify-between items-center mb-4">
+                    <Title level={4} className="m-0">
+                      Nhóm sân {sportName}
+                    </Title>
+                    <Button 
+                      type="primary" 
+                      icon={<PlusOutlined />} 
+                      onClick={() => showAddModal(sport)}
+                    >
+                      Thêm nhóm sân {sportName}
+                    </Button>
+                  </div>
+                  
+                  {renderFieldGroupsTable(sport)}
+                </div>
+              );
+            })}
           </>
         )}
       </Card>

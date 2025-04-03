@@ -22,7 +22,8 @@ import {
   DeleteOutlined, 
   EyeOutlined,
   EnvironmentOutlined,
-  StarOutlined
+  StarOutlined,
+  DollarOutlined
 } from '@ant-design/icons';
 import { Facility } from '@/types/facility.type';
 import { getSportNameInVietnamese } from '@/utils/translateSport';
@@ -30,13 +31,9 @@ import { facilityService } from '@/services/facility.service';
 import FacilityDetail from './components/FacilityDetail';
 import FacilityEdit from './components/FacilityEdit';
 import OperatingHoursDisplay from '@/components/shared/OperatingHoursDisplay';
-import { useDispatch } from 'react-redux';
-import { AppDispatch } from '@/store';
-import { fetchOwnerFacilities } from '@/store/slices/facilitySlice';
 
 const FacilityManagement: React.FC = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch<AppDispatch>();
   
   // Local state
   const [facilities, setFacilities] = useState<Facility[]>([]);
@@ -57,10 +54,31 @@ const FacilityManagement: React.FC = () => {
   
   // Fetch facilities on component mount
   useEffect(() => {
-    fetchFacilities(currentPage, pageSize, activeFilter, searchQuery);
-  }, [currentPage, pageSize, activeFilter, searchQuery]);
+    // Chỉ gọi API khi thay đổi trang, pageSize hoặc searchQuery
+    fetchFacilities(currentPage, pageSize, searchQuery);
+  }, [currentPage, pageSize, searchQuery]);
   
-  const fetchFacilities = async (page: number, pageSize: number, status: string = 'all', query: string = '') => {
+  // Theo dõi thay đổi của activeFilter để lọc dữ liệu từ facilities
+  useEffect(() => {
+    filterFacilitiesByStatus();
+  }, [activeFilter, facilities]);
+  
+  // Hàm filter facilities theo status ở phía client
+  const filterFacilitiesByStatus = () => {
+    if (!facilities || facilities.length === 0) return;
+    
+    console.log(`Filtering facilities client-side by status: ${activeFilter}`);
+    
+    if (activeFilter === 'all') {
+      setFilteredFacilities(facilities);
+    } else {
+      const filtered = facilities.filter(facility => facility.status === activeFilter);
+      console.log(`Found ${filtered.length} facilities with status ${activeFilter}`);
+      setFilteredFacilities(filtered);
+    }
+  };
+  
+  const fetchFacilities = async (page: number, pageSize: number, query: string = '') => {
     try {
       setLoading(true);
       // Get the userId from localStorage to fetch facilities for this owner
@@ -71,19 +89,42 @@ const FacilityManagement: React.FC = () => {
         return;
       }
       
-      // Use the service which now uses the real API with fallback to mock data
-      const response = await facilityService.getMyFacilities(page, pageSize, status, query);
+      console.log(`Fetching all facilities, query: "${query}", page: ${page}, pageSize: ${pageSize}`);
       
-      // Also dispatch the Redux action (this is optional, based on if other components need this data)
-      dispatch(fetchOwnerFacilities(userId));
+      // Gọi API không có tham số status để lấy tất cả dữ liệu
+      const response = await facilityService.getMyFacilities(page, pageSize, 'all', query);
       
-      // Update local state with the data
-      setFacilities(response.data || response);
-      setFilteredFacilities(response.data || response);
-      setTotalItems(response.total || response.data.length);
+      console.log('API response:', response);
+      
+      // Kiểm tra xem response có dữ liệu không
+      if (!response.data && !Array.isArray(response)) {
+        console.error('API response does not contain data');
+        setFacilities([]);
+        setFilteredFacilities([]);
+        setTotalItems(0);
+        return;
+      }
+      
+      // Lưu tất cả dữ liệu vào state facilities
+      const facilitiesData = response.data || response;
+      console.log(`Received ${facilitiesData.length} total facilities`);
+      
+      setFacilities(facilitiesData);
+      setTotalItems(response.total || facilitiesData.length);
+      
+      // Filter dữ liệu theo activeFilter hiện tại ngay sau khi nhận được dữ liệu mới
+      if (activeFilter === 'all') {
+        setFilteredFacilities(facilitiesData);
+      } else {
+        const filtered = facilitiesData.filter(facility => facility.status === activeFilter);
+        console.log(`Filtered to ${filtered.length} facilities with status ${activeFilter}`);
+        setFilteredFacilities(filtered);
+      }
     } catch (error) {
       console.error('Failed to fetch facilities:', error);
       message.error('Không thể tải danh sách cơ sở');
+      setFacilities([]);
+      setFilteredFacilities([]);
     } finally {
       setLoading(false);
     }
@@ -110,9 +151,11 @@ const FacilityManagement: React.FC = () => {
   }));
   
   const handleFilterClick = (filter: string) => {
+    console.log(`Filter changed to: ${filter}`);
     setActiveFilter(filter);
     setCurrentPage(1); // Reset về trang đầu tiên khi thay đổi filter
-  }; 
+    // Không cần gọi lại API, chỉ cần filter dữ liệu đã có
+  };
   
   const handleCreateFacility = () => {
     navigate('/owner/create-facility');
@@ -140,7 +183,7 @@ const FacilityManagement: React.FC = () => {
       setDeleteLoading(true);
       await facilityService.deleteFacility(selectedFacilityId);
       message.success('Cơ sở đã được xóa thành công');
-      fetchFacilities(currentPage, pageSize, activeFilter, searchQuery);
+      fetchFacilities(currentPage, pageSize, searchQuery);
       setDeleteModalVisible(false);
     } catch (error) {
       console.error('Failed to delete facility:', error);
@@ -160,7 +203,7 @@ const FacilityManagement: React.FC = () => {
     setEditModalVisible(false);
     setSelectedFacilityId(null);
     if (updated) {
-      fetchFacilities(currentPage, pageSize, activeFilter, searchQuery);
+      fetchFacilities(currentPage, pageSize, searchQuery);
     }
   };
 
@@ -319,6 +362,29 @@ const FacilityManagement: React.FC = () => {
                         <EnvironmentOutlined className="mr-2 mt-1 flex-shrink-0" />
                         <p className="line-clamp-2 text-sm">{facility.location}</p>
                       </div>
+                      
+                      {/* Khoảng giá */}
+                      <div className="flex items-center text-blue-600 font-medium">
+                        <DollarOutlined className="mr-2 text-green-600" />
+                        {facility.minPrice !== undefined && facility.maxPrice !== undefined ? (
+                          <>
+                            <span className="text-blue-600 font-medium">
+                              {facility.minPrice.toLocaleString('vi-VN', { useGrouping: true }).replace(/,/g, '.')}đ - {facility.maxPrice.toLocaleString('vi-VN', { useGrouping: true }).replace(/,/g, '.')}đ
+                            </span>
+                            <span className="text-gray-500 text-xs ml-1">/giờ</span>
+                          </>
+                        ) : facility.fieldGroups && facility.fieldGroups.length > 0 ? (
+                          <>
+                            <span className="text-blue-600 font-medium">
+                              {Math.min(...facility.fieldGroups.map(g => g.basePrice)).toLocaleString('vi-VN', { useGrouping: true }).replace(/,/g, '.')}đ - {Math.max(...facility.fieldGroups.map(g => g.basePrice)).toLocaleString('vi-VN', { useGrouping: true }).replace(/,/g, '.')}đ
+                            </span>
+                            <span className="text-gray-500 text-xs ml-1">/giờ</span>
+                          </>
+                        ) : (
+                          <span className="text-gray-500">Chưa có thông tin giá</span>
+                        )}
+                      </div>
+                                             
                     </div>
                   </Card>
                 </Col>

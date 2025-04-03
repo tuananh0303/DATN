@@ -38,12 +38,6 @@ import { Facility } from '@/types/facility.type';
 import { facilityService } from '@/services/facility.service';
 import { Sport } from '@/types/sport.type';
 import { getSportNameInVietnamese } from '@/utils/translateSport';
-import { 
-  getFacilityFieldGroups, 
-  getFacilityServices, 
-  getFacilityEvents, 
-  getFacilityVouchers
-} from '@/mocks/facility/mockFacilities';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 
@@ -71,6 +65,22 @@ interface FacilityFormValues {
   status?: string;
 }
 
+// Khai báo interface cho file upload từ Ant Design
+interface UploadFile {
+  uid: string;
+  name: string;
+  status?: 'uploading' | 'done' | 'error' | 'removed';
+  url?: string;
+  thumbUrl?: string;
+  originFileObj?: File;
+  response?: unknown;
+  error?: unknown;
+  linkProps?: unknown;
+  type?: string;
+  size?: number;
+  percent?: number;
+}
+
 const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
   const [form] = Form.useForm<FacilityFormValues>();
   const [facility, setFacility] = useState<Facility | null>(null);
@@ -81,24 +91,8 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
   const [certificateFile, setCertificateFile] = useState<File | null>(null);
   const [licenseFiles, setLicenseFiles] = useState<Record<number, File>>({});
   const [numberOfShifts, setNumberOfShifts] = useState<number>(1);
+  const [uploadFileList, setUploadFileList] = useState<UploadFile[]>([]);
   const navigate = useNavigate();
-  
-  // Mock sports for now
-  const mockSports: Sport[] = [
-    { id: 1, name: 'football' },
-    { id: 2, name: 'tennis' },
-    { id: 3, name: 'futsal' },
-    { id: 4, name: 'basketball' },
-    { id: 5, name: 'badminton' },
-    { id: 6, name: 'swimming' },
-    { id: 7, name: 'golf' }
-  ];
-  
-  // Get mock data for this facility
-  const fieldGroups = facility ? getFacilityFieldGroups(facilityId) : [];
-  const facilityServices = facility ? getFacilityServices(facilityId) : [];
-  const facilityEvents = facility ? getFacilityEvents(facilityId) : [];
-  const facilityVouchers = facility ? getFacilityVouchers(facilityId) : [];
   
   // Update numberOfShifts when form values change
   const handleNumberOfShiftsChange = (value: number) => {
@@ -122,13 +116,37 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
         openTime3: values.openTime3 ? values.openTime3.format('HH:mm') : '',
         closeTime3: values.closeTime3 ? values.closeTime3.format('HH:mm') : '',
         numberOfShifts: values.numberOfShifts,
-        status: values.status as 'pending' | 'active' | 'unactive' | 'closed' | 'banned',
-        sports: values.sportIds
-          .map(id => allSports.find(sport => sport.id === id))
-          .filter((sport): sport is Sport => sport !== undefined)
+        status: values.status as 'pending' | 'active' | 'unactive' | 'closed' | 'banned'
       };
       
+      // Cập nhật thông tin cơ bản của cơ sở
       await facilityService.updateFacility(facilityId, formattedValues);
+      
+      // Xử lý upload hình ảnh mới nếu có
+      const fileList = uploadFileList || [];
+      if (fileList.length > 0) {
+        const fileObjects = fileList
+          .filter((file) => file.originFileObj)
+          .map((file) => file.originFileObj);
+        
+        if (fileObjects.length > 0 && fileObjects.every(Boolean)) {
+          await facilityService.uploadFacilityImages(facilityId, fileObjects as File[]);
+        }
+      }
+      
+      // Xử lý upload certificate nếu có
+      if (certificateFile) {
+        await facilityService.uploadCertificate(facilityId, certificateFile);
+      }
+      
+      // Xử lý upload license files nếu có
+      if (Object.keys(licenseFiles).length > 0) {
+        const uploadPromises = Object.entries(licenseFiles).map(([sportId, file]) => 
+          facilityService.uploadLicense(facilityId, Number(sportId), file)
+        );
+        await Promise.all(uploadPromises);
+      }
+      
       message.success('Cập nhật cơ sở thành công');
       onClose(true);
     } catch (error) {
@@ -153,7 +171,11 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
       }
       return isImage ? false : Upload.LIST_IGNORE;
     },
-    accept: 'image/*'
+    accept: 'image/*',
+    fileList: uploadFileList,
+    onChange: ({ fileList }: { fileList: UploadFile[] }) => {
+      setUploadFileList(fileList);
+    }
   };
   
   // Navigation to management pages
@@ -188,14 +210,17 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
     return false; // prevent auto upload
   };
   
-  // Fetch facility data on component mount
+  // Fetch facility data and sports data on component mount
   useEffect(() => {
     const fetchFacilityData = async () => {
       try {
         setLoading(true);
+        // Gọi API để lấy dữ liệu cơ sở
         const data = await facilityService.getFacilityById(facilityId);
         setFacility(data);
         setNumberOfShifts(data.numberOfShifts || 1);
+        
+        console.log('Loaded facility data:', data);
         
         // Set initial form values
         form.setFieldsValue({
@@ -209,11 +234,36 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
           openTime3: data.openTime3 ? dayjs(data.openTime3, 'HH:mm') : null,
           closeTime3: data.closeTime3 ? dayjs(data.closeTime3, 'HH:mm') : null,
           numberOfShifts: data.numberOfShifts || 1,
-          sportIds: data.sports.map(sport => sport.id),
           status: data.status
         });
         
-        setAllSports(mockSports);
+        // Xử lý danh sách sport IDs từ fieldGroups
+        if (data.fieldGroups && data.fieldGroups.length > 0) {
+          // Thu thập tất cả các sportIds từ tất cả các fieldGroups
+          const allSportIds = data.fieldGroups.flatMap(group => {
+            if (group.sports) return group.sports.map(sport => sport.id);
+            return [];
+          });
+          
+          // Loại bỏ các ID trùng lặp
+          const uniqueSportIds = [...new Set(allSportIds)];
+          
+          // Cập nhật form với danh sách sportIds đã trích xuất
+          form.setFieldsValue({ sportIds: uniqueSportIds });
+        }
+        
+        // Lấy danh sách sports từ API
+        // TODO: Thay thế mockSports bằng real API khi có
+        const sportsList = [
+          { id: 1, name: 'football' },
+          { id: 2, name: 'tennis' },
+          { id: 3, name: 'futsal' },
+          { id: 4, name: 'basketball' },
+          { id: 5, name: 'badminton' },
+          { id: 6, name: 'swimming' },
+          { id: 7, name: 'golf' }
+        ];
+        setAllSports(sportsList);
       } catch (error) {
         console.error('Failed to fetch facility details:', error);
         message.error('Không thể tải thông tin cơ sở');
@@ -227,6 +277,49 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
     }
   }, [facilityId, form]);
   
+  // Handle image deletion
+  const handleDeleteImage = async (imageUrl: string) => {
+    try {
+      if (!facility) return;
+      
+      await facilityService.deleteFacilityImages(facilityId, [imageUrl]);
+      
+      // Update local state to reflect deletion
+      setFacility(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          imagesUrl: prev.imagesUrl.filter(img => img !== imageUrl)
+        };
+      });
+      
+      message.success('Xóa hình ảnh thành công');
+    } catch (error) {
+      console.error('Failed to delete image:', error);
+      message.error('Không thể xóa hình ảnh');
+    }
+  };
+  
+  // Lấy sports từ fieldGroups
+  const extractSportsFromFieldGroups = React.useMemo(() => {
+    if (!facility?.fieldGroups || facility.fieldGroups.length === 0) return [];
+    
+    // Thu thập tất cả các thông tin sport từ tất cả các fieldGroups
+    const allSports: Array<{id: number, name: string}> = [];
+    
+    facility.fieldGroups.forEach(group => {
+      if (group.sports && Array.isArray(group.sports)) {
+        group.sports.forEach(sport => {
+          if (!allSports.some(s => s.id === sport.id)) {
+            allSports.push(sport);
+          }
+        });
+      }
+    });
+    
+    return allSports;
+  }, [facility?.fieldGroups]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-12">
@@ -466,6 +559,7 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
                           type="primary" 
                           size="small" 
                           icon={<MinusCircleOutlined />}
+                          onClick={() => handleDeleteImage(image)}
                         >
                           Xoá ảnh
                         </Button>
@@ -503,7 +597,7 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
                 Quản lý nhóm sân
               </Button>
             }>
-              {fieldGroups && fieldGroups.length > 0 ? (
+              {facility.fieldGroups && facility.fieldGroups.length > 0 ? (
                 <div>
                   <div className="text-gray-500 mb-4">
                     <Space direction="vertical">
@@ -516,7 +610,7 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
                   
                   <List
                     grid={{ gutter: 16, xs: 1, sm: 1, md: 2, lg: 3 }}
-                    dataSource={fieldGroups}
+                    dataSource={facility.fieldGroups}
                     renderItem={group => (
                       <List.Item>
                         <Card 
@@ -555,7 +649,7 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
                 Quản lý dịch vụ
               </Button>
             }>
-              {facilityServices && facilityServices.length > 0 ? (
+              {facility.services && facility.services.length > 0 ? (
                 <div>
                   <div className="text-gray-500 mb-4">
                     <Space direction="vertical">
@@ -568,7 +662,7 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
                   
                   <List
                     grid={{ gutter: 16, xs: 1, sm: 2, lg: 3 }}
-                    dataSource={facilityServices}
+                    dataSource={facility.services}
                     renderItem={service => (
                       <List.Item>
                         <Card size="small">
@@ -603,7 +697,7 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
                 Quản lý sự kiện
               </Button>
             }>
-              {facilityEvents && facilityEvents.length > 0 ? (
+              {facility.events && facility.events.length > 0 ? (
                 <div>
                   <div className="text-gray-500 mb-4">
                     <Space direction="vertical">
@@ -616,7 +710,7 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
                   
                   <List
                     grid={{ gutter: 16, xs: 1, sm: 1, md: 2 }}
-                    dataSource={facilityEvents}
+                    dataSource={facility.events}
                     renderItem={event => (
                       <List.Item>
                         <Card size="small">
@@ -656,7 +750,7 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
                 Quản lý khuyến mãi
               </Button>
             }>
-              {facilityVouchers && facilityVouchers.length > 0 ? (
+              {facility.vouchers && facility.vouchers.length > 0 ? (
                 <div>
                   <div className="text-gray-500 mb-4">
                     <Space direction="vertical">
@@ -669,7 +763,7 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
                   
                   <List
                     grid={{ gutter: 16, xs: 1, sm: 1, md: 2 }}
-                    dataSource={facilityVouchers}
+                    dataSource={facility.vouchers}
                     renderItem={voucher => (
                       <List.Item>
                         <Card size="small" className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-100">
@@ -751,9 +845,9 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
                 </Card>
                 
                 <Card title="Giấy phép kinh doanh" size="small">
-                  {facility.license && facility.license.length > 0 ? (
+                  {facility.licenses && facility.licenses.length > 0 ? (
                     <Table 
-                      dataSource={facility.license}
+                      dataSource={facility.licenses}
                       rowKey={(record) => `${record.facilityId}-${record.sportId}`}
                       pagination={false}
                       columns={[
@@ -762,8 +856,20 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
                           dataIndex: 'sportId',
                           key: 'sportId',
                           render: (sportId) => {
-                            const sport = facility.sports.find(s => s.id === sportId);
-                            return sport ? getSportNameInVietnamese(sport.name) : 'Không xác định';
+                            // Tìm sport trong các nguồn theo thứ tự ưu tiên
+                            // 1. Từ danh sách sports trong fieldGroups
+                            const fieldGroupSport = extractSportsFromFieldGroups.find(s => s.id === sportId);
+                            if (fieldGroupSport) {
+                              return getSportNameInVietnamese(fieldGroupSport.name);
+                            }
+                            
+                            // 2. Từ danh sách allSports (mockSports)
+                            const mockSport = allSports.find(s => s.id === sportId);
+                            if (mockSport) {
+                              return getSportNameInVietnamese(mockSport.name);
+                            }
+                            
+                            return "Không xác định";
                           }
                         },
                         {

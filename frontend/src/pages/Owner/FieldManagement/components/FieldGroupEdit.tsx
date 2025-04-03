@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Form, Input, InputNumber, Select, TimePicker, Typography, Row, Col } from 'antd';
-import { FieldGroup } from '@/types/field.type';
+import { Modal, Form, Input, InputNumber, Select, TimePicker, Typography, Row, Col, message } from 'antd';
+import { FieldGroup, FieldGroupFormData } from '@/types/field.type';
+import { fieldService } from '@/services/field.service';
 import { SURFACE_TYPES, DIMENSIONS } from '@/mocks/default/defaultData';
 import dayjs from 'dayjs';
 import { getSportNameInVietnamese } from '@/utils/translateSport';
@@ -18,7 +19,8 @@ interface FieldGroupEditProps {
 
 const FieldGroupEdit: React.FC<FieldGroupEditProps> = ({ open, onClose, onSave, fieldGroup }) => {
   const [form] = Form.useForm();
-  const [selectedSports, setSelectedSports] = useState<string[]>([]);
+  const [selectedSports, setSelectedSports] = useState<number[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (fieldGroup && open) {
@@ -30,26 +32,28 @@ const FieldGroupEdit: React.FC<FieldGroupEditProps> = ({ open, onClose, onSave, 
         basePrice: fieldGroup.basePrice,
         // Format times for TimePicker with dayjs
         peakTime1: fieldGroup.peakStartTime1 ? [
-          dayjs(fieldGroup.peakStartTime1, 'HH:mm:ss'),
-          dayjs(fieldGroup.peakEndTime1, 'HH:mm:ss')
+          dayjs(fieldGroup.peakStartTime1, 'HH:mm'),
+          dayjs(fieldGroup.peakEndTime1, 'HH:mm')
         ] : undefined,
         priceIncrease1: fieldGroup.priceIncrease1,
         
         peakTime2: fieldGroup.peakStartTime2 ? [
-          dayjs(fieldGroup.peakStartTime2, 'HH:mm:ss'),
-          dayjs(fieldGroup.peakEndTime2, 'HH:mm:ss')
+          dayjs(fieldGroup.peakStartTime2, 'HH:mm'),
+          dayjs(fieldGroup.peakEndTime2, 'HH:mm')
         ] : undefined,
         priceIncrease2: fieldGroup.priceIncrease2,
         
         peakTime3: fieldGroup.peakStartTime3 ? [
-          dayjs(fieldGroup.peakStartTime3, 'HH:mm:ss'),
-          dayjs(fieldGroup.peakEndTime3, 'HH:mm:ss')
+          dayjs(fieldGroup.peakStartTime3, 'HH:mm'),
+          dayjs(fieldGroup.peakEndTime3, 'HH:mm')
         ] : undefined,
         priceIncrease3: fieldGroup.priceIncrease3,
+        
+        sportIds: fieldGroup.sports.map(sport => sport.id)
       });
       
       // Set selected sports from fieldGroup
-      setSelectedSports(fieldGroup.sports.map(sport => sport.name));
+      setSelectedSports(fieldGroup.sports.map(sport => sport.id));
     }
   }, [fieldGroup, open, form]);
 
@@ -57,61 +61,130 @@ const FieldGroupEdit: React.FC<FieldGroupEditProps> = ({ open, onClose, onSave, 
     form.validateFields().then(values => {
       if (!fieldGroup) return;
 
+      // Calculate number of peak times
+      let numberOfPeaks = 0;
+      if (values.peakTime1) numberOfPeaks++;
+      if (values.peakTime2) numberOfPeaks++;
+      if (values.peakTime3) numberOfPeaks++;
+
+      // Transform form values for display
+      const peakTime1Display = values.peakTime1 
+        ? `${values.peakTime1[0].format('HH:mm')} - ${values.peakTime1[1].format('HH:mm')}: ${values.priceIncrease1?.toLocaleString('de-DE')} VNĐ` 
+        : '';
+      
+      const peakTime2Display = values.peakTime2 
+        ? `${values.peakTime2[0].format('HH:mm')} - ${values.peakTime2[1].format('HH:mm')}: ${values.priceIncrease2?.toLocaleString('de-DE')} VNĐ` 
+        : '';
+      
+      const peakTime3Display = values.peakTime3 
+        ? `${values.peakTime3[0].format('HH:mm')} - ${values.peakTime3[1].format('HH:mm')}: ${values.priceIncrease3?.toLocaleString('de-DE')} VNĐ` 
+        : '';
+
+      // Get sport names
+      const selectedSportNames = sportOptions
+        .filter(sport => values.sportIds.includes(sport.value))
+        .map(sport => sport.label)
+        .join(', ');
+
       // Hiển thị popup xác nhận
       Modal.confirm({
         title: 'Xác nhận thay đổi',
-        content: 'Bạn có chắc chắn muốn lưu những thay đổi này?',
+        content: (
+          <div>
+            <p>Bạn có chắc chắn muốn lưu những thay đổi cho nhóm sân <strong>{values.name}</strong>?</p>
+            <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+              <p><strong>Kích thước:</strong> {values.dimension}</p>
+              <p><strong>Mặt sân:</strong> {values.surface}</p>
+              <p><strong>Giá cơ bản:</strong> {values.basePrice?.toLocaleString('de-DE')} VNĐ</p>
+              <p><strong>Loại hình thể thao:</strong> {selectedSportNames}</p>
+              {numberOfPeaks > 0 && (
+                <>
+                  <p><strong>Giờ cao điểm:</strong></p>
+                  <ul>
+                    {peakTime1Display && <li>{peakTime1Display}</li>}
+                    {peakTime2Display && <li>{peakTime2Display}</li>}
+                    {peakTime3Display && <li>{peakTime3Display}</li>}
+                  </ul>
+                </>
+              )}
+            </div>
+          </div>
+        ),
         okText: 'Lưu thay đổi',
         cancelText: 'Hủy',
         icon: <ExclamationCircleOutlined />,
-        onOk() {
-          // Transform form values to FieldGroup object
-          const updatedFieldGroup: FieldGroup = {
-            ...fieldGroup,
-            name: values.name,
-            dimension: values.dimension,
-            surface: values.surface,
-            basePrice: values.basePrice,
-            // Handle peak times
-            peakStartTime1: values.peakTime1 ? values.peakTime1[0].format('HH:mm:ss') : '',
-            peakEndTime1: values.peakTime1 ? values.peakTime1[1].format('HH:mm:ss') : '',
-            priceIncrease1: values.priceIncrease1 || 0,
+        onOk: async () => {
+          try {
+            setIsSubmitting(true);
             
-            peakStartTime2: values.peakTime2 ? values.peakTime2[0].format('HH:mm:ss') : '',
-            peakEndTime2: values.peakTime2 ? values.peakTime2[1].format('HH:mm:ss') : '',
-            priceIncrease2: values.priceIncrease2 || 0,
-            
-            peakStartTime3: values.peakTime3 ? values.peakTime3[0].format('HH:mm:ss') : '',
-            peakEndTime3: values.peakTime3 ? values.peakTime3[1].format('HH:mm:ss') : '',
-            priceIncrease3: values.priceIncrease3 || 0,
-            
-            // Update sports based on selected options
-            sports: selectedSports.map((sportName, index) => {
-              // Preserve existing sport IDs if possible
-              const existingSport = fieldGroup.sports.find(s => s.name === sportName);
-              return {
-                id: existingSport?.id || index + 1,
-                name: sportName
-              };
-            })
-          };
+            // Transform form values to FieldGroupFormData object
+            const updateData: Partial<FieldGroupFormData> = {
+              name: values.name,
+              dimension: values.dimension,
+              surface: values.surface,
+              basePrice: values.basePrice,
+              // Handle peak times
+              peakStartTime1: values.peakTime1 ? values.peakTime1[0].format('HH:mm') : '',
+              peakEndTime1: values.peakTime1 ? values.peakTime1[1].format('HH:mm') : '',
+              priceIncrease1: values.priceIncrease1 || 0,
+              
+              peakStartTime2: values.peakTime2 ? values.peakTime2[0].format('HH:mm') : '',
+              peakEndTime2: values.peakTime2 ? values.peakTime2[1].format('HH:mm') : '',
+              priceIncrease2: values.priceIncrease2 || 0,
+              
+              peakStartTime3: values.peakTime3 ? values.peakTime3[0].format('HH:mm') : '',
+              peakEndTime3: values.peakTime3 ? values.peakTime3[1].format('HH:mm') : '',
+              priceIncrease3: values.priceIncrease3 || 0,
+              
+              // Update sports based on selected options
+              sportIds: values.sportIds,
+              
+              // Set number of peaks
+              numberOfPeaks
+            };
 
-          onSave(updatedFieldGroup);
-          onClose();
+            // Call API to update field group
+            await fieldService.updateFieldGroup(fieldGroup.id, updateData);
+            
+            // For the local state update, we need to map to the expected format
+            const updatedFieldGroup: FieldGroup = {
+              ...fieldGroup,
+              ...updateData,
+              numberOfPeaks,
+              fields: fieldGroup.fields, // Keep the existing fields unchanged
+              sports: fieldGroup.sports.filter(sport => 
+                values.sportIds.includes(sport.id)
+              )
+            };
+            
+            // Show success message
+            Modal.success({
+              title: 'Cập nhật thành công',
+              content: 'Thông tin nhóm sân đã được cập nhật thành công.'
+            });
+                        
+            onSave(updatedFieldGroup);
+            onClose();
+          } catch (error) {
+            console.error('Error updating field group:', error);
+            message.error('Không thể cập nhật nhóm sân. Vui lòng thử lại.');
+          } finally {
+            setIsSubmitting(false);
+          }
         }
       });
     });
   };
 
   const sportOptions = [
-    { value: 'football', label: getSportNameInVietnamese('football') },
-    { value: 'basketball', label: getSportNameInVietnamese('basketball') },
-    { value: 'volleyball', label: getSportNameInVietnamese('volleyball') },
-    { value: 'tennis', label: getSportNameInVietnamese('tennis') },
-    { value: 'badminton', label: getSportNameInVietnamese('badminton') },
-    { value: 'tabletennis', label: getSportNameInVietnamese('tabletennis') },
-    { value: 'pickleball', label: getSportNameInVietnamese('pickleball') },
-    { value: 'golf', label: getSportNameInVietnamese('golf') }
+    { value: 1, label: getSportNameInVietnamese('football') },
+    { value: 2, label: getSportNameInVietnamese('basketball') },
+    { value: 3, label: getSportNameInVietnamese('volleyball') },
+    { value: 4, label: getSportNameInVietnamese('tennis') },
+    { value: 5, label: getSportNameInVietnamese('badminton') },
+    { value: 6, label: getSportNameInVietnamese('tabletennis') },
+    { value: 7, label: getSportNameInVietnamese('pickleball') },
+    { value: 8, label: getSportNameInVietnamese('golf') }
   ];
 
   // Get surface options based on selected sports
@@ -119,8 +192,9 @@ const FieldGroupEdit: React.FC<FieldGroupEditProps> = ({ open, onClose, onSave, 
     if (selectedSports.length === 0) return SURFACE_TYPES.default;
     
     // Get surfaces for the first selected sport (simplification)
-    const firstSport = selectedSports[0].toLowerCase();
-    const sportKey = firstSport as keyof typeof SURFACE_TYPES;
+    const sportId = selectedSports[0];
+    const sportName = sportOptions.find(opt => opt.value === sportId)?.label.toLowerCase() || 'football';
+    const sportKey = sportName as keyof typeof SURFACE_TYPES;
     
     return SURFACE_TYPES[sportKey] || SURFACE_TYPES.default;
   };
@@ -130,8 +204,9 @@ const FieldGroupEdit: React.FC<FieldGroupEditProps> = ({ open, onClose, onSave, 
     if (selectedSports.length === 0) return DIMENSIONS.default;
     
     // Get dimensions for the first selected sport (simplification)
-    const firstSport = selectedSports[0].toLowerCase();
-    const sportKey = firstSport as keyof typeof DIMENSIONS;
+    const sportId = selectedSports[0];
+    const sportName = sportOptions.find(opt => opt.value === sportId)?.label.toLowerCase() || 'football';
+    const sportKey = sportName as keyof typeof DIMENSIONS;
     
     return DIMENSIONS[sportKey] || DIMENSIONS.default;
   };
@@ -147,6 +222,7 @@ const FieldGroupEdit: React.FC<FieldGroupEditProps> = ({ open, onClose, onSave, 
       okText="Lưu thay đổi"
       cancelText="Hủy"
       width={800}
+      confirmLoading={isSubmitting}
       style={{ top: 20 }}
       styles={{ 
         body: { maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }
@@ -197,25 +273,25 @@ const FieldGroupEdit: React.FC<FieldGroupEditProps> = ({ open, onClose, onSave, 
         <Row gutter={16}>
           <Col span={12}>
             <Form.Item
-              label="Loại hình sân"
-              rules={[{ required: true, message: 'Vui lòng chọn ít nhất một loại hình sân' }]}
+              label="Loại hình thể thao"
+              name="sportIds"
+              rules={[{ required: true, message: 'Vui lòng chọn ít nhất một loại hình thể thao' }]}
             >
               <Select
                 mode="multiple"
-                placeholder="Chọn loại hình sân"
-                onChange={values => setSelectedSports(values)}
-                value={selectedSports}
+                placeholder="Chọn loại hình thể thao"
+                onChange={(values: number[]) => setSelectedSports(values)}
                 style={{ width: '100%' }}
               >
-                {sportOptions.map(option => (
-                  <Option key={option.value} value={option.value}>
-                    {option.label}
+                {sportOptions.map((sport) => (
+                  <Option key={sport.value} value={sport.value}>
+                    {sport.label}
                   </Option>
                 ))}
               </Select>
             </Form.Item>
           </Col>
-          
+
           <Col span={12}>
             <Form.Item
               label="Mặt sân"
@@ -234,9 +310,9 @@ const FieldGroupEdit: React.FC<FieldGroupEditProps> = ({ open, onClose, onSave, 
         </Row>
 
         <Row gutter={16}>
-          <Col span={24}>
+          <Col span={12}>
             <Form.Item
-              label="Kích thước"
+              label="Kích thước sân"
               name="dimension"
               rules={[{ required: true, message: 'Vui lòng chọn kích thước sân' }]}
             >

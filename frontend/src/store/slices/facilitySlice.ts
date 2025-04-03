@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { Facility, FacilityState } from '@/types/facility.type';
-import api from '@/services/api';
+import { facilityService, FacilityDropdownItem } from '@/services/facility.service';
 import { AxiosError } from 'axios';
 
 // Interface for API error responses
@@ -9,11 +9,17 @@ interface ApiError {
   statusCode?: number;
 }
 
+// Mở rộng FacilityState để thêm danh sách dropdown
+interface ExtendedFacilityState extends FacilityState {
+  dropdownItems: FacilityDropdownItem[];
+}
+
 // Initial state
-const initialState: FacilityState = {
+const initialState: ExtendedFacilityState = {
   facility: {} as Facility,
   isLoading: false,
   error: null,
+  dropdownItems: []
 };
 
 // Async thunks
@@ -21,7 +27,7 @@ export const fetchOwnerFacilities = createAsyncThunk(
   'facility/fetchOwnerFacilities',
   async (ownerId: string, { rejectWithValue }) => {
     try {
-      const response = await api.get(`/facility/owner/${ownerId}`);
+      const response = await facilityService.getMyFacilities();
       return response.data;
     } catch (error) {
       const err = error as AxiosError<ApiError>;
@@ -34,11 +40,24 @@ export const fetchFacilityById = createAsyncThunk(
   'facility/fetchFacilityById',
   async (facilityId: string, { rejectWithValue }) => {
     try {
-      const response = await api.get(`/facility/${facilityId}`);
-      return response.data;
+      const response = await facilityService.getFacilityById(facilityId);
+      return response;
     } catch (error) {
       const err = error as AxiosError<ApiError>;
       return rejectWithValue(err.response?.data?.message || 'Failed to fetch facility details');
+    }
+  }
+);
+
+export const fetchFacilityDropdown = createAsyncThunk(
+  'facility/fetchFacilityDropdown',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await facilityService.getFacilitiesDropdown();
+      return response;
+    } catch (error) {
+      const err = error as AxiosError<ApiError>;
+      return rejectWithValue(err.response?.data?.message || 'Failed to fetch facility dropdown');
     }
   }
 );
@@ -67,6 +86,20 @@ const facilitySlice = createSlice({
         state.facility = action.payload;
       })
       .addCase(fetchFacilityById.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      
+      // Fetch facility dropdown
+      .addCase(fetchFacilityDropdown.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchFacilityDropdown.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.dropdownItems = action.payload;
+      })
+      .addCase(fetchFacilityDropdown.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
       });

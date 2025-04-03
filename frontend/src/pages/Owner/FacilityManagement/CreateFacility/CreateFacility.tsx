@@ -140,9 +140,32 @@ const CreateFacility: React.FC = () => {
     try {
       // Validation for each step
       if (current === 0) {
-        // Validate basic info form
+        // Validate basic info form và lấy dữ liệu
         if (basicInfoFormRef.current) {
-          await basicInfoFormRef.current.validateFields();
+          const values = await basicInfoFormRef.current.validateFields();
+          // Lưu dữ liệu từ form vào state formData
+          const facilityInfo = {
+            ...formData.facilityInfo,
+            name: values.name,
+            description: values.description,
+            numberOfShifts: values.numberOfShifts,
+            provinceCode: values.provinceCode,
+            districtCode: values.districtCode,
+            wardCode: values.wardCode,
+            location: values.detailAddress,
+            openTime1: values.openTime1 ? values.openTime1.format('HH:mm') : '',
+            closeTime1: values.closeTime1 ? values.closeTime1.format('HH:mm') : '',
+            openTime2: values.numberOfShifts >= 2 && values.openTime2 ? values.openTime2.format('HH:mm') : '',
+            closeTime2: values.numberOfShifts >= 2 && values.closeTime2 ? values.closeTime2.format('HH:mm') : '',
+            openTime3: values.numberOfShifts >= 3 && values.openTime3 ? values.openTime3.format('HH:mm') : '',
+            closeTime3: values.numberOfShifts >= 3 && values.closeTime3 ? values.closeTime3.format('HH:mm') : ''
+          };
+          
+          // Cập nhật formData với dữ liệu mới
+          updateFormData({ facilityInfo });
+          
+          // Log để kiểm tra dữ liệu
+          console.log("Đã cập nhật formData với thông tin cơ bản:", facilityInfo);
         }
       } else if (current === 1) {
         // Validate images
@@ -164,8 +187,9 @@ const CreateFacility: React.FC = () => {
       }
       
       setCurrent(current + 1);
-    } catch {
-      // Form validation failed, no need to show error message as it's already shown by form validation
+    } catch (error) {
+      // Hiển thị lỗi cụ thể hơn
+      console.error("Lỗi khi chuyển bước:", error);
       return;
     }
   };
@@ -187,34 +211,139 @@ const CreateFacility: React.FC = () => {
       message.error('Vui lòng tải lên giấy chứng nhận cơ sở');
       return;
     }
+
+    // Kiểm tra thông tin cơ bản
+    if (!formData.facilityInfo.name || formData.facilityInfo.name.length < 5) {
+      message.error('Tên cơ sở phải có ít nhất 5 ký tự');
+      setCurrent(0); // Quay lại bước 1
+      return;
+    }
+
+    if (!formData.facilityInfo.location) {
+      message.error('Vui lòng nhập địa chỉ cơ sở');
+      setCurrent(0); // Quay lại bước 1
+      return;
+    }
+
+    if (!formData.facilityInfo.openTime1 || !formData.facilityInfo.closeTime1) {
+      message.error('Vui lòng nhập giờ mở cửa và đóng cửa');
+      setCurrent(0); // Quay lại bước 1
+      return;
+    }
     
     try {
       setSubmitting(true);
       
-      // Prepare data for API submission
-      const formDataForApi = new FormData();
+      // Hàm định dạng chuẩn hóa thời gian
+      const formatTimeString = (timeStr: string): string => {
+        if (!timeStr) return "";
+        
+        // Nếu đã có format HH:MM (2 số, dấu hai chấm, 2 số) thì trả về
+        if (timeStr.match(/^\d{2}:\d{2}$/)) return timeStr;
+        
+        // Xử lý định dạng HH:mm:ss (được sử dụng trong fieldGroup)
+        if (timeStr.match(/^\d{2}:\d{2}:\d{2}$/)) {
+          return timeStr.substring(0, 5); // Lấy 5 ký tự đầu (HH:MM)
+        }
+        
+        // Xử lý các định dạng khác
+        try {
+          const parts = timeStr.split(':');
+          if (parts.length >= 2) {
+            const hours = parts[0].padStart(2, '0');
+            const minutes = parts[1].padStart(2, '0');
+            return `${hours}:${minutes}`;
+          }
+        } catch (error) {
+          console.error("Lỗi khi định dạng thời gian:", timeStr, error);
+        }
+        
+        return timeStr; // Trả về nguyên bản nếu không xử lý được
+      };
+
+      // Chuẩn bị dữ liệu cho API - chỉ gửi các trường mà API cần
+      const apiInfo = {
+        name: formData.facilityInfo.name,
+        description: formData.facilityInfo.description,
+        location: formData.facilityInfo.location,
+        openTime1: formatTimeString(formData.facilityInfo.openTime1),
+        closeTime1: formatTimeString(formData.facilityInfo.closeTime1),
+        openTime2: formData.facilityInfo.openTime2 ? formatTimeString(formData.facilityInfo.openTime2) : null,
+        closeTime2: formData.facilityInfo.closeTime2 ? formatTimeString(formData.facilityInfo.closeTime2) : null,
+        openTime3: formData.facilityInfo.openTime3 ? formatTimeString(formData.facilityInfo.openTime3) : null,
+        closeTime3: formData.facilityInfo.closeTime3 ? formatTimeString(formData.facilityInfo.closeTime3) : null,
+        fieldGroups: formData.fieldGroups.map(group => {
+          // Đảm bảo các trường required luôn có dữ liệu định dạng đúng
+          if (!group.peakStartTime1 || !group.peakEndTime1) {
+            console.warn("Thiếu dữ liệu thời gian cao điểm 1 cho nhóm sân:", group.name);
+          }
+          
+          return {
+            name: group.name,
+            dimension: group.dimension,
+            surface: group.surface,
+            basePrice: group.basePrice,
+            peakStartTime1: formatTimeString(group.peakStartTime1 || ""),
+            peakEndTime1: formatTimeString(group.peakEndTime1 || ""),
+            priceIncrease1: group.priceIncrease1,
+            sportIds: group.sportIds,
+            // Thêm các trường thời gian khác nếu chúng tồn tại
+            ...(group.peakStartTime2 ? { peakStartTime2: formatTimeString(group.peakStartTime2) } : {}),
+            ...(group.peakEndTime2 ? { peakEndTime2: formatTimeString(group.peakEndTime2) } : {}),
+            ...(group.priceIncrease2 ? { priceIncrease2: group.priceIncrease2 } : {}),
+            
+            ...(group.peakStartTime3 ? { peakStartTime3: formatTimeString(group.peakStartTime3) } : {}),
+            ...(group.peakEndTime3 ? { peakEndTime3: formatTimeString(group.peakEndTime3) } : {}),
+            ...(group.priceIncrease3 ? { priceIncrease3: group.priceIncrease3 } : {}),
+            
+            fields: group.fields.map(field => ({ name: field.name }))
+          };
+        })
+      };
       
-      // Add basic info as JSON
-      formDataForApi.append('facilityInfo', JSON.stringify(formData.facilityInfo));
+      // Log để kiểm tra dữ liệu trước khi gửi
+      console.log("Dữ liệu gửi đến API:", apiInfo);
+      
+      // Log chi tiết thời gian để debug
+      console.log("Chi tiết thời gian:");
+      console.log("Facility - openTime1:", apiInfo.openTime1);
+      console.log("Facility - closeTime1:", apiInfo.closeTime1);
+      console.log("FieldGroups:", apiInfo.fieldGroups.map(group => ({
+        name: group.name,
+        peakStartTime1: group.peakStartTime1,
+        peakEndTime1: group.peakEndTime1,
+        peakStartTime2: group.peakStartTime2,
+        peakEndTime2: group.peakEndTime2,
+        peakStartTime3: group.peakStartTime3,
+        peakEndTime3: group.peakEndTime3
+      })));
+      
+      // Thêm thông tin cơ sở vào FormData
+      const formDataForApi = new FormData();
+      formDataForApi.append('facilityInfo', JSON.stringify(apiInfo));
       
       // Add images
-      formData.imageFiles.forEach((file, index) => {
-        formDataForApi.append(`image_${index}`, file);
+      formData.imageFiles.forEach((file) => {
+        formDataForApi.append('images', file);
       });
-      
-      // Add field groups as JSON
-      formDataForApi.append('fieldGroups', JSON.stringify(formData.fieldGroups));
-      
-      // Add sports
-      formDataForApi.append('sports', JSON.stringify(formData.selectedSports.map(sport => sport.id)));
       
       // Add certificate
       formDataForApi.append('certificate', formData.certificateFile);
       
       // Add licenses
-      formData.licenseFiles.forEach(license => {
-        formDataForApi.append(`license_${license.sportId}`, license.file);
-      });
+      if (formData.licenseFiles && formData.licenseFiles.length > 0) {
+        formData.licenseFiles.forEach((license) => {
+          formDataForApi.append('licenses', license.file);
+        });
+        
+        // Thêm mapping sportIds cho licenses
+        const sportLicenses = {
+          sportIds: formData.licenseFiles.map(license => license.sportId)
+        };
+        formDataForApi.append('sportLicenses', JSON.stringify(sportLicenses));
+      } else {
+        formDataForApi.append('sportLicenses', JSON.stringify({}));
+      }
       
       // Submit to API
       const response = await facilityService.createFacility(formDataForApi);

@@ -24,19 +24,9 @@ import {
   CalendarOutlined,
   TagOutlined
 } from '@ant-design/icons';
-import { Facility, VerificationHistoryItem } from '@/types/facility.type';
-import { Service } from '@/types/service.type';
+import { Facility } from '@/types/facility.type';
 import { Event, EventDetail, EventPrize } from '@/types/event.type';
-import { Voucher } from '@/types/voucher.type';
 import { getSportNameInVietnamese } from '@/utils/translateSport';
-// Chỉ import các hàm mock để dùng khi fallback
-import { 
-  getFacilityFieldGroups, 
-  getFacilityServices, 
-  getFacilityEvents, 
-  getFacilityVouchers, 
-  getFacilityVerificationHistory
-} from '@/mocks/facility/mockFacilities';
 import OperatingHoursDisplay from '@/components/shared/OperatingHoursDisplay';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '@/store';
@@ -72,6 +62,16 @@ const FacilityDetail: React.FC<FacilityDetailProps> = ({ facilityId, onClose, on
   useEffect(() => {
     const fetchFacilityData = async () => {
       try {
+        // Nếu đã có dữ liệu trong Redux store và đúng facilityId, không cần fetch lại
+        if (reduxFacility && reduxFacility.id === facilityId) {
+          setFacility(reduxFacility);
+          if (reduxFacility.imagesUrl && reduxFacility.imagesUrl.length > 0) {
+            setMainImage(reduxFacility.imagesUrl[0]);
+          }
+          setLoading(false);
+          return;
+        }
+        
         setLoading(true);
         
         // Chỉ sử dụng Redux để fetch dữ liệu
@@ -87,7 +87,7 @@ const FacilityDetail: React.FC<FacilityDetailProps> = ({ facilityId, onClose, on
     if (facilityId) {
       fetchFacilityData();
     }
-  }, [facilityId, dispatch]);
+  }, [facilityId, dispatch, reduxFacility]);
   
   // Also add a useEffect to update component state when Redux state changes
   useEffect(() => {
@@ -98,15 +98,27 @@ const FacilityDetail: React.FC<FacilityDetailProps> = ({ facilityId, onClose, on
       }
       setLoading(reduxLoading);
     }
-  }, [reduxFacility, reduxLoading, facilityId]);
-  
-  // Get data for this facility
-  // Sử dụng dữ liệu từ API với fallback về mock data
-  const fieldGroups = facility?.fieldGroups || getFacilityFieldGroups(facilityId);
-  const facilityServices = facility?.services || getFacilityServices(facilityId);
-  const facilityEvents = facility?.events || getFacilityEvents(facilityId);
-  const facilityVouchers = facility?.vouchers || getFacilityVouchers(facilityId);
-  const verificationHistory: VerificationHistoryItem[] = facility?.verificationHistory || getFacilityVerificationHistory(facilityId);
+  }, [reduxFacility, reduxLoading, facilityId]);  
+ 
+  // Trích xuất danh sách môn thể thao từ fieldGroups
+  const sportsList = React.useMemo(() => {
+    if (!facility?.fieldGroups || facility.fieldGroups.length === 0) return [];
+    
+    // Thu thập tất cả các thông tin sport từ tất cả các fieldGroups
+    const allSports: Array<{id: number, name: string}> = [];
+    
+    facility.fieldGroups.forEach(group => {
+      if (group.sports && Array.isArray(group.sports)) {
+        group.sports.forEach(sport => {
+          if (!allSports.some(s => s.id === sport.id)) {
+            allSports.push(sport);
+          }
+        });
+      }
+    });
+    
+    return allSports;
+  }, [facility?.fieldGroups]);
   
   const getStatusTag = (status: string) => {
     switch(status) {
@@ -239,9 +251,13 @@ const FacilityDetail: React.FC<FacilityDetailProps> = ({ facilityId, onClose, on
                 <div>
                   <Title level={5} className="mb-2">Môn thể thao</Title>
                   <div className="flex flex-wrap gap-2">
-                    {facility.sports && facility.sports.map((sport) => (
-                      <Tag key={sport.id} color="blue">{getSportNameInVietnamese(sport.name)}</Tag>
-                    ))}
+                    {sportsList && sportsList.length > 0 ? (
+                      sportsList.map((sport) => (
+                        <Tag key={sport.id} color="blue">{getSportNameInVietnamese(sport.name)}</Tag>
+                      ))
+                    ) : (
+                      <Text type="secondary">Không có thông tin về môn thể thao</Text>
+                    )}
                   </div>
                 </div>
               </Card>
@@ -300,9 +316,9 @@ const FacilityDetail: React.FC<FacilityDetailProps> = ({ facilityId, onClose, on
         
         {activeTab === 'fields' && (
           <div>
-            {fieldGroups && fieldGroups.length > 0 ? (
+            {facility?.fieldGroups && facility.fieldGroups.length > 0 ? (
               <div>
-                {fieldGroups.map(group => (
+                {facility.fieldGroups.map(group => (
                   <Card 
                     key={group.id} 
                     title={
@@ -408,9 +424,9 @@ const FacilityDetail: React.FC<FacilityDetailProps> = ({ facilityId, onClose, on
         
         {activeTab === 'services' && (
           <div>
-            {facilityServices && facilityServices.length > 0 ? (
+            {facility?.services && facility.services.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {facilityServices.map(service => (
+                {facility.services.map(service => (
                   <Card 
                     key={service.id}
                     hoverable
@@ -472,9 +488,9 @@ const FacilityDetail: React.FC<FacilityDetailProps> = ({ facilityId, onClose, on
         
         {activeTab === 'events' && (
           <div>
-            {facilityEvents && facilityEvents.length > 0 ? (
+            {facility?.events && facility.events.length > 0 ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {facilityEvents.map(event => {
+                {facility.events.map(event => {
                   // Get event detail from mockEventDetails if available
                   const eventDetail = (event as Event & { eventDetail?: EventDetail }).eventDetail;
                   
@@ -617,9 +633,9 @@ const FacilityDetail: React.FC<FacilityDetailProps> = ({ facilityId, onClose, on
         
         {activeTab === 'vouchers' && (
           <div>
-            {facilityVouchers && facilityVouchers.length > 0 ? (
+            {facility?.vouchers && facility.vouchers.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {facilityVouchers.map(voucher => {
+                {facility.vouchers.map(voucher => {
                   // Get voucher status
                   const status = getVoucherStatus(voucher.startDate, voucher.endDate);
                   
@@ -744,9 +760,9 @@ const FacilityDetail: React.FC<FacilityDetailProps> = ({ facilityId, onClose, on
             </Card>
             
             <Card title="Giấy phép kinh doanh">
-              {facility.license && facility.license.length > 0 ? (
+              {facility.licenses && facility.licenses.length > 0 ? (
                 <Table 
-                  dataSource={facility.license}
+                  dataSource={facility.licenses}
                   rowKey={(record) => `${record.facilityId}-${record.sportId}`}
                   pagination={false}
                   columns={[
@@ -755,8 +771,12 @@ const FacilityDetail: React.FC<FacilityDetailProps> = ({ facilityId, onClose, on
                       dataIndex: 'sportId',
                       key: 'sportId',
                       render: (sportId) => {
-                        const sport = facility.sports.find(s => s.id === sportId);
-                        return sport ? getSportNameInVietnamese(sport.name) : 'Không xác định';
+                        // Tìm sport trong danh sách sportsList (ưu tiên)
+                        const sport = sportsList.find(s => s.id === sportId);
+                        if (sport) {
+                          return getSportNameInVietnamese(sport.name);
+                        }
+                        return "Không xác định";
                       }
                     },
                     {
@@ -798,9 +818,9 @@ const FacilityDetail: React.FC<FacilityDetailProps> = ({ facilityId, onClose, on
         
         {activeTab === 'history' && (
           <div>
-            {verificationHistory && verificationHistory.length > 0 ? (
+            {facility.verificationHistory && facility.verificationHistory.length > 0 ? (
               <Timeline>
-                {verificationHistory.map((item, index) => (
+                {facility.verificationHistory.map((item, index) => (
                   <Timeline.Item 
                     key={item.id || index}
                     color={

@@ -27,7 +27,7 @@ export interface Facility {
     createdAt: string;
     updatedAt: string;
     certificate: Certificate;
-    license: License[];
+    licenses: Licenses[];
     // Các trường có thể có thêm từ API chi tiết
     fieldGroups?: FieldGroup[];
     services?: Service[];
@@ -40,6 +40,8 @@ export interface Facility {
       lastName: string;
       email: string;
     };
+    minPrice: number;
+    maxPrice: number;
   }
 
   // Type cho thông tin cơ bản khi tạo mới cơ sở
@@ -89,7 +91,7 @@ export interface Certificate {
     facilityId?: string;
   }
 
-  export interface License {
+  export interface Licenses {
     verified: string;
     temporary: string;
     facilityId?: string;

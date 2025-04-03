@@ -5,6 +5,7 @@ import { SURFACE_TYPES, DIMENSIONS, DEFAULT_PRICING, COMPATIBLE_SPORT_GROUPS } f
 import { Sport } from '@/types/sport.type';
 import { ExclamationCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { getSportNameInVietnamese } from '@/utils/translateSport';
+import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -273,6 +274,12 @@ const FieldGroupForm: React.FC<FieldGroupFormProps> = ({
         status: 'active' as const
       }));
       
+      // Định dạng thời gian theo chuẩn HH:MM
+      const formatTimeToHHMM = (time: dayjs.Dayjs | null): string => {
+        if (!time) return '';
+        return time.format('HH:mm'); // Không thêm giây (:ss)
+      };
+      
       // Prepare data for submission
       const fieldGroupData: FieldGroupFormData = {
         name: values.name,
@@ -280,14 +287,14 @@ const FieldGroupForm: React.FC<FieldGroupFormProps> = ({
         surface: values.surface,
         basePrice: values.basePrice,
         numberOfPeaks: values.numberOfPeaks || 1,
-        peakStartTime1: values.peakTime1 ? values.peakTime1[0].format('HH:mm:ss') : '',
-        peakEndTime1: values.peakTime1 ? values.peakTime1[1].format('HH:mm:ss') : '',
+        peakStartTime1: values.peakTime1 ? formatTimeToHHMM(values.peakTime1[0]) : '',
+        peakEndTime1: values.peakTime1 ? formatTimeToHHMM(values.peakTime1[1]) : '',
         priceIncrease1: values.priceIncrease1 || 0,
-        peakStartTime2: values.peakTime2 ? values.peakTime2[0].format('HH:mm:ss') : '',
-        peakEndTime2: values.peakTime2 ? values.peakTime2[1].format('HH:mm:ss') : '',
+        peakStartTime2: values.peakTime2 ? formatTimeToHHMM(values.peakTime2[0]) : '',
+        peakEndTime2: values.peakTime2 ? formatTimeToHHMM(values.peakTime2[1]) : '',
         priceIncrease2: values.priceIncrease2 || 0,
-        peakStartTime3: values.peakTime3 ? values.peakTime3[0].format('HH:mm:ss') : '',
-        peakEndTime3: values.peakTime3 ? values.peakTime3[1].format('HH:mm:ss') : '',
+        peakStartTime3: values.peakTime3 ? formatTimeToHHMM(values.peakTime3[0]) : '',
+        peakEndTime3: values.peakTime3 ? formatTimeToHHMM(values.peakTime3[1]) : '',
         priceIncrease3: values.priceIncrease3 || 0,
         sportIds: values.sportIds || [sport.id],
         fields: fieldsData,
