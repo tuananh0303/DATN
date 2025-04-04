@@ -1,44 +1,35 @@
 import React from 'react';
 import { Table, Space, Button, Tooltip, Tag, Typography } from 'antd';
 import { EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
-import { Service } from '@/types/service.type';
+import { Service, ServiceType } from '@/types/service.type';
 import { formatPrice } from '@/utils/statusUtils';
+import { getSportNameInVietnamese } from '@/utils/translateSport';
 
 const { Text } = Typography;
 
 interface ServiceTableProps {
   services: Service[];
-  currentPage: number;
-  itemsPerPage: number;
-  totalServices: number;
-  onPageChange: (page: number) => void;
-  onViewService: (service: Service) => void;
-  onEditService: (service: Service) => void;
-  onDeleteService: (serviceId: string) => void;
+  loading: boolean;
+  onDelete: (serviceId: string) => void;
+  onView: (service: Service) => void;
+  onEdit: (service: Service) => void;
+  pagination: {
+    current: number;
+    total: number;
+    pageSize: number;
+    onChange: (page: number) => void;
+    showSizeChanger: boolean;
+  };
 }
 
 const ServiceTable: React.FC<ServiceTableProps> = ({
   services,
-  currentPage,
-  itemsPerPage,
-  totalServices,
-  onPageChange,
-  onViewService,
-  onEditService,
-  onDeleteService
+  loading,
+  onDelete,
+  onView,
+  onEdit,
+  pagination
 }) => {
-  // Helper function để hiển thị trạng thái
-  const getStatusTag = (status: string) => {
-    const config: Record<string, { color: string, text: string }> = {
-      available: { color: 'success', text: 'Còn hàng' },
-      low_stock: { color: 'warning', text: 'Sắp hết' },
-      out_of_stock: { color: 'error', text: 'Hết hàng' },
-      discontinued: { color: 'default', text: 'Ngừng kinh doanh' },
-    };
-    const statusConfig = config[status] || { color: 'default', text: status };
-    return <Tag color={statusConfig.color}>{statusConfig.text}</Tag>;
-  };
-
   // Helper function để hiển thị loại dịch vụ
   const getServiceTypeTag = (type: string) => {
     const config: Record<string, { color: string, text: string }> = {
@@ -66,15 +57,15 @@ const ServiceTable: React.FC<ServiceTableProps> = ({
       key: 'sport',
       render: (text: string) => (
         <Tag color="blue" style={{ borderRadius: '4px', padding: '2px 8px' }}>
-          {text}
+          {text ? getSportNameInVietnamese(text) : 'Không xác định'}
         </Tag>
       ),
     },
     {
       title: 'Loại dịch vụ',
-      dataIndex: 'serviceType',
-      key: 'serviceType',
-      render: (type: string) => getServiceTypeTag(type),
+      dataIndex: 'type',
+      key: 'type',
+      render: (type: ServiceType) => getServiceTypeTag(type),
     },
     {
       title: 'Giá',
@@ -87,22 +78,18 @@ const ServiceTable: React.FC<ServiceTableProps> = ({
       ),
     },
     {
-      title: 'Tồn kho',
+      title: 'Số lượng',
       key: 'inventory',
       render: (record: Service) => (
         <div>
-          <div>{record.amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}</div>
-          <div style={{ fontSize: '12px', color: '#666' }}>
-            Đang sử dụng: {record.inUseCount?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
-          </div>
+          <div>Tổng: {record.amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}</div>
+          {record.bookedCount && (
+            <div style={{ fontSize: '12px', color: '#666' }}>
+              Đã đặt: {record.bookedCount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+            </div>
+          )}
         </div>
       ),
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status: string) => getStatusTag(status),
     },
     {
       title: 'Thao tác',
@@ -113,14 +100,14 @@ const ServiceTable: React.FC<ServiceTableProps> = ({
             <Button
               type="text"
               icon={<EyeOutlined style={{ color: '#1890ff' }} />}
-              onClick={() => onViewService(record)}
+              onClick={() => onView(record)}
             />
           </Tooltip>
           <Tooltip title="Chỉnh sửa">
             <Button
               type="text"
               icon={<EditOutlined style={{ color: '#52c41a' }} />}
-              onClick={() => onEditService(record)}
+              onClick={() => onEdit(record)}
             />
           </Tooltip>
           <Tooltip title="Xóa">
@@ -128,7 +115,7 @@ const ServiceTable: React.FC<ServiceTableProps> = ({
               type="text"
               danger
               icon={<DeleteOutlined style={{ color: '#ff4d4f' }} />}
-              onClick={() => onDeleteService(record.id.toString())}
+              onClick={() => onDelete(record.id.toString())}
             />
           </Tooltip>
         </Space>
@@ -142,13 +129,8 @@ const ServiceTable: React.FC<ServiceTableProps> = ({
         columns={columns}
         dataSource={services}
         rowKey="id"
-        pagination={{
-          current: currentPage,
-          pageSize: itemsPerPage,
-          total: totalServices,
-          onChange: onPageChange,
-          showSizeChanger: false
-        }}
+        pagination={pagination}
+        loading={loading}
         scroll={{ x: 1100 }}
       />
     </div>

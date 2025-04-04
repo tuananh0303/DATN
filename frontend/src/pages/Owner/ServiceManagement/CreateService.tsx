@@ -1,25 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Form, Input, Button, Select, InputNumber, Card, Typography, Space, Divider, List, Tag, Modal } from 'antd';
+import { Form, Input, Button, Select, InputNumber, Card, Typography, Space, Divider, List, Tag, Modal, message } from 'antd';
 import { PlusOutlined, DeleteOutlined, ArrowLeftOutlined } from '@ant-design/icons';
-import { ServiceFormData, ServiceType } from '@/types/service.type';
-import { mockFacilitiesDropdown } from '@/mocks/facility/mockFacilities';
+import { ServiceFormData, ServiceType, ServiceApiRequest } from '@/types/service.type';
+import { facilityService } from '@/services/facility.service';
+import { FacilityDropdownItem } from '@/services/facility.service';
+import { Sport } from '@/types/sport.type';
+import { serviceService } from '@/services/service.service';
+import { getSportNameInVietnamese } from '@/utils/translateSport';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
 
-// Mock sports data
-const mockSports = [
-  { id: 1, name: 'Bóng đá' },
-  { id: 2, name: 'Bóng rổ' },
-  { id: 3, name: 'Tennis' },
-  { id: 4, name: 'Cầu lông' }
-];
-
 interface CreateServiceProps {
   onCancel?: () => void;
   onSubmit?: (data: ServiceFormData[]) => void;
+}
+
+// Định nghĩa interface mở rộng cho Facility bao gồm trường sports
+interface ExtendedFacility extends FacilityDropdownItem {
+  sports?: Sport[];
 }
 
 const CreateService: React.FC<CreateServiceProps> = ({ onCancel, onSubmit }) => {
@@ -30,10 +31,45 @@ const CreateService: React.FC<CreateServiceProps> = ({ onCancel, onSubmit }) => 
   const [selectedFacilityId, setSelectedFacilityId] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
   const [servicesList, setServicesList] = useState<ServiceFormData[]>([]);
+  const [facilities, setFacilities] = useState<ExtendedFacility[]>([]);
+  const [sports, setSports] = useState<Sport[]>([]);
+  const [loading, setLoading] = useState(false);
   
-  // Handle facility selection
+  // Fetch facilities khi component mount
+  useEffect(() => {
+    const fetchFacilities = async () => {
+      setLoading(true);
+      try {
+        const facilitiesData = await facilityService.getFacilitiesDropdown();
+        console.log('Fetched facilities data:', facilitiesData); // Debug log
+        setFacilities(facilitiesData);
+      } catch (error) {
+        console.error('Error fetching facilities:', error);
+        message.error('Không thể tải danh sách cơ sở. Vui lòng thử lại sau.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchFacilities();
+  }, []);
+
+  // Handle facility selection và set sports
   const handleFacilitySelect = (value: string) => {
     setSelectedFacilityId(value);
+    form.resetFields(['sportId']); // Reset sport field
+    
+    // Tìm facility được chọn
+    const selectedFacility = facilities.find(facility => facility.id === value);
+    
+    if (selectedFacility && selectedFacility.sports && selectedFacility.sports.length > 0) {
+      console.log('Setting sports from selected facility:', selectedFacility.sports);
+      setSports(selectedFacility.sports);
+    } else {
+      console.log('No sports found in the selected facility');
+      setSports([]);
+      message.warning('Cơ sở này chưa có thông tin về các loại hình thể thao.');
+    }
   };
 
   // Add service to the list
@@ -47,8 +83,7 @@ const CreateService: React.FC<CreateServiceProps> = ({ onCancel, onSubmit }) => 
         amount: values.amount,
         sportId: values.sportId,
         unit: values.unit,
-        serviceType: values.serviceType,
-        status: values.status || 'available'
+        type: values.type
       };
       
       setServicesList(prev => [...prev, newService]);
@@ -60,8 +95,7 @@ const CreateService: React.FC<CreateServiceProps> = ({ onCancel, onSubmit }) => 
         description: '',
         amount: null,
         unit: undefined,
-        serviceType: undefined,
-        status: 'available'
+        type: undefined
       });
     });
   };
@@ -72,7 +106,7 @@ const CreateService: React.FC<CreateServiceProps> = ({ onCancel, onSubmit }) => 
   };
 
   // Handle form submission
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!selectedFacilityId) {
       Modal.error({
         title: 'Chưa chọn cơ sở',
@@ -91,23 +125,36 @@ const CreateService: React.FC<CreateServiceProps> = ({ onCancel, onSubmit }) => 
 
     setSubmitting(true);
     
-    // Simulate API call with setTimeout
-    setTimeout(() => {
-      // Success message
-      Modal.success({
-        title: 'Tạo dịch vụ thành công',
-        content: `Đã tạo ${servicesList.length} dịch vụ mới cho cơ sở`,
-        onOk: () => {
-          if (onSubmit) {
-            onSubmit(servicesList);
-          } else {
-            navigate('/owner/service-management');
-          }
-        }
-      });
+    try {
+      // Chuyển đổi sang định dạng API
+      const apiRequest: ServiceApiRequest[] = servicesList.map(service => ({
+        name: service.name,
+        price: service.price,
+        description: service.description,
+        amount: service.amount,
+        sportId: service.sportId,
+        unit: service.unit,
+        type: service.type
+      }));
       
+      // Gọi API để tạo dịch vụ
+      await serviceService.createServices(selectedFacilityId, apiRequest);
+      
+      // Thông báo thành công
+      message.success(`Đã tạo ${servicesList.length} dịch vụ mới cho cơ sở`);
+      
+      // Chuyển hướng hoặc callback
+      if (onSubmit) {
+        onSubmit(servicesList);
+      } else {
+        navigate('/owner/service-management');
+      }
+    } catch (error) {
+      console.error('Error creating services:', error);
+      message.error('Không thể tạo dịch vụ. Vui lòng thử lại sau.');
+    } finally {
       setSubmitting(false);
-    }, 1000);
+    }
   };
 
   // Handle Cancel
@@ -121,8 +168,8 @@ const CreateService: React.FC<CreateServiceProps> = ({ onCancel, onSubmit }) => 
 
   // Get sport name by ID
   const getSportName = (sportId: number) => {
-    const sport = mockSports.find(s => s.id === sportId);
-    return sport ? sport.name : 'Không xác định';
+    const sport = sports.find(s => s.id === sportId);
+    return sport ? getSportNameInVietnamese(sport.name) : 'Không xác định';
   };
 
   // Helper function để hiển thị loại dịch vụ
@@ -176,9 +223,10 @@ const CreateService: React.FC<CreateServiceProps> = ({ onCancel, onSubmit }) => 
             <Select
               placeholder="Chọn cơ sở của bạn"
               onChange={handleFacilitySelect}
-              disabled={submitting}
+              disabled={submitting || loading}
+              loading={loading}
             >
-              {mockFacilitiesDropdown.map((facility) => (
+              {facilities.map((facility) => (
                 <Option key={facility.id} value={facility.id}>
                   {facility.name}
                 </Option>
@@ -195,18 +243,19 @@ const CreateService: React.FC<CreateServiceProps> = ({ onCancel, onSubmit }) => 
               >
                 <Select 
                   placeholder="Chọn loại hình thể thao" 
-                  disabled={submitting}
+                  disabled={submitting || loading}
+                  loading={loading}
                   optionLabelProp="label"
                   style={{ width: '100%' }}
                   popupMatchSelectWidth={false}
                 >
-                  {mockSports.map((sport) => (
+                  {sports.map((sport) => (
                     <Option 
                       key={sport.id} 
                       value={sport.id} 
-                      label={sport.name}
+                      label={getSportNameInVietnamese(sport.name)}
                     >
-                      <div style={{ minWidth: '120px' }}>{sport.name}</div>
+                      <div style={{ minWidth: '120px' }}>{getSportNameInVietnamese(sport.name)}</div>
                     </Option>
                   ))}
                 </Select>
@@ -221,7 +270,7 @@ const CreateService: React.FC<CreateServiceProps> = ({ onCancel, onSubmit }) => 
               </Form.Item>
 
               <Form.Item
-                name="serviceType"
+                name="type"
                 label="Loại dịch vụ"
                 rules={[{ required: true, message: 'Vui lòng chọn loại dịch vụ' }]}
               >
@@ -282,39 +331,24 @@ const CreateService: React.FC<CreateServiceProps> = ({ onCancel, onSubmit }) => 
                 </Form.Item>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <Form.Item
-                  name="amount"
-                  label="Số lượng"
-                  className="flex-1"
-                  rules={[{ required: true, message: 'Vui lòng nhập số lượng' }]}
-                >
-                  <InputNumber
-                    min={0}
-                    placeholder="Nhập số lượng"
-                    style={{ width: '100%' }}
-                    formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
-                    parser={(value: string | undefined) => {
-                      if (!value) return 0;
-                      return Number(value.replace(/\./g, ''));
-                    }}
-                    disabled={submitting}
-                  />
-                </Form.Item>
-
-                <Form.Item
-                  name="status"
-                  label="Trạng thái"
-                  initialValue="available"
-                >
-                  <Select placeholder="Chọn trạng thái" disabled={submitting}>
-                    <Option value="available">Còn hàng</Option>
-                    <Option value="low_stock">Sắp hết</Option>
-                    <Option value="out_of_stock">Hết hàng</Option>
-                    <Option value="discontinued">Ngừng kinh doanh</Option>
-                  </Select>
-                </Form.Item>
-              </div>
+              <Form.Item
+                name="amount"
+                label="Số lượng"
+                className="flex-1"
+                rules={[{ required: true, message: 'Vui lòng nhập số lượng' }]}
+              >
+                <InputNumber
+                  min={0}
+                  placeholder="Nhập số lượng"
+                  style={{ width: '100%' }}
+                  formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+                  parser={(value: string | undefined) => {
+                    if (!value) return 0;
+                    return Number(value.replace(/\./g, ''));
+                  }}
+                  disabled={submitting}
+                />
+              </Form.Item>
 
               <Form.Item>
                 <Button 
@@ -362,7 +396,7 @@ const CreateService: React.FC<CreateServiceProps> = ({ onCancel, onSubmit }) => 
                         <Space direction="vertical" size={1}>
                           <div className="flex gap-1 mt-1">
                             <Tag color="blue">{getSportName(service.sportId)}</Tag>
-                            {service.serviceType && getServiceTypeTag(service.serviceType)}
+                            {service.type && getServiceTypeTag(service.type)}
                           </div>
                           <Text type="secondary">Giá: {service.price.toLocaleString()} đ/{service.unit}</Text>
                           <Text type="secondary">Số lượng: {service.amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}</Text>

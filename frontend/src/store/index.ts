@@ -5,6 +5,7 @@ import serviceReducer from './slices/serviceSlice';
 import voucherReducer from './slices/voucherSlice';
 import eventReducer from './slices/eventSlice';
 import facilityReducer from './slices/facilitySlice';
+import notificationReducer from './slices/notificationSlice';
 
 export const store = configureStore({
   reducer: {
@@ -14,6 +15,7 @@ export const store = configureStore({
     voucher: voucherReducer,
     event: eventReducer,
     facility: facilityReducer,
+    notification: notificationReducer,
   },
 });
 

@@ -1,40 +1,33 @@
-import React from 'react';
-import { Layout, Button, Dropdown, Avatar, Badge, Space, theme } from 'antd';
-import { useLocation, useNavigate } from 'react-router-dom';
-import {
-  UserOutlined,
-  BellOutlined,
-  DollarOutlined,
-  HistoryOutlined,
-  FileTextOutlined,
-  LogoutOutlined,
-  GlobalOutlined,
-} from '@ant-design/icons';
+import React, { useEffect, useState } from 'react';
+import { Layout, Button, Dropdown, Avatar, Badge, Space, MenuProps } from 'antd';
+import { BellOutlined, UserOutlined, LogoutOutlined, GlobalOutlined, DollarOutlined, HistoryOutlined, FileTextOutlined } from '@ant-design/icons';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/hooks/reduxHooks';
 import { logout } from '@/store/slices/authSlice';
-import type { MenuProps } from 'antd';
+import { theme } from 'antd';
+import { fetchUnreadCount } from '@/store/slices/notificationSlice';
+import NotificationList from '../notification/NotificationList';
 
 const { Header } = Layout;
 
-
-const ROUTE_TITLES: { [key: string]: string } = {
-  '/dashboard': 'Trang chủ',
+const ROUTE_TITLES: Record<string, string> = {
+  '/dashboard': 'Dashboard',
   '/users': 'Quản lý người dùng',
   '/facilities': 'Quản lý cơ sở',
-  '/approvals': 'Phê duyệt',
-  '/fields': 'Quản lý sân',
-  '/services': 'Quản lý dịch vụ',
-  '/vouchers': 'Quản lý voucher',
-  '/events': 'Quản lý sự kiện',
-  '/reviews': 'Quản lý đánh giá',
-  '/supports': 'Hỗ trợ',
   '/reports': 'Báo cáo',
-  '/settings': 'Cài đặt hệ thống',
+  '/approvals': 'Phê duyệt',
+  '/settings': 'Cài đặt',
 };
 
 const LANGUAGES = [
-  { key: 'vi', label: 'Tiếng Việt' },
-  { key: 'en', label: 'English' },
+  {
+    key: 'vi',
+    label: 'Tiếng Việt',
+  },
+  {
+    key: 'en',
+    label: 'English',
+  },
 ];
 
 const Topbar: React.FC = () => {
@@ -43,6 +36,20 @@ const Topbar: React.FC = () => {
   const dispatch = useAppDispatch();
   const { token } = theme.useToken();
   const { user } = useAppSelector(state => state.auth);
+  const { unreadCount } = useAppSelector((state) => state.notification);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+
+  useEffect(() => {
+    // Fetch unread count when component mounts
+    dispatch(fetchUnreadCount());
+
+    // Poll for new notifications every minute
+    const interval = setInterval(() => {
+      dispatch(fetchUnreadCount());
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [dispatch]);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -121,9 +128,18 @@ const Topbar: React.FC = () => {
           <Button type="text" icon={<GlobalOutlined style={{ fontSize: '20px' }} />} />
         </Dropdown>
 
-        <Badge count={5} size="small">
-          <Button type="text" icon={<BellOutlined style={{ fontSize: '20px' }} />} />
-        </Badge>
+        <Dropdown 
+          menu={{ items: [] }} 
+          dropdownRender={() => <NotificationList onClose={() => setNotificationOpen(false)} />}
+          open={notificationOpen}
+          onOpenChange={setNotificationOpen}
+          placement="bottomRight"
+          trigger={['click']}
+        >
+          <Badge count={unreadCount} size="small">
+            <Button type="text" icon={<BellOutlined style={{ fontSize: '20px' }} />} />
+          </Badge>
+        </Dropdown>
 
         <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
           <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}>

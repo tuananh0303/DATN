@@ -115,16 +115,20 @@ const CreateFieldGroup: React.FC = () => {
       const fieldGroupsData = await fieldService.getFieldGroupsByFacilityId(selectedFacilityId);
       
       // Organize field groups by sport
-      const fieldGroupsBySport: Record<string, FieldGroup[]> = {
-        composite: []
-      };
+      const fieldGroupsBySport: Record<string, FieldGroup[]> = {};
       
       // Process each field group to categorize by sport
       fieldGroupsData.forEach(group => {
+        // Nếu không có sports hoặc là mảng rỗng, bỏ qua
+        if (!group.sports || group.sports.length === 0) return;
+
         // Groups with multiple sports go to composite
         if (group.sports.length > 1) {
-          fieldGroupsBySport.composite.push(group);
-        } else if (group.sports.length === 1) {
+          if (!fieldGroupsBySport['composite']) {
+            fieldGroupsBySport['composite'] = [];
+          }
+          fieldGroupsBySport['composite'].push(group);
+        } else {
           // For single sport field groups
           const sportName = group.sports[0].name.toLowerCase();
           if (!fieldGroupsBySport[sportName]) {
@@ -134,6 +138,7 @@ const CreateFieldGroup: React.FC = () => {
         }
       });
       
+      console.log('Categorized field groups:', fieldGroupsBySport);
       setFieldGroups(fieldGroupsBySport);
     } catch (error) {
       console.error('Error fetching field groups:', error);
@@ -172,6 +177,12 @@ const CreateFieldGroup: React.FC = () => {
   // Lấy danh sách nhóm sân cho một loại thể thao cụ thể
   const getFieldGroupsForSport = (sport: Sport): FieldGroup[] => {
     const sportName = sport.name.toLowerCase();
+    
+    // Đối với tổng hợp, cần trả về composite
+    if (sport.id === COMPOSITE_SPORT.id) {
+      return fieldGroups['composite'] || [];
+    }
+    
     return fieldGroups[sportName] || [];
   };
   
@@ -206,8 +217,14 @@ const CreateFieldGroup: React.FC = () => {
       return;
     }
     
+    // Ensure formData has the correct structure for the API
+    const preparedFormData = {
+      ...formData,
+      fields: formData.fields.map(field => ({ name: typeof field === 'string' ? field : field.name }))
+    };
+    
     // Add facilityId to the formData
-    formData.facilityId = selectedFacilityId;
+    preparedFormData.facilityId = selectedFacilityId;
     
     // Show confirmation modal
     Modal.confirm({
@@ -215,12 +232,12 @@ const CreateFieldGroup: React.FC = () => {
       icon: <ExclamationCircleOutlined />,
       content: (
         <div>
-          <p>Bạn có chắc chắn muốn tạo nhóm sân <strong>{formData.name}</strong> với các thông tin sau không?</p>
+          <p>Bạn có chắc chắn muốn tạo nhóm sân <strong>{preparedFormData.name}</strong> với các thông tin sau không?</p>
           <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
-            <p><strong>Kích thước:</strong> {formData.dimension}</p>
-            <p><strong>Mặt sân:</strong> {formData.surface}</p>
-            <p><strong>Giá cơ bản:</strong> {formData.basePrice.toLocaleString('de-DE')} VNĐ</p>
-            <p><strong>Số sân:</strong> {formData.fields.length}</p>
+            <p><strong>Kích thước:</strong> {preparedFormData.dimension}</p>
+            <p><strong>Mặt sân:</strong> {preparedFormData.surface}</p>
+            <p><strong>Giá cơ bản:</strong> {preparedFormData.basePrice.toLocaleString('de-DE')} VNĐ</p>
+            <p><strong>Số sân:</strong> {preparedFormData.fields.length}</p>
           </div>
         </div>
       ),
@@ -230,7 +247,7 @@ const CreateFieldGroup: React.FC = () => {
       onOk: async () => {
         try {
           // Call API to create field group
-          await fieldService.createFieldGroups(selectedFacilityId, [formData]);
+          await fieldService.createFieldGroups(selectedFacilityId, [preparedFormData]);
           
           notification.success({
             message: 'Thành công',
@@ -285,8 +302,10 @@ const CreateFieldGroup: React.FC = () => {
       return <Spin tip="Đang tải dữ liệu..." />;
     }
     
+    console.log(`Sport ${sport.name} (${sport.id}) has ${groups.length} field groups`);
+    
     if (groups.length === 0) {
-      return <Empty description="Không có nhóm sân nào" />;
+      return <Empty description={`Không có nhóm sân ${getSportDisplayName(sport)} nào`} />;
     }
     
     return (

@@ -123,26 +123,28 @@ const FieldGroupEdit: React.FC<FieldGroupEditProps> = ({ open, onClose, onSave, 
               dimension: values.dimension,
               surface: values.surface,
               basePrice: values.basePrice,
-              // Handle peak times
-              peakStartTime1: values.peakTime1 ? values.peakTime1[0].format('HH:mm') : '',
-              peakEndTime1: values.peakTime1 ? values.peakTime1[1].format('HH:mm') : '',
-              priceIncrease1: values.priceIncrease1 || 0,
-              
-              peakStartTime2: values.peakTime2 ? values.peakTime2[0].format('HH:mm') : '',
-              peakEndTime2: values.peakTime2 ? values.peakTime2[1].format('HH:mm') : '',
-              priceIncrease2: values.priceIncrease2 || 0,
-              
-              peakStartTime3: values.peakTime3 ? values.peakTime3[0].format('HH:mm') : '',
-              peakEndTime3: values.peakTime3 ? values.peakTime3[1].format('HH:mm') : '',
-              priceIncrease3: values.priceIncrease3 || 0,
-              
-              // Update sports based on selected options
-              sportIds: values.sportIds,
-              
-              // Set number of peaks
-              numberOfPeaks
+              sportIds: values.sportIds
             };
-
+            
+            // Chỉ thêm các trường peak time nếu có
+            if (values.peakTime1) {
+              updateData.peakStartTime1 = values.peakTime1[0].format('HH:mm');
+              updateData.peakEndTime1 = values.peakTime1[1].format('HH:mm');
+              updateData.priceIncrease1 = values.priceIncrease1 || 0;
+            }
+            
+            if (values.peakTime2) {
+              updateData.peakStartTime2 = values.peakTime2[0].format('HH:mm');
+              updateData.peakEndTime2 = values.peakTime2[1].format('HH:mm');
+              updateData.priceIncrease2 = values.priceIncrease2 || 0;
+            }
+            
+            if (values.peakTime3) {
+              updateData.peakStartTime3 = values.peakTime3[0].format('HH:mm');
+              updateData.peakEndTime3 = values.peakTime3[1].format('HH:mm');
+              updateData.priceIncrease3 = values.priceIncrease3 || 0;
+            }
+            
             // Call API to update field group
             await fieldService.updateFieldGroup(fieldGroup.id, updateData);
             

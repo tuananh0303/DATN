@@ -1,7 +1,8 @@
 import React from 'react';
-import { Modal, Button, Typography, Tag, Divider } from 'antd';
+import { Modal, Button, Typography, Tag, Divider, Descriptions } from 'antd';
 import { Service } from '@/types/service.type';
 import { formatPrice } from '@/utils/statusUtils';
+import { getSportNameInVietnamese } from '@/utils/translateSport';
 
 const { Text } = Typography;
 
@@ -9,33 +10,13 @@ interface ServiceDetailModalProps {
   visible: boolean;
   service: Service | null;
   onClose: () => void;
-  onEdit: (service: Service) => void;
 }
 
 const ServiceDetailModal: React.FC<ServiceDetailModalProps> = ({
   visible,
   service,
-  onClose,
-  onEdit
+  onClose
 }) => {
-  // Helper function to format date
-  const formatDate = (date?: Date) => {
-    if (!date) return '-';
-    return new Date(date).toLocaleDateString('vi-VN');
-  };
-
-  // Helper function để hiển thị trạng thái
-  const getStatusTag = (status: string) => {
-    const config: Record<string, { color: string, text: string }> = {
-      available: { color: 'success', text: 'Còn hàng' },
-      low_stock: { color: 'warning', text: 'Sắp hết' },
-      out_of_stock: { color: 'error', text: 'Hết hàng' },
-      discontinued: { color: 'default', text: 'Ngừng kinh doanh' },
-    };
-    const statusConfig = config[status] || { color: 'default', text: status };
-    return <Tag color={statusConfig.color}>{statusConfig.text}</Tag>;
-  };
-
   // Helper function để hiển thị loại dịch vụ
   const getServiceTypeTag = (type: string) => {
     const config: Record<string, { color: string, text: string }> = {
@@ -57,18 +38,6 @@ const ServiceDetailModal: React.FC<ServiceDetailModalProps> = ({
       footer={[
         <Button key="close" onClick={onClose}>
           Đóng
-        </Button>,
-        <Button 
-          key="edit" 
-          type="primary" 
-          onClick={() => {
-            if (service) {
-              onEdit(service);
-            }
-          }}
-          disabled={!service}
-        >
-          Chỉnh sửa
         </Button>
       ]}
       width={600}
@@ -79,15 +48,14 @@ const ServiceDetailModal: React.FC<ServiceDetailModalProps> = ({
             <div>
               <Text strong className="text-lg">{service.name}</Text>
               <div className="mt-1 flex gap-1">
-                <Tag color="blue">{service.sport.name}</Tag>
-                {getServiceTypeTag(service.serviceType)}
-                {getStatusTag(service.status)}
+                <Tag color="blue">{service.sport ? getSportNameInVietnamese(service.sport.name) : 'Không xác định'}</Tag>
+                {getServiceTypeTag(service.type)}
               </div>
             </div>
             <div className="text-right">
               <Text strong className="text-lg text-red-500">{formatPrice(service.price)}/{service.unit}</Text>
               <div className="mt-1">
-                <Text type="secondary">Còn {service.amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')} sản phẩm</Text>
+                <Text type="secondary">Tổng: {service.amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')} sản phẩm</Text>
               </div>
             </div>
           </div>
@@ -101,40 +69,44 @@ const ServiceDetailModal: React.FC<ServiceDetailModalProps> = ({
           
           <div className="p-4 bg-gray-50 rounded-md">
             <Text strong>Thông tin bổ sung:</Text>
-            <div className="grid grid-cols-2 gap-4 mt-2">
-              <div>
-                <Text type="secondary">ID dịch vụ:</Text>
-                <p>{service.id}</p>
-              </div>
-              <div>
-                <Text type="secondary">Loại hình thể thao:</Text>
-                <p>{service.sport.name}</p>
-              </div>
-              <div>
-                <Text type="secondary">Giá dịch vụ:</Text>
-                <p>{formatPrice(service.price)}/{service.unit}</p>
-              </div>
-              <div>
-                <Text type="secondary">Số lượng còn lại:</Text>
-                <p>{service.amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}</p>
-              </div>
-              <div>
-                <Text type="secondary">Độ phổ biến:</Text>
-                <p>{service.popularityScore}/100</p>
-              </div>
-              <div>
-                <Text type="secondary">Lượt đặt:</Text>
-                <p>{service.bookedCount}</p>
-              </div>
-              <div>
-                <Text type="secondary">Đang sử dụng:</Text>
-                <p>{service.inUseCount}</p>
-              </div>
-              <div>
-                <Text type="secondary">Cập nhật cuối:</Text>
-                <p>{formatDate(service.lastUpdated)}</p>
-              </div>
-            </div>
+            <Descriptions column={2}>
+              <Descriptions.Item label="Loại dịch vụ">
+                <Tag color={getServiceTypeTag(service.type).props.color}>
+                  {getServiceTypeTag(service.type).props.children}
+                </Tag>
+              </Descriptions.Item>
+              
+              <Descriptions.Item label="Phân loại">
+                <Tag color="blue">
+                  {service.sport ? getSportNameInVietnamese(service.sport.name) : 'Không xác định'}
+                </Tag>
+              </Descriptions.Item>
+              
+              <Descriptions.Item label="Tổng">
+                <strong>
+                  {service.amount?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+                  {service.unit && ` ${service.unit}`}
+                </strong>
+              </Descriptions.Item>
+
+              <Descriptions.Item label="Đơn giá">
+                <strong className="text-orange-500">{formatPrice(service.price)}</strong>
+              </Descriptions.Item>
+
+              <Descriptions.Item label="Số lượng đã đặt">
+                <strong>
+                  {service.bookedCount?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') || '0'}
+                  {service.unit && ` ${service.unit}`}
+                </strong>
+              </Descriptions.Item>
+
+              <Descriptions.Item label="Đang sử dụng trong ngày">
+                <strong>
+                  {service.bookedCountOnDate?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') || '0'}
+                  {service.unit && ` ${service.unit}`}
+                </strong>
+              </Descriptions.Item>
+            </Descriptions>
           </div>
           
           <div className="pt-2">

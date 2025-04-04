@@ -1,6 +1,8 @@
 import React from 'react';
 import { Modal, Form, Input, Typography, Select, InputNumber, Button } from 'antd';
 import { Service, UpdatedServiceValues } from '@/types/service.type';
+import { Sport } from '@/types/sport.type';
+import { getSportNameInVietnamese } from '@/utils/translateSport';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -9,31 +11,23 @@ const { Title } = Typography;
 interface ServiceEditModalProps {
   visible: boolean;
   service: Service | null;
-  onClose: () => void;
-  onConfirmUpdate: (values: UpdatedServiceValues) => void;
-  submitting: boolean;
+  sports: Sport[];
+  onCancel: () => void;
+  onSubmit: (values: UpdatedServiceValues) => void;
 }
-
-// Mock sports data
-const mockSports = [
-  { id: 1, name: 'Bóng đá' },
-  { id: 2, name: 'Bóng rổ' },
-  { id: 3, name: 'Tennis' },
-  { id: 4, name: 'Chung' }
-];
 
 const ServiceEditModal: React.FC<ServiceEditModalProps> = ({
   visible,
   service,
-  onClose,
-  onConfirmUpdate,
-  submitting
+  sports,
+  onCancel,
+  onSubmit
 }) => {
   const [form] = Form.useForm();
 
   const handleSubmit = () => {
     form.validateFields().then(values => {
-      onConfirmUpdate(values as UpdatedServiceValues);
+      onSubmit(values as UpdatedServiceValues);
     }).catch(error => {
       console.error('Validation failed:', error);
     });
@@ -43,16 +37,15 @@ const ServiceEditModal: React.FC<ServiceEditModalProps> = ({
     <Modal
       title={<Title level={4}>Chỉnh sửa dịch vụ</Title>}
       open={visible}
-      onCancel={onClose}
+      onCancel={onCancel}
       footer={[
-        <Button key="cancel" onClick={onClose} disabled={submitting}>
+        <Button key="cancel" onClick={onCancel}>
           Hủy
         </Button>,
         <Button 
           key="submit" 
           type="primary" 
           onClick={handleSubmit} 
-          loading={submitting}
         >
           Lưu thay đổi
         </Button>
@@ -73,9 +66,8 @@ const ServiceEditModal: React.FC<ServiceEditModalProps> = ({
             description: service.description,
             price: service.price,
             amount: service.amount,
-            sportId: service.sport.id,
-            serviceType: service.serviceType,
-            status: service.status,
+            sportId: service.sport?.id,
+            type: service.type,
             unit: service.unit
           }}
         >
@@ -84,7 +76,7 @@ const ServiceEditModal: React.FC<ServiceEditModalProps> = ({
             label="Tên dịch vụ"
             rules={[{ required: true, message: 'Vui lòng nhập tên dịch vụ' }]}
           >
-            <Input placeholder="Nhập tên dịch vụ" disabled={submitting} />
+            <Input placeholder="Nhập tên dịch vụ" />
           </Form.Item>
 
           <Form.Item
@@ -93,30 +85,29 @@ const ServiceEditModal: React.FC<ServiceEditModalProps> = ({
             rules={[{ required: true, message: 'Vui lòng chọn loại hình thể thao' }]}
           >
             <Select 
-              placeholder="Chọn loại hình thể thao" 
-              disabled={submitting}
+              placeholder="Chọn loại hình thể thao"
               optionLabelProp="label"
               style={{ width: '100%' }}
               popupMatchSelectWidth={false}
             >
-              {mockSports.map((sport) => (
+              {sports.map((sport) => (
                 <Option 
                   key={sport.id} 
                   value={sport.id} 
-                  label={sport.name}
+                  label={getSportNameInVietnamese(sport.name)}
                 >
-                  <div style={{ minWidth: '120px' }}>{sport.name}</div>
+                  <div style={{ minWidth: '120px' }}>{getSportNameInVietnamese(sport.name)}</div>
                 </Option>
               ))}
             </Select>
           </Form.Item>
 
           <Form.Item
-            name="serviceType"
+            name="type"
             label="Loại dịch vụ"
             rules={[{ required: true, message: 'Vui lòng chọn loại dịch vụ' }]}
           >
-            <Select placeholder="Chọn loại dịch vụ" disabled={submitting}>
+            <Select placeholder="Chọn loại dịch vụ">
               <Option value="rental">Cho thuê</Option>
               <Option value="coaching">Huấn luyện</Option>
               <Option value="equipment">Thiết bị</Option>
@@ -131,8 +122,7 @@ const ServiceEditModal: React.FC<ServiceEditModalProps> = ({
           >
             <TextArea 
               placeholder="Nhập mô tả chi tiết về dịch vụ" 
-              rows={3} 
-              disabled={submitting}
+              rows={3}
             />
           </Form.Item>
 
@@ -152,7 +142,6 @@ const ServiceEditModal: React.FC<ServiceEditModalProps> = ({
                   if (!value) return 0;
                   return Number(value.replace(/\./g, ''));
                 }}
-                disabled={submitting}
               />
             </Form.Item>
 
@@ -161,7 +150,7 @@ const ServiceEditModal: React.FC<ServiceEditModalProps> = ({
               label="Đơn vị tính"
               rules={[{ required: true, message: 'Vui lòng nhập đơn vị tính' }]}
             >
-              <Select placeholder="Chọn đơn vị tính" disabled={submitting}>
+              <Select placeholder="Chọn đơn vị tính">
                 <Option value="giờ">Giờ</Option>
                 <Option value="ngày">Ngày</Option>
                 <Option value="buổi">Buổi</Option>
@@ -172,38 +161,22 @@ const ServiceEditModal: React.FC<ServiceEditModalProps> = ({
             </Form.Item>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <Form.Item
-              name="amount"
-              label="Số lượng"
-              rules={[{ required: true, message: 'Vui lòng nhập số lượng' }]}
-            >
-              <InputNumber
-                min={0}
-                placeholder="Nhập số lượng"
-                style={{ width: '100%' }}
-                formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
-                parser={(value: string | undefined) => {
-                  if (!value) return 0;
-                  return Number(value.replace(/\./g, ''));
-                }}
-                disabled={submitting}
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="status"
-              label="Trạng thái"
-              rules={[{ required: true, message: 'Vui lòng chọn trạng thái' }]}
-            >
-              <Select placeholder="Chọn trạng thái" disabled={submitting}>
-                <Option value="available">Còn hàng</Option>
-                <Option value="low_stock">Sắp hết</Option>
-                <Option value="out_of_stock">Hết hàng</Option>
-                <Option value="discontinued">Ngừng kinh doanh</Option>
-              </Select>
-            </Form.Item>
-          </div>
+          <Form.Item
+            name="amount"
+            label="Số lượng"
+            rules={[{ required: true, message: 'Vui lòng nhập số lượng' }]}
+          >
+            <InputNumber
+              min={0}
+              placeholder="Nhập số lượng"
+              style={{ width: '100%' }}
+              formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+              parser={(value: string | undefined) => {
+                if (!value) return 0;
+                return Number(value.replace(/\./g, ''));
+              }}
+            />
+          </Form.Item>
         </Form>
       )}
     </Modal>

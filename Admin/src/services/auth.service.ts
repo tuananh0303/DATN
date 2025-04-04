@@ -1,25 +1,35 @@
-import axios from 'axios';
-import { AdminUser, AuthResponse, TokenResponse } from '@/types/auth.types';
 import { apiClient } from '@/services/api.service';
+import { ApiError } from '@/types/errors';
 
 export const authService = {
-  async login(email: string, password: string): Promise<AuthResponse> {
-    const response = await axios.post(`${import.meta.env.VITE_API_URL}/auth/admin/login`, {
-      email,
-      password,
-    });
+  login: async (email: string, password: string) => {
+    try {
+      const response = await apiClient.post('/auth/login', { email, password });
+      return response.data;
+    } catch (error: unknown) {
+      const apiError = error as ApiError;
+      const errorMessage = apiError.response?.data?.message;
+      if (errorMessage) {
+        throw new Error(
+          Array.isArray(errorMessage) ? errorMessage.join(', ') : errorMessage
+        );
+      }
+      throw error;
+    }
+  },
+
+  refreshToken: async (refreshToken: string) => {
+    const response = await apiClient.post('/auth/refresh-token', { refreshToken });
     return response.data;
   },
 
-  async refreshToken(refreshToken: string): Promise<TokenResponse> {
-    const response = await axios.post(`${import.meta.env.VITE_API_URL}/auth/refresh-token`, {
-      refreshToken,
-    });
+  getMyInfo: async () => {
+    const response = await apiClient.get('/person/my-info');
     return response.data;
   },
 
-  async getAdminInfo(): Promise<AdminUser> {
-    const response = await apiClient.get('/admin/profile');
+  getAllPerson: async () => {
+    const response = await apiClient.get('/person/all');
     return response.data;
   },
 };

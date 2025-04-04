@@ -85,7 +85,7 @@ const TopbarProfile: React.FC = () => {
     {
       key: 'bookings',
       label: 'Lịch sử đặt sân',
-      onClick: () => navigate('/user/booking')
+      onClick: () => navigate('/user/history-booking')
     },
     {
       key: 'favorite',

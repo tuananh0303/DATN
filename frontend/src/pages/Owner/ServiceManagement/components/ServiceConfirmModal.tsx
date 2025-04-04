@@ -5,32 +5,22 @@ import { Service, UpdatedServiceValues } from '@/types/service.type';
 import { formatPrice } from '@/utils/statusUtils';
 
 interface ServiceConfirmModalProps {
+  visible: boolean;
   service: Service | null;
   updatedValues: UpdatedServiceValues | null;
-  onOk: () => void;
+  onConfirm: () => void;
   onCancel: () => void;
-  sportName: string;
+  submitting: boolean;
 }
 
 const ServiceConfirmModal: React.FC<ServiceConfirmModalProps> = ({
+  visible,
   service,
   updatedValues,
-  onOk,
+  onConfirm,
   onCancel,
-  sportName
+  submitting
 }) => {
-  // Helper function để hiển thị trạng thái
-  const getStatusTag = (status: string) => {
-    const config: Record<string, { color: string, text: string }> = {
-      available: { color: 'success', text: 'Còn hàng' },
-      low_stock: { color: 'warning', text: 'Sắp hết' },
-      out_of_stock: { color: 'error', text: 'Hết hàng' },
-      discontinued: { color: 'default', text: 'Ngừng kinh doanh' },
-    };
-    const statusConfig = config[status] || { color: 'default', text: status };
-    return <Tag color={statusConfig.color}>{statusConfig.text}</Tag>;
-  };
-
   // Helper function để hiển thị loại dịch vụ
   const getServiceTypeTag = (type: string) => {
     const config: Record<string, { color: string, text: string }> = {
@@ -46,6 +36,13 @@ const ServiceConfirmModal: React.FC<ServiceConfirmModalProps> = ({
 
   if (!service || !updatedValues) return null;
 
+  // Lấy tên môn thể thao từ ID
+  const getSportName = (sportId: number): string => {
+    // Trong thực tế, đây sẽ là một lookup từ danh sách sports
+    // Nhưng vì chúng ta không có props sports, nên chỉ hiển thị ID
+    return `ID: ${sportId}`;
+  };
+
   return (
     <Modal
       title={
@@ -54,12 +51,13 @@ const ServiceConfirmModal: React.FC<ServiceConfirmModalProps> = ({
           <span>Xác nhận cập nhật dịch vụ</span>
         </div>
       }
-      open={!!updatedValues}
-      onOk={onOk}
+      open={visible}
+      onOk={onConfirm}
       onCancel={onCancel}
       okText="Cập nhật"
       okType="primary"
       cancelText="Hủy"
+      confirmLoading={submitting}
     >
       <div>
         <p>Bạn có chắc chắn muốn cập nhật dịch vụ này với thông tin mới?</p>
@@ -76,29 +74,20 @@ const ServiceConfirmModal: React.FC<ServiceConfirmModalProps> = ({
             
             <div>
               <p><strong>Loại hình cũ:</strong></p>
-              <p className="text-gray-500">{service.sport.name}</p>
+              <p className="text-gray-500">{service.sport?.name || 'Không xác định'}</p>
             </div>
             <div>
               <p><strong>Loại hình mới:</strong></p>
-              <p className="text-blue-500">{sportName}</p>
+              <p className="text-blue-500">{getSportName(updatedValues.sportId)}</p>
             </div>
             
             <div>
               <p><strong>Loại dịch vụ cũ:</strong></p>
-              <p className="text-gray-500">{getServiceTypeTag(service.serviceType)}</p>
+              <p className="text-gray-500">{getServiceTypeTag(service.type)}</p>
             </div>
             <div>
               <p><strong>Loại dịch vụ mới:</strong></p>
-              <p className="text-blue-500">{getServiceTypeTag(updatedValues.serviceType)}</p>
-            </div>
-
-            <div>
-              <p><strong>Trạng thái cũ:</strong></p>
-              <p className="text-gray-500">{getStatusTag(service.status)}</p>
-            </div>
-            <div>
-              <p><strong>Trạng thái mới:</strong></p>
-              <p className="text-blue-500">{getStatusTag(updatedValues.status)}</p>
+              <p className="text-blue-500">{getServiceTypeTag(updatedValues.type)}</p>
             </div>
             
             <div>

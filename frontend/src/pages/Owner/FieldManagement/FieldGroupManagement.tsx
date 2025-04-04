@@ -112,7 +112,7 @@ const FieldGroupManagement: React.FC = () => {
       onOk() {
         // Check for existing bookings (mock implementation)
         if (currentStatus === 'active') {
-          const hasBooking = ["1", "3"].includes(fieldId);
+          const hasBooking = ["1", "2", "3", "4", "5", "8", "9", "10"].includes(fieldId);
 
           if (hasBooking) {
             Modal.error({
@@ -174,7 +174,7 @@ const FieldGroupManagement: React.FC = () => {
       onOk: async () => {
         try {
           // Check for existing bookings (mock implementation)
-          const hasBooking = ["1", "3"].includes(fieldId);
+          const hasBooking = ["1", "2", "3", "4", "5", "8", "9", "10"].includes(fieldId);
 
           if (hasBooking) {
             Modal.error({

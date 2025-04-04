@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Form, Steps, Card, Row, Col, Select, DatePicker, TimePicker, Radio, Button, InputNumber, Alert, Modal, Divider, Typography, Space, Switch, Calendar, Checkbox, Tag } from 'antd';
-import { ArrowLeftOutlined, ArrowRightOutlined, CheckCircleOutlined, ClockCircleOutlined, BankOutlined, WalletOutlined, CreditCardOutlined, CalendarOutlined } from '@ant-design/icons';
+import { Form, Steps, Card, Row, Col, Select, DatePicker, TimePicker, Radio, Button, InputNumber, Alert, Modal, Divider, Typography, Space, Switch, Calendar, Tag, Tooltip, Checkbox } from 'antd';
+import { ArrowLeftOutlined, ArrowRightOutlined, CheckCircleOutlined, ClockCircleOutlined, BankOutlined, WalletOutlined, CreditCardOutlined, CalendarOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { BookingFormData, BookingStatus, RecurringType, RecurringConfig, FieldGroupAvailability } from '@/types/booking.type';
 
@@ -32,6 +32,14 @@ const BookingPage: React.FC = () => {
   const [showRecurringModal, setShowRecurringModal] = useState(false);
   const [selectedDates, setSelectedDates] = useState<dayjs.Dayjs[]>([]);
   const [fieldGroupAvailability, setFieldGroupAvailability] = useState<FieldGroupAvailability[]>([]);
+  const [recurringSelectionMode, setRecurringSelectionMode] = useState<'auto' | 'manual'>('auto');
+  const [recurringType, setRecurringType] = useState<RecurringType>(RecurringType.DAILY);
+  const [selectedWeekday, setSelectedWeekday] = useState<string>('');
+  const [additionalWeekdays, setAdditionalWeekdays] = useState<number[]>([]);
+  const [isDateSelected, setIsDateSelected] = useState<boolean>(false);
+
+  // Maximum date constraints - 1 month from today
+  const maxBookingDate = dayjs().add(1, 'month');
 
   // Mock data - replace with actual API calls
   const sports = [
@@ -96,6 +104,76 @@ const BookingPage: React.FC = () => {
     }
   }, [currentStep]);
 
+  // Auto-generate recurring dates based on selected date and recurring type
+  const generateRecurringDates = (baseDate: dayjs.Dayjs, type: RecurringType) => {
+    if (!baseDate) return [];
+    
+    const dates: dayjs.Dayjs[] = [baseDate];
+    const endDate = dayjs().add(1, 'month'); // Max 1 month from today
+    
+    if (type === RecurringType.DAILY) {
+      // Generate daily dates for the rest of the week
+      let currentDate = baseDate.add(1, 'day');
+      
+      // Add remaining days of the week after selected date
+      while (currentDate.isBefore(endDate) && currentDate.day() !== baseDate.day()) {
+        dates.push(currentDate);
+        currentDate = currentDate.add(1, 'day');
+      }
+    } else if (type === RecurringType.WEEKLY) {
+      // Generate weekly dates for 1 month
+      let currentDate = baseDate.add(1, 'week');
+      while (currentDate.isBefore(endDate)) {
+        dates.push(currentDate);
+        currentDate = currentDate.add(1, 'week');
+      }
+
+      // Add additional weekdays if selected
+      if (additionalWeekdays.length > 0) {
+        const baseDayOfWeek = baseDate.day();
+        additionalWeekdays.forEach(weekday => {
+          if (weekday !== baseDayOfWeek) {
+            let additionalDate = baseDate.day(weekday);
+            
+            // If we've gone backwards in time, go forward a week
+            if (additionalDate.isBefore(baseDate)) {
+              additionalDate = additionalDate.add(1, 'week');
+            }
+            
+            // Add recurring instances of this additional weekday
+            while (additionalDate.isBefore(endDate)) {
+              dates.push(additionalDate);
+              additionalDate = additionalDate.add(1, 'week');
+            }
+          }
+        });
+
+        // Sort dates chronologically
+        dates.sort((a, b) => a.valueOf() - b.valueOf());
+      }
+    }
+    
+    return dates;
+  };
+
+  // Handle date change in the main form
+  const handleDateChange = (date: dayjs.Dayjs | null) => {
+    if (date) {
+      form.setFieldsValue({ date });
+      setIsDateSelected(true);
+      setSelectedWeekday(getWeekdayName(date));
+      
+      // If recurring is already set, update the dates
+      if (formData.isRecurring && recurringSelectionMode === 'auto') {
+        const newDates = generateRecurringDates(date, recurringType);
+        setSelectedDates(newDates);
+      }
+    } else {
+      setIsDateSelected(false);
+      setSelectedWeekday('');
+    }
+  };
+
   const handleNext = async () => {
     try {
       const values = await form.validateFields();
@@ -116,7 +194,7 @@ const BookingPage: React.FC = () => {
       // TODO: Implement API call to create booking
       await new Promise(resolve => setTimeout(resolve, 1000));
       navigate('/booking/history');
-    } catch (error) {
+    } catch {
       setError('Có lỗi xảy ra khi đặt sân. Vui lòng thử lại.');
     } finally {
       setLoading(false);
@@ -125,9 +203,28 @@ const BookingPage: React.FC = () => {
   };
 
   const handleRecurringChange = (checked: boolean) => {
+    if (!isDateSelected && checked) {
+      // If no date is selected, show an error and don't proceed
+      setError('Vui lòng chọn ngày đặt sân trước khi đặt định kỳ');
+      form.setFieldsValue({ isRecurring: false });
+      return;
+    } else if (error === 'Vui lòng chọn ngày đặt sân trước khi đặt định kỳ') {
+      // Clear the error if it's the date selection error
+      setError(null);
+    }
+
     form.setFieldsValue({ isRecurring: checked });
     if (checked) {
+      // When turning on recurring, auto-populate based on the already selected date
+      const selectedDate = form.getFieldValue('date');
+      if (selectedDate && recurringSelectionMode === 'auto') {
+        const dates = generateRecurringDates(selectedDate, recurringType);
+        setSelectedDates(dates);
+      }
       setShowRecurringModal(true);
+    } else {
+      // Clear selected dates when turning off recurring
+      setSelectedDates([]);
     }
   };
 
@@ -136,22 +233,90 @@ const BookingPage: React.FC = () => {
   };
 
   const handleDateSelect = (date: dayjs.Dayjs) => {
+    // Only allow dates within 1 month from now
+    if (date.isAfter(maxBookingDate)) {
+      return;
+    }
+    
     setSelectedDates(prev => {
-      const exists = prev.some(d => d.isSame(date));
+      const exists = prev.some(d => d.isSame(date, 'day'));
       if (exists) {
-        return prev.filter(d => !d.isSame(date));
+        return prev.filter(d => !d.isSame(date, 'day'));
       }
       return [...prev, date];
     });
   };
 
+  const handleRemoveDate = (dateToRemove: dayjs.Dayjs) => {
+    setSelectedDates(prev => prev.filter(date => !date.isSame(dateToRemove, 'day')));
+  };
+
+  const handleRecurringTypeChange = (type: RecurringType) => {
+    setRecurringType(type);
+    
+    // Reset additional weekdays when changing type
+    setAdditionalWeekdays([]);
+    
+    if (recurringSelectionMode === 'auto') {
+      const selectedDate = form.getFieldValue('date');
+      if (selectedDate) {
+        const dates = generateRecurringDates(selectedDate, type);
+        setSelectedDates(dates);
+      }
+    }
+    
+    handleRecurringConfigChange({ type });
+  };
+
+  const handleRecurringModeChange = (mode: 'auto' | 'manual') => {
+    setRecurringSelectionMode(mode);
+    
+    if (mode === 'auto') {
+      // Reset any manually selected dates
+      const selectedDate = form.getFieldValue('date');
+      if (selectedDate) {
+        const dates = generateRecurringDates(selectedDate, recurringType);
+        setSelectedDates(dates);
+      }
+    } else {
+      // If switching to manual, start with the base date
+      const selectedDate = form.getFieldValue('date');
+      if (selectedDate) {
+        setSelectedDates([selectedDate]);
+      } else {
+        setSelectedDates([]);
+      }
+    }
+  };
+
+  const handleAdditionalWeekdayChange = (weekdayValues: number[]) => {
+    // Limit to at most 2 additional weekdays
+    if (weekdayValues.length > 2) {
+      weekdayValues = weekdayValues.slice(0, 2);
+    }
+    
+    setAdditionalWeekdays(weekdayValues);
+    
+    // Regenerate dates with the new weekdays
+    if (recurringSelectionMode === 'auto') {
+      const selectedDate = form.getFieldValue('date');
+      if (selectedDate) {
+        // First update the state, then regenerate
+        setTimeout(() => {
+          const dates = generateRecurringDates(selectedDate, recurringType);
+          setSelectedDates(dates);
+        }, 0);
+      }
+    }
+  };
+
   const handleRecurringModalOk = () => {
     const config: RecurringConfig = {
-      type: RecurringType.NONE,
+      type: recurringType,
       startDate: selectedDates[0],
       endDate: selectedDates[selectedDates.length - 1],
       daysOfWeek: selectedDates.map(d => d.day()),
-      daysOfMonth: selectedDates.map(d => d.date())
+      daysOfMonth: [] // No longer needed as per requirements
     };
     handleRecurringConfigChange(config);
     setShowRecurringModal(false);
@@ -170,6 +335,13 @@ const BookingPage: React.FC = () => {
     }).format(amount);
   };
 
+  // Get weekday name from date
+  const getWeekdayName = (date: dayjs.Dayjs | null): string => {
+    if (!date) return '';
+    const weekdayIndex = date.day();
+    return WEEKDAYS.find(day => day.value === weekdayIndex)?.label || '';
+  };
+
   const calculateTotalPrice = () => {
     const fieldPrice = formData.fieldGroupId ? 
       fieldGroups.find(g => g.id === formData.fieldGroupId)?.basePrice || 0 : 0;
@@ -179,7 +351,7 @@ const BookingPage: React.FC = () => {
       return total + (serviceInfo?.price || 0) * service.quantity;
     }, 0) || 0;
 
-    const recurringMultiplier = formData.isRecurring && formData.recurringConfig ? 
+    const recurringMultiplier = formData.isRecurring && selectedDates.length > 0 ? 
       selectedDates.length : 1;
 
     return (fieldPrice + servicePrice) * recurringMultiplier;
@@ -216,11 +388,23 @@ const BookingPage: React.FC = () => {
                   label="Ngày đặt sân"
                   rules={[{ required: true, message: 'Vui lòng chọn ngày đặt sân' }]}
                 >
-                  <DatePicker 
-                    className="w-full" 
-                    format="DD/MM/YYYY"
-                    disabledDate={current => current && current < dayjs().startOf('day')}
-                  />
+                  <div className="flex flex-col">
+                    <DatePicker 
+                      className="w-full" 
+                      format="DD/MM/YYYY"
+                      disabledDate={current => {
+                        // Disable dates before today or after 1 month from now
+                        return (current && current < dayjs().startOf('day')) || 
+                               (current && current > maxBookingDate);
+                      }}
+                      onChange={handleDateChange}
+                    />
+                    {selectedWeekday && (
+                      <div className="mt-1 text-blue-600 text-sm font-semibold">
+                        {selectedWeekday}
+                      </div>
+                    )}
+                  </div>
                 </Form.Item>
               </Col>
               
@@ -241,13 +425,22 @@ const BookingPage: React.FC = () => {
               <Col xs={24}>
                 <Form.Item
                   name="isRecurring"
-                  label="Đặt sân định kỳ"
+                  label={
+                    <div className="flex items-center">
+                      <span>Đặt sân định kỳ</span>
+                      <Tooltip title="Đặt sân định kỳ cho nhiều ngày trong vòng 1 tháng">
+                        <InfoCircleOutlined className="ml-2 text-gray-400" />
+                      </Tooltip>
+                    </div>
+                  }
                   valuePropName="checked"
+                  tooltip={!isDateSelected ? "Vui lòng chọn ngày đặt sân trước" : ""}
                 >
                   <Switch 
                     checkedChildren="Có" 
                     unCheckedChildren="Không"
                     onChange={handleRecurringChange}
+                    disabled={!isDateSelected}
                   />
                 </Form.Item>
               </Col>
@@ -267,8 +460,13 @@ const BookingPage: React.FC = () => {
                       <Text type="secondary">Đã chọn {selectedDates.length} ngày:</Text>
                       <div className="flex flex-wrap gap-2 mt-1">
                         {selectedDates.map(date => (
-                          <Tag key={date.format('YYYY-MM-DD')}>
-                            {date.format('DD/MM/YYYY')}
+                          <Tag 
+                            key={date.format('YYYY-MM-DD')} 
+                            color="blue"
+                            closable
+                            onClose={() => handleRemoveDate(date)}
+                          >
+                            {date.format('DD/MM/YYYY')} ({getWeekdayName(date)})
                           </Tag>
                         ))}
                       </div>
@@ -599,6 +797,7 @@ const BookingPage: React.FC = () => {
           showIcon
           className="mb-4"
           closable
+          onClose={() => setError(null)}
         />
       )}
       
@@ -666,80 +865,133 @@ const BookingPage: React.FC = () => {
         )}
       </Modal>
 
-      {/* Recurring Modal */}
+      {/* Recurring Modal - Redesigned */}
       <Modal
-        title="Chọn ngày định kỳ"
+        title="Đặt sân định kỳ"
         open={showRecurringModal}
         onOk={handleRecurringModalOk}
         onCancel={() => setShowRecurringModal(false)}
         width={800}
+        okText="Xác nhận"
+        cancelText="Hủy"
       >
         <div className="space-y-4">
+          <Alert
+            message="Lưu ý: Bạn chỉ có thể đặt sân định kỳ trong vòng 1 tháng kể từ ngày hiện tại"
+            type="info"
+            showIcon
+            className="mb-4"
+          />
+
           <div>
-            <Text strong>Chọn loại định kỳ:</Text>
+            <Text strong>Chọn phương thức:</Text>
             <Radio.Group 
               className="ml-4"
-              onChange={e => handleRecurringConfigChange({ type: e.target.value })}
+              value={recurringSelectionMode}
+              onChange={e => handleRecurringModeChange(e.target.value)}
             >
-              <Space direction="vertical">
-                <Radio value={RecurringType.DAILY}>Hàng ngày</Radio>
-                <Radio value={RecurringType.WEEKLY}>Hàng tuần</Radio>
-                <Radio value={RecurringType.MONTHLY}>Hàng tháng</Radio>
-              </Space>
+              <Radio value="auto">Tự động</Radio>
+              <Radio value="manual">Tùy chọn</Radio>
             </Radio.Group>
           </div>
 
-          <div>
-            <Text strong>Chọn ngày:</Text>
-            <Calendar
-              className="mt-2"
-              onSelect={handleDateSelect}
-              dateCellRender={date => {
-                const isSelected = selectedDates.some(d => d.isSame(date));
-                return isSelected ? (
-                  <div className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center">
-                    {date.date()}
+          {recurringSelectionMode === 'auto' && (
+            <div>
+              <Text strong>Chọn loại định kỳ:</Text>
+              <Radio.Group 
+                className="ml-4"
+                value={recurringType}
+                onChange={e => handleRecurringTypeChange(e.target.value)}
+              >
+                <Space direction="vertical">
+                  <Radio value={RecurringType.DAILY}>Hàng ngày</Radio>
+                  <Radio value={RecurringType.WEEKLY}>Hàng tuần</Radio>
+                </Space>
+              </Radio.Group>
+              
+              {recurringType === RecurringType.WEEKLY && (
+                <div className="mt-4 ml-4">
+                  <Text>Chọn thêm tối đa 2 ngày trong tuần:</Text>
+                  <div className="mt-2">
+                    <Checkbox.Group
+                      options={WEEKDAYS.filter(day => day.value !== form.getFieldValue('date')?.day()).map(day => ({
+                        label: day.label,
+                        value: day.value
+                      }))}
+                      value={additionalWeekdays}
+                      onChange={handleAdditionalWeekdayChange}
+                    />
                   </div>
-                ) : null;
-              }}
-            />
-          </div>
-
-          {formData.recurringConfig?.type === RecurringType.WEEKLY && (
-            <div>
-              <Text strong>Chọn ngày trong tuần:</Text>
-              <Checkbox.Group
-                className="ml-4"
-                options={WEEKDAYS}
-                onChange={values => handleRecurringConfigChange({ daysOfWeek: values as number[] })}
-              />
+                  <Text type="secondary" className="block mt-1">
+                    Đã chọn: {additionalWeekdays.length} ngày
+                  </Text>
+                </div>
+              )}
             </div>
           )}
 
-          {formData.recurringConfig?.type === RecurringType.MONTHLY && (
+          <Divider />
+
+          {recurringSelectionMode === 'auto' ? (
             <div>
-              <Text strong>Chọn ngày trong tháng:</Text>
-              <Checkbox.Group
-                className="ml-4"
-                options={Array.from({ length: 31 }, (_, i) => ({
-                  label: `${i + 1}`,
-                  value: i + 1
-                }))}
-                onChange={values => handleRecurringConfigChange({ daysOfMonth: values as number[] })}
-              />
+              <Text strong>Các ngày đã chọn tự động:</Text>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {selectedDates.map(date => (
+                  <Tag key={date.format('YYYY-MM-DD')} color="blue">
+                    {date.format('DD/MM/YYYY')} ({getWeekdayName(date)})
+                  </Tag>
+                ))}
+              </div>
+              <Text type="secondary" className="block mt-2">
+                Các ngày này được tự động tạo dựa trên ngày đặt sân ({form.getFieldValue('date')?.format('DD/MM/YYYY')}) và loại định kỳ bạn đã chọn
+              </Text>
+            </div>
+          ) : (
+            <div>
+              <Text strong>Chọn ngày thủ công:</Text>
+              <div className="mt-2">
+                <Calendar
+                  fullscreen={false}
+                  onSelect={handleDateSelect}
+                  disabledDate={current => {
+                    // Disable dates before today or after 1 month from now
+                    return (current && current < dayjs().startOf('day')) || 
+                          (current && current > maxBookingDate);
+                  }}
+                  dateCellRender={date => {
+                    const isSelected = selectedDates.some(d => d.isSame(date, 'day'));
+                    const isToday = date.isSame(dayjs(), 'day');
+                    return isSelected ? (
+                      <div className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center">
+                        {date.date()}
+                      </div>
+                    ) : isToday ? (
+                      <div className="border border-blue-500 text-blue-500 rounded-full w-6 h-6 flex items-center justify-center">
+                        {date.date()}
+                      </div>
+                    ) : null;
+                  }}
+                />
+              </div>
+              <div className="mt-4">
+                <Text strong>Ngày đã chọn ({selectedDates.length}):</Text>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {selectedDates.map(date => (
+                    <Tag 
+                      key={date.format('YYYY-MM-DD')} 
+                      color="blue"
+                      closable
+                      onClose={() => {
+                        setSelectedDates(prev => prev.filter(d => !d.isSame(date, 'day')));
+                      }}
+                    >
+                      {date.format('DD/MM/YYYY')} ({getWeekdayName(date)})
+                    </Tag>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
-
-          <div>
-            <Text strong>Ngày đã chọn:</Text>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {selectedDates.map(date => (
-                <Tag key={date.format('YYYY-MM-DD')}>
-                  {date.format('DD/MM/YYYY')}
-                </Tag>
-              ))}
-            </div>
-          </div>
         </div>
       </Modal>
     </div>

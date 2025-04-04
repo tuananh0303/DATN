@@ -22,7 +22,7 @@ export const login = createAsyncThunk<AdminUser, LoginParams, { rejectValue: str
       if (authData && authData.accessToken) {
         localStorage.setItem('admin_access_token', authData.accessToken);
         localStorage.setItem('admin_refresh_token', authData.refreshToken);
-        const user = await authService.getAdminInfo();
+        const user = await authService.getMyInfo();
         
         // Kiểm tra xem người dùng có phải là admin hay không
         if (user.role !== 'admin') {
