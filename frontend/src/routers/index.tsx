@@ -13,8 +13,8 @@ import DetailFacility from '@/pages/Public/DetailFacility';
 import ResultSearch from '@/pages/Public/ResultSearch';
 
 // Player pages
-import BookingPage from '@/pages/Player/Booking';
-import HistoryBooking from '@/pages/Player/HistoryBooking';
+import BookingPage from '@/pages/Player/Booking/Booking';
+import HistoryBooking from '@/pages/Player/HistoryBooking/HistoryBooking';
 // import ResultBooking from '@/pages/Player/ResutlBooking';
 // import ResultBookingVNPay from '@/pages/Player/ResultBookingVNPay';
 
