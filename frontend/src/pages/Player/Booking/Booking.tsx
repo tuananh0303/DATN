@@ -675,127 +675,129 @@ const BookingPage: React.FC = () => {
   ];
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-4xl">
-      {/* Breadcrumb */}
-      <div className="mb-6">
-        <a onClick={() => navigate('/')} className="text-blue-600 hover:text-blue-800">Trang chủ</a>
-        <span className="mx-2">/</span>
-        <a onClick={() => navigate(`/facility/${facilityId}`)} className="text-blue-600 hover:text-blue-800">Thông tin cơ sở</a>
-        <span className="mx-2">/</span>
-        <span>Đặt sân</span>
-      </div>
-      
-      {/* Title and Timer */}
-      <div className="flex justify-between items-center mb-6">
-        <Title level={2} className="m-0">Đặt sân</Title>
-        {currentStep > 0 && (
-          <div className="flex items-center">
-            <ClockCircleOutlined className="mr-2 text-red-500" />
-            <Text className="text-red-500">Thời gian còn lại: {formatTime(timeRemaining)}</Text>
-          </div>
-        )}
-      </div>
-      
-      {/* Error message */}
-      {error && (
-        <Alert
-          message="Lỗi"
-          description={error}
-          type="error"
-          showIcon
-          className="mb-4"
-          closable
-          onClose={() => setError(null)}
-        />
-      )}
-      
-      {/* Steps */}
-      <Steps
-        current={currentStep}
-        items={steps.map(item => ({ key: item.title, title: item.title }))}
-        className="mb-8"
-      />
-      
-      {/* Step Content */}
-      <div className="mb-8">
-        {steps[currentStep].content}
-      </div>
-      
-      {/* Navigation Buttons */}
-      <div className="flex justify-between">
-        <Button 
-          onClick={handlePrev}
-          disabled={currentStep === 0}
-          icon={<ArrowLeftOutlined />}
-        >
-          Quay lại
-        </Button>
+    <div className="w-full px-4 py-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Breadcrumb */}
+        <div className="mb-4 md:mb-6">
+          <a onClick={() => navigate('/')} className="text-blue-600 hover:text-blue-800">Trang chủ</a>
+          <span className="mx-2">/</span>
+          <a onClick={() => navigate(`/facility/${facilityId}`)} className="text-blue-600 hover:text-blue-800">Thông tin cơ sở</a>
+          <span className="mx-2">/</span>
+          <span>Đặt sân</span>
+        </div>
         
-        {currentStep < steps.length - 1 ? (
-          <Button 
-            type="primary" 
-            onClick={handleNext}
-            loading={loading}
-          >
-            Tiếp theo <ArrowRightOutlined />
-          </Button>
-        ) : (
-          <Button 
-            type="primary" 
-            onClick={() => setShowConfirmModal(true)}
-            loading={loading}
-          >
-            Xác nhận đặt sân <CheckCircleOutlined />
-          </Button>
-        )}
-      </div>
-      
-      {/* Confirm Modal */}
-      <Modal
-        title="Xác nhận đặt sân"
-        open={showConfirmModal}
-        onOk={handleSubmitBooking}
-        onCancel={() => setShowConfirmModal(false)}
-        confirmLoading={loading}
-        okText="Xác nhận"
-        cancelText="Hủy"
-      >
-        <p>Bạn có chắc chắn muốn đặt sân với thông tin đã chọn?</p>
-        <p>Tổng số tiền: <span className="text-blue-600 font-bold">{formatCurrency(calculateTotalPrice())}</span></p>
-        {formData.paymentMethod !== 'cash' && (
+        {/* Title and Timer */}
+        <div className="flex justify-between items-center mb-4 md:mb-6 flex-wrap gap-2">
+          <Title level={2} className="m-0 text-xl md:text-2xl">Đặt sân</Title>
+          {currentStep > 0 && (
+            <div className="flex items-center">
+              <ClockCircleOutlined className="mr-2 text-red-500" />
+              <Text className="text-red-500">Thời gian còn lại: {formatTime(timeRemaining)}</Text>
+            </div>
+          )}
+        </div>
+        
+        {/* Error message */}
+        {error && (
           <Alert
-            message="Lưu ý"
-            description="Bạn sẽ được chuyển đến trang thanh toán sau khi xác nhận."
-            type="info"
+            message="Lỗi"
+            description={error}
+            type="error"
             showIcon
-            className="mt-4"
+            className="mb-4"
+            closable
+            onClose={() => setError(null)}
           />
         )}
-      </Modal>
+        
+        {/* Steps */}
+        <Steps
+          current={currentStep}
+          items={steps.map(item => ({ key: item.title, title: item.title }))}
+          className="mb-6 md:mb-8"
+        />
+        
+        {/* Step Content */}
+        <div className="mb-6 md:mb-8 bg-white p-4 md:p-6 rounded-lg shadow-md">
+          {steps[currentStep].content}
+        </div>
+        
+        {/* Navigation Buttons */}
+        <div className="flex justify-between">
+          <Button 
+            onClick={handlePrev}
+            disabled={currentStep === 0}
+            icon={<ArrowLeftOutlined />}
+          >
+            Quay lại
+          </Button>
+          
+          {currentStep < steps.length - 1 ? (
+            <Button 
+              type="primary" 
+              onClick={handleNext}
+              loading={loading}
+            >
+              Tiếp theo <ArrowRightOutlined />
+            </Button>
+          ) : (
+            <Button 
+              type="primary" 
+              onClick={() => setShowConfirmModal(true)}
+              loading={loading}
+            >
+              Xác nhận đặt sân <CheckCircleOutlined />
+            </Button>
+          )}
+        </div>
+        
+        {/* Confirm Modal */}
+        <Modal
+          title="Xác nhận đặt sân"
+          open={showConfirmModal}
+          onOk={handleSubmitBooking}
+          onCancel={() => setShowConfirmModal(false)}
+          confirmLoading={loading}
+          okText="Xác nhận"
+          cancelText="Hủy"
+        >
+          <p>Bạn có chắc chắn muốn đặt sân với thông tin đã chọn?</p>
+          <p>Tổng số tiền: <span className="text-blue-600 font-bold">{formatCurrency(calculateTotalPrice())}</span></p>
+          {formData.paymentMethod !== 'cash' && (
+            <Alert
+              message="Lưu ý"
+              description="Bạn sẽ được chuyển đến trang thanh toán sau khi xác nhận."
+              type="info"
+              showIcon
+              className="mt-4"
+            />
+          )}
+        </Modal>
 
-      {/* Recurring Modal */}
-      <RecurringModal
-        visible={showRecurringModal}
-        onOk={handleRecurringModalOk}
-        onCancel={handleRecurringModalCancel}
-        recurringType={recurringType}
-        recurrenceFrequency={recurrenceFrequency}
-        recurrenceEndType={recurrenceEndType}
-        recurrenceEndDate={recurrenceEndDate}
-        recurrenceEndOccurrences={recurrenceEndOccurrences}
-        additionalWeekdays={additionalWeekdays}
-        selectedDates={selectedDates}
-        handleRecurringTypeChange={handleRecurringTypeChange}
-        handleRecurrenceFrequencyChange={handleRecurrenceFrequencyChange}
-        handleRecurrenceEndTypeChange={handleRecurrenceEndTypeChange}
-        handleRecurrenceEndDateChange={handleRecurrenceEndDateChange}
-        handleRecurrenceEndOccurrencesChange={handleRecurrenceEndOccurrencesChange}
-        getWeekdayName={getWeekdayName}
-        form={form}
-        handleAdditionalWeekdaysChange={setAdditionalWeekdays}
-        saveCustomRecurringOption={saveCustomRecurringOption}
-        generateRecurringDates={generateRecurringDates}
-      />
+        {/* Recurring Modal */}
+        <RecurringModal
+          visible={showRecurringModal}
+          onOk={handleRecurringModalOk}
+          onCancel={handleRecurringModalCancel}
+          recurringType={recurringType}
+          recurrenceFrequency={recurrenceFrequency}
+          recurrenceEndType={recurrenceEndType}
+          recurrenceEndDate={recurrenceEndDate}
+          recurrenceEndOccurrences={recurrenceEndOccurrences}
+          additionalWeekdays={additionalWeekdays}
+          selectedDates={selectedDates}
+          handleRecurringTypeChange={handleRecurringTypeChange}
+          handleRecurrenceFrequencyChange={handleRecurrenceFrequencyChange}
+          handleRecurrenceEndTypeChange={handleRecurrenceEndTypeChange}
+          handleRecurrenceEndDateChange={handleRecurrenceEndDateChange}
+          handleRecurrenceEndOccurrencesChange={handleRecurrenceEndOccurrencesChange}
+          getWeekdayName={getWeekdayName}
+          form={form}
+          handleAdditionalWeekdaysChange={setAdditionalWeekdays}
+          saveCustomRecurringOption={saveCustomRecurringOption}
+          generateRecurringDates={generateRecurringDates}
+        />
+      </div>
     </div>
   );
 };
