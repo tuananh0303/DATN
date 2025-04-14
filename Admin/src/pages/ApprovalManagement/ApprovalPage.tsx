@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Input, Select, Space, Tag, message, Card, Tabs, Modal, Descriptions, Image } from 'antd';
-import { SearchOutlined, CheckOutlined, CloseOutlined, EyeOutlined, FileTextOutlined } from '@ant-design/icons';
+import { SearchOutlined, CheckOutlined, CloseOutlined, EyeOutlined } from '@ant-design/icons';
 import { approvalService } from '@/services/approval.service';
 import { Approval, ApprovalFilter } from '@/types/approval.types';
 
@@ -76,24 +76,15 @@ const ApprovalPage: React.FC = () => {
     setDetailsModalVisible(true);
   };
 
-  const handleVerifyDocument = async (approvalId: string, documentId: string, isValid: boolean) => {
-    try {
-      await approvalService.verifyDocument(approvalId, documentId, isValid);
-      message.success(`Đã ${isValid ? 'xác nhận' : 'từ chối'} tài liệu`);
-      fetchApprovals();
-    } catch (error) {
-      console.error('Error verifying document:', error);
-      message.error('Không thể xác thực tài liệu');
-    }
-  };
-
   const getApprovalTypeText = (type: string) => {
     switch (type) {
-      case 'facility_registration':
+      case 'facility':
         return 'Đăng ký cơ sở mới';
-      case 'facility_name_change':
+      case 'facility_name':
         return 'Thay đổi tên cơ sở';
-      case 'business_license':
+      case 'certificate':
+        return 'Giấy chứng nhận';
+      case 'license':
         return 'Giấy phép kinh doanh';
       default:
         return type;
@@ -107,9 +98,10 @@ const ApprovalPage: React.FC = () => {
       key: 'type',
       render: (type: string) => (
         <Tag color={
-          type === 'facility_registration' ? 'blue' :
-          type === 'facility_name_change' ? 'orange' :
-          type === 'business_license' ? 'green' : 'default'
+          type === 'facility' ? 'blue' :
+          type === 'facility_name' ? 'orange' :
+          type === 'certificate' ? 'green' :
+          type === 'license' ? 'purple' : 'default'
         }>
           {getApprovalTypeText(type)}
         </Tag>
@@ -120,22 +112,24 @@ const ApprovalPage: React.FC = () => {
       key: 'facility',
       render: (record: Approval) => (
         <div>
-          <div>{record.facilityName || 'N/A'}</div>
-          {record.facilityId && (
-            <div className="text-xs text-gray-500">ID: {record.facilityId}</div>
+          <div>{record.facility?.name || 'N/A'}</div>
+          {record.facility?.id && (
+            <div className="text-xs text-gray-500">ID: {record.facility.id}</div>
           )}
         </div>
       ),
     },
     {
-      title: 'Người yêu cầu',
-      key: 'requestedBy',
-      render: (record: Approval) => (
-        <div>
-          <div>{record.requestedBy.name}</div>
-          <div className="text-xs text-gray-500">{record.requestedBy.email}</div>
-        </div>
-      ),
+      title: 'Thông tin thêm',
+      key: 'info',
+      render: (record: Approval) => {
+        if (record.type === 'facility_name' && record.name) {
+          return <div>Tên mới: {record.name}</div>;
+        } else if (record.type === 'license' && record.sport) {
+          return <div>Môn thể thao: {record.sport.name}</div>;
+        }
+        return <div>-</div>;
+      }
     },
     {
       title: 'Ngày tạo',
@@ -181,8 +175,7 @@ const ApprovalPage: React.FC = () => {
 
   const filteredApprovals = approvals.filter(approval => {
     const matchesSearch = searchText === '' || 
-      approval.facilityName?.toLowerCase().includes(searchText.toLowerCase()) ||
-      approval.requestedBy.name.toLowerCase().includes(searchText.toLowerCase());
+      approval.facility?.name?.toLowerCase().includes(searchText.toLowerCase());
       
     const matchesType = filterType === null || approval.type === filterType;
     
@@ -208,7 +201,7 @@ const ApprovalPage: React.FC = () => {
       <Card className="mb-6">
         <div className="flex flex-wrap gap-4">
           <Input
-            placeholder="Tìm kiếm theo tên cơ sở, người yêu cầu..."
+            placeholder="Tìm kiếm theo tên cơ sở..."
             prefix={<SearchOutlined />}
             value={searchText}
             onChange={e => setSearchText(e.target.value)}
@@ -220,10 +213,12 @@ const ApprovalPage: React.FC = () => {
             allowClear
             style={{ width: 200 }}
             onChange={value => setFilterType(value)}
+            value={filterType}
           >
-            <Option value="facility_registration">Đăng ký cơ sở mới</Option>
-            <Option value="facility_name_change">Thay đổi tên cơ sở</Option>
-            <Option value="business_license">Giấy phép kinh doanh</Option>
+            <Option value="facility">Đăng ký cơ sở mới</Option>
+            <Option value="facility_name">Thay đổi tên cơ sở</Option>
+            <Option value="certificate">Giấy chứng nhận</Option>
+            <Option value="license">Giấy phép kinh doanh</Option>
           </Select>
         </div>
       </Card>
@@ -246,141 +241,136 @@ const ApprovalPage: React.FC = () => {
       >
         {selectedApproval && (
           <div>
-            <Descriptions bordered>
-              <Descriptions.Item label="Loại yêu cầu">
+            <Descriptions bordered column={2}>
+              <Descriptions.Item label="Loại yêu cầu" span={2}>
                 <Tag color={
-                  selectedApproval.type === 'facility_registration' ? 'blue' :
-                  selectedApproval.type === 'facility_name_change' ? 'orange' :
-                  selectedApproval.type === 'business_license' ? 'green' : 'default'
+                  selectedApproval.type === 'facility' ? 'blue' :
+                  selectedApproval.type === 'facility_name' ? 'orange' :
+                  selectedApproval.type === 'certificate' ? 'green' :
+                  selectedApproval.type === 'license' ? 'purple' : 'default'
+                }>{getApprovalTypeText(selectedApproval.type)}</Tag>
+              </Descriptions.Item>
+              
+              <Descriptions.Item label="Trạng thái" span={2}>
+                <Tag color={
+                  selectedApproval.status === 'approved' ? 'success' :
+                  selectedApproval.status === 'pending' ? 'processing' : 'error'
                 }>
-                  {getApprovalTypeText(selectedApproval.type)}
+                  {selectedApproval.status === 'approved' ? 'Đã phê duyệt' :
+                  selectedApproval.status === 'pending' ? 'Đang chờ' : 'Đã từ chối'}
                 </Tag>
               </Descriptions.Item>
               
-              <Descriptions.Item label="Cơ sở">
-                {selectedApproval.facilityName || 'N/A'}
-                {selectedApproval.facilityId && (
-                  <div className="text-xs text-gray-500">ID: {selectedApproval.facilityId}</div>
-                )}
+              <Descriptions.Item label="Cơ sở" span={2}>
+                {selectedApproval.facility?.name || 'N/A'}
               </Descriptions.Item>
               
-              <Descriptions.Item label="Người yêu cầu">
-                {selectedApproval.requestedBy.name}
-                <div className="text-xs text-gray-500">{selectedApproval.requestedBy.email}</div>
+              <Descriptions.Item label="Địa chỉ" span={2}>
+                {selectedApproval.facility?.location || 'N/A'}
               </Descriptions.Item>
               
-              <Descriptions.Item label="Ngày tạo">
-                {new Date(selectedApproval.createdAt).toLocaleDateString('vi-VN', {
-                  year: 'numeric',
-                  month: '2-digit',
-                  day: '2-digit',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
-              </Descriptions.Item>
-              
-              <Descriptions.Item label="Mô tả" span={3}>
-                {selectedApproval.details.description}
-              </Descriptions.Item>
-              
-              {selectedApproval.details.facilityInfo && (
-                <>
-                  <Descriptions.Item label="Thông tin cơ sở" span={3}>
-                    <div className="space-y-4">
-                      <div>
-                        <strong>Tên cơ sở:</strong> {selectedApproval.details.facilityInfo.name}
-                      </div>
-                      <div>
-                        <strong>Địa chỉ:</strong> {selectedApproval.details.facilityInfo.address}
-                      </div>
-                      <div>
-                        <strong>Mô tả:</strong> {selectedApproval.details.facilityInfo.description}
-                      </div>
-                      {selectedApproval.details.facilityInfo.images.length > 0 && (
-                        <div>
-                          <strong>Hình ảnh:</strong>
-                          <Image.PreviewGroup>
-                            <div className="grid grid-cols-2 gap-2 mt-2">
-                              {selectedApproval.details.facilityInfo.images.map((image, index) => (
-                                <Image
-                                  key={index}
-                                  src={image}
-                                  alt={`Hình ảnh ${index + 1}`}
-                                  className="rounded-lg"
-                                />
-                              ))}
-                            </div>
-                          </Image.PreviewGroup>
-                        </div>
-                      )}
-                    </div>
-                  </Descriptions.Item>
-                </>
+              {selectedApproval.type === 'facility_name' && (
+                <Descriptions.Item label="Tên mới" span={2}>
+                  {selectedApproval.name || 'N/A'}
+                </Descriptions.Item>
               )}
               
-              <Descriptions.Item label="Tài liệu" span={3}>
-                <div className="space-y-4">
-                  {selectedApproval.details.documents.map((doc, index) => (
-                    <div key={index} className="border p-4 rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <FileTextOutlined className="mr-2" />
-                          <span>{doc.name}</span>
-                          <Tag className="ml-2">
-                            {doc.type === 'business_registration' ? 'Giấy chứng nhận' : 'Giấy phép'}
-                            {doc.sportType && ` - ${doc.sportType}`}
-                          </Tag>
-                        </div>
-                        <div>
-                          <Button
-                            type="link"
-                            onClick={() => window.open(doc.url, '_blank')}
-                          >
-                            Xem tài liệu
-                          </Button>
-                          {selectedApproval.status === 'pending' && (
-                            <Space>
-                              <Button
-                                type="link"
-                                danger
-                                onClick={() => handleVerifyDocument(selectedApproval.id, doc.url, false)}
-                              >
-                                Từ chối
-                              </Button>
-                              <Button
-                                type="link"
-                                onClick={() => handleVerifyDocument(selectedApproval.id, doc.url, true)}
-                              >
-                                Xác nhận
-                              </Button>
-                            </Space>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+              {selectedApproval.type === 'license' && selectedApproval.sport && (
+                <Descriptions.Item label="Môn thể thao" span={2}>
+                  {selectedApproval.sport.name}
+                </Descriptions.Item>
+              )}
+              
+              <Descriptions.Item label="Ngày tạo">
+                {new Date(selectedApproval.createdAt).toLocaleString('vi-VN')}
+              </Descriptions.Item>
+              
+              <Descriptions.Item label="Cập nhật lần cuối">
+                {new Date(selectedApproval.updatedAt).toLocaleString('vi-VN')}
+              </Descriptions.Item>
+              
+              {selectedApproval.note && (
+                <Descriptions.Item label="Ghi chú" span={2}>
+                  {selectedApproval.note}
+                </Descriptions.Item>
+              )}
+            </Descriptions>
+            
+            {/* Hiển thị hình ảnh giấy tờ */}
+            {(selectedApproval.type === 'certificate' && selectedApproval.certifiacte) && (
+              <div className="mt-6">
+                <h3 className="text-lg font-medium mb-2">Giấy chứng nhận</h3>
+                <div className="flex justify-center">
+                  <Image
+                    src={selectedApproval.certifiacte}
+                    alt="Giấy chứng nhận"
+                    style={{ maxHeight: '400px' }}
+                  />
+                </div>
+              </div>
+            )}
+            
+            {(selectedApproval.type === 'license' && selectedApproval.license) && (
+              <div className="mt-6">
+                <h3 className="text-lg font-medium mb-2">Giấy phép kinh doanh</h3>
+                <div className="flex justify-center">
+                  <Image
+                    src={selectedApproval.license}
+                    alt="Giấy phép kinh doanh"
+                    style={{ maxHeight: '400px' }}
+                  />
+                </div>
+              </div>
+            )}
+            
+            {/* Hình ảnh cơ sở nếu là đăng ký cơ sở mới */}
+            {selectedApproval.type === 'facility' && selectedApproval.facility?.imagesUrl && (
+              <div className="mt-6">
+                <h3 className="text-lg font-medium mb-2">Hình ảnh cơ sở</h3>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {selectedApproval.facility.imagesUrl.map((image, index) => (
+                    <Image
+                      key={index}
+                      src={image}
+                      alt={`Hình ảnh ${index + 1}`}
+                      style={{ height: '150px', objectFit: 'cover', marginBottom: '10px' }}
+                    />
                   ))}
                 </div>
-              </Descriptions.Item>
-            </Descriptions>
+              </div>
+            )}
+            
+            {/* Nút phê duyệt/từ chối nếu đang ở trạng thái pending */}
+            {selectedApproval.status === 'pending' && (
+              <div className="mt-6 flex justify-end gap-2">
+                <Button danger onClick={() => handleReject(selectedApproval.id)}>
+                  Từ chối
+                </Button>
+                <Button type="primary" onClick={() => handleApprove(selectedApproval.id)}>
+                  Phê duyệt
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </Modal>
-
-      {/* Modal Từ chối yêu cầu */}
+      
+      {/* Modal Từ chối */}
       <Modal
         title="Từ chối yêu cầu"
         open={rejectModalVisible}
         onOk={confirmReject}
-        onCancel={() => {
-          setRejectModalVisible(false);
-          setRejectReason('');
-        }}
+        onCancel={() => setRejectModalVisible(false)}
+        okText="Xác nhận từ chối"
+        cancelText="Hủy"
+        okButtonProps={{ disabled: !rejectReason.trim() }}
       >
+        <p>Vui lòng nhập lý do từ chối:</p>
         <Input.TextArea
           rows={4}
-          placeholder="Nhập lý do từ chối..."
           value={rejectReason}
           onChange={e => setRejectReason(e.target.value)}
+          placeholder="Nhập lý do từ chối yêu cầu..."
         />
       </Modal>
     </div>

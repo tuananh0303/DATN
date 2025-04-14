@@ -1,4 +1,4 @@
-import { Facility, FacilityStatusChange, FacilityFormData } from '@/types/facility.type';
+import { Facility, FacilityFormData } from '@/types/facility.type';
 import api from './api';
 
 // Interface cho response khi gọi API với pagination
@@ -129,7 +129,7 @@ class FacilityService {
         formData.append('images', image);
       });
 
-      const response = await api.put(`/facility/${facilityId}/update-images`, formData, {
+      const response = await api.put(`/facility/${facilityId}/add-images`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -141,39 +141,14 @@ class FacilityService {
       throw error;
     }
   }
-  
-  // Upload certificate document
-  async uploadCertificate(facilityId: string, file: File): Promise<string> {
+
+  // Delete facility images
+  async deleteFacilityImages(facilityId:string ,imageUrl: string): Promise<{ message: string }> {
     try {
-      const formData = new FormData();
-      formData.append('certificate', file);
-      
-      const response = await api.post(`/facility/${facilityId}/upload-certificate`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+      const response = await api.delete(`/facility/delete-image`, {
+        data: { facilityId, imageUrl }
       });
-      
-      return response.data.url;
-    } catch (error) {
-      console.error('API call failed:', error);
-      throw error;
-    }
-  }
-  
-  // Upload license document
-  async uploadLicense(facilityId: string, sportId: number, file: File): Promise<string> {
-    try {
-      const formData = new FormData();
-      formData.append('license', file);
-      formData.append('sportId', sportId.toString());
-      
-      const response = await api.post(`/facility/${facilityId}/upload-license`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });      
-      return response.data.url;
+      return response.data;
     } catch (error) {
       console.error('API call failed:', error);
       throw error;
@@ -202,28 +177,16 @@ class FacilityService {
   }
 
 
-  // Change status of a facility (active/inactive)
-  async changeFacilityStatus(statusChange: FacilityStatusChange): Promise<void> {
-    try {
-      await api.patch(`/facility/${statusChange.facilityId}/status`, {
-        status: statusChange.newStatus,
-        note: statusChange.note
-      });
-    } catch (error) {
-      console.error('API call failed:', error);
-      throw error;
-    }
-  }
-
   // Check if a facility name already exists
   async checkFacilityNameExists(name: string): Promise<FacilityNameCheckResponse> {
     try {
-      // Fetch all facilities from dropdown
-      const facilities = await this.getFacilitiesDropdown();
+      // Get existing facility names from API
+      const response = await api.get('/facility/existing-name');
+      const existingNames: string[] = response.data;
       
-      // Check if any facility has the same name (case insensitive)
-      const exists = facilities.some(
-        facility => facility.name.toLowerCase() === name.toLowerCase()
+      // Check if name exists in the list (case insensitive)
+      const exists = existingNames.some(
+        existingName => existingName.toLowerCase() === name.toLowerCase()
       );
       
       return { exists };
@@ -233,11 +196,51 @@ class FacilityService {
     }
   }
 
-  // Delete facility images
-  async deleteFacilityImages(facilityId: string, images: string[]): Promise<{ message: string }> {
+  
+  
+  // Cập nhật tên cơ sở (tạo approval)
+  async updateFacilityName(facilityId: string, newName: string): Promise<{ message: string }> {
     try {
-      const response = await api.delete(`/facility/${facilityId}/delete-image`, {
-        data: { images }
+      const response = await api.put(`/facility/${facilityId}/update-name?name=${encodeURIComponent(newName)}`, {}, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('API call failed:', error);
+      throw error;
+    }
+  }
+  
+  // Cập nhật giấy chứng nhận (tạo approval)
+  async updateCertificate(facilityId: string, certificateFile: File): Promise<{ message: string }> {
+    try {
+      const formData = new FormData();
+      formData.append('certificate', certificateFile);
+      
+      const response = await api.put(`/facility/${facilityId}/update-certificate`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('API call failed:', error);
+      throw error;
+    }
+  }
+  
+  // Cập nhật giấy phép (tạo approval)
+  async updateLicense(facilityId: string, sportId: number, licenseFile: File): Promise<{ message: string }> {
+    try {
+      const formData = new FormData();
+      formData.append('license', licenseFile);
+      
+      const response = await api.put(`/facility/${facilityId}/update-license?sportId=${sportId}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
       return response.data;
     } catch (error) {

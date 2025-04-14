@@ -107,7 +107,6 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
       
       // Format times for submission
       const formattedValues: Partial<Facility> = {
-        name: values.name,
         description: values.description,
         location: values.location,
         openTime1: values.openTime1 ? values.openTime1.format('HH:mm') : '',
@@ -119,6 +118,20 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
         numberOfShifts: values.numberOfShifts,
         status: values.status as 'pending' | 'active' | 'unactive' | 'closed' | 'banned'
       };
+      
+      // Nếu tên bị thay đổi, sử dụng API approval cho cập nhật tên
+      if (facility && values.name !== facility.name) {
+        try {
+          await facilityService.updateFacilityName(facilityId, values.name);
+          message.success('Yêu cầu cập nhật tên cơ sở đã được gửi và đang chờ phê duyệt');
+        } catch (error) {
+          console.error('Không thể gửi yêu cầu cập nhật tên:', error);
+          message.error('Không thể gửi yêu cầu cập nhật tên cơ sở');
+        }
+      } else {
+        // Nếu không thay đổi tên, sử dụng API cập nhật thông thường
+        formattedValues.name = values.name;
+      }
       
       // Cập nhật thông tin cơ bản của cơ sở
       await facilityService.updateFacility(facilityId, formattedValues);
@@ -133,19 +146,6 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
         if (fileObjects.length > 0 && fileObjects.every(Boolean)) {
           await facilityService.uploadFacilityImages(facilityId, fileObjects as File[]);
         }
-      }
-      
-      // Xử lý upload certificate nếu có
-      if (certificateFile) {
-        await facilityService.uploadCertificate(facilityId, certificateFile);
-      }
-      
-      // Xử lý upload license files nếu có
-      if (Object.keys(licenseFiles).length > 0) {
-        const uploadPromises = Object.entries(licenseFiles).map(([sportId, file]) => 
-          facilityService.uploadLicense(facilityId, Number(sportId), file)
-        );
-        await Promise.all(uploadPromises);
       }
       
       message.success('Cập nhật cơ sở thành công');
@@ -202,6 +202,29 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
     return false; // prevent auto upload
   };
   
+  // Submit certificate qua approval API
+  const handleCertificateSubmit = async () => {
+    if (!certificateFile) {
+      message.error('Vui lòng chọn file giấy chứng nhận trước khi gửi');
+      return;
+    }
+    
+    try {
+      setSubmitting(true);
+      await facilityService.updateCertificate(facilityId, certificateFile);
+      message.success('Yêu cầu cập nhật giấy chứng nhận đã được gửi và đang chờ phê duyệt');
+      setCertificateFile(null);
+      // Refresh data
+      const data = await facilityService.getFacilityById(facilityId);
+      setFacility(data);
+    } catch (error) {
+      console.error('Không thể gửi yêu cầu cập nhật giấy chứng nhận:', error);
+      message.error('Không thể gửi yêu cầu cập nhật giấy chứng nhận');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+  
   // License file upload
   const handleLicenseUpload = (file: File, sportId: number) => {
     setLicenseFiles(prev => ({
@@ -209,6 +232,35 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
       [sportId]: file
     }));
     return false; // prevent auto upload
+  };
+  
+  // Submit license qua approval API
+  const handleLicenseSubmit = async (sportId: number) => {
+    const licenseFile = licenseFiles[sportId];
+    if (!licenseFile) {
+      message.error('Vui lòng chọn file giấy phép trước khi gửi');
+      return;
+    }
+    
+    try {
+      setSubmitting(true);
+      await facilityService.updateLicense(facilityId, sportId, licenseFile);
+      message.success('Yêu cầu cập nhật giấy phép đã được gửi và đang chờ phê duyệt');
+      // Xóa file đã upload khỏi state
+      setLicenseFiles(prev => {
+        const newFiles = {...prev};
+        delete newFiles[sportId];
+        return newFiles;
+      });
+      // Refresh data
+      const data = await facilityService.getFacilityById(facilityId);
+      setFacility(data);
+    } catch (error) {
+      console.error('Không thể gửi yêu cầu cập nhật giấy phép:', error);
+      message.error('Không thể gửi yêu cầu cập nhật giấy phép');
+    } finally {
+      setSubmitting(false);
+    }
   };
   
   // Fetch facility data and sports data on component mount
@@ -248,77 +300,80 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
           const uniqueSportIds = [...new Set(allSportIds)];
           
           // Cập nhật form với danh sách sportIds đã trích xuất
-          form.setFieldsValue({ sportIds: uniqueSportIds });
+          form.setFieldsValue({
+            sportIds: uniqueSportIds
+          });
         }
         
-        // Lấy danh sách sports từ API
-        // TODO: Thay thế mockSports bằng real API khi có
-        const sportsList = [
-          { id: 1, name: 'football' },
-          { id: 2, name: 'tennis' },
-          { id: 3, name: 'futsal' },
-          { id: 4, name: 'basketball' },
-          { id: 5, name: 'badminton' },
-          { id: 6, name: 'swimming' },
-          { id: 7, name: 'golf' }
-        ];
-        setAllSports(sportsList);
+        // Xử lý danh sách hình ảnh
+        if (data.imagesUrl && data.imagesUrl.length > 0) {
+          const fileList: UploadFile[] = data.imagesUrl.map((url, index) => ({
+            uid: `-${index}`,
+            name: url.split('/').pop() || `image-${index}.jpg`,
+            status: 'done',
+            url,
+          }));
+          setUploadFileList(fileList);
+        }
       } catch (error) {
         console.error('Failed to fetch facility details:', error);
-        message.error('Không thể tải thông tin cơ sở');
+        message.error('Không thể tải thông tin cơ sở.');
       } finally {
         setLoading(false);
       }
     };
     
+    // Gọi API lấy danh sách thể thao - Nếu không có getAllSports, sử dụng mock data
+    const fetchSports = async () => {
+      try {
+        // TODO: Thay thế bằng API thực tế khi có
+        // Nếu có thực hiện và khi có getAllSports:
+        // const data = await facilityService.getAllSports();
+        // setAllSports(data || []);
+        
+        // Tạm thời sử dụng mock data
+        const sportsList = [
+          { id: 1, name: 'football' },
+          { id: 2, name: 'badminton' },
+          { id: 3, name: 'futsal' },
+          { id: 4, name: 'basketball' },
+          { id: 5, name: 'volleyball' },
+          { id: 6, name: 'tennis' },
+          { id: 7, name: 'golf' },
+          { id: 8, name: 'swimming' },
+          { id: 9, name: 'table_tennis' },
+          { id: 10, name: 'baseball' }
+        ];
+        setAllSports(sportsList);
+      } catch (error) {
+        console.error('Failed to fetch sports:', error);
+      }
+    };
+    
     if (facilityId) {
       fetchFacilityData();
+      fetchSports();
     }
   }, [facilityId, form]);
   
-  // Handle image deletion
+  // Phương thức xóa hình ảnh
   const handleDeleteImage = async (imageUrl: string) => {
     try {
-      if (!facility) return;
+      setSubmitting(true);
+      await facilityService.deleteFacilityImages(facilityId, imageUrl);
       
-      await facilityService.deleteFacilityImages(facilityId, [imageUrl]);
+      // Cập nhật lại danh sách hình ảnh trong state
+      setUploadFileList(prev => prev.filter(file => file.url !== imageUrl));
       
-      // Update local state to reflect deletion
-      setFacility(prev => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          imagesUrl: prev.imagesUrl.filter(img => img !== imageUrl)
-        };
-      });
-      
-      message.success('Xóa hình ảnh thành công');
+      message.success('Đã xóa hình ảnh');
     } catch (error) {
       console.error('Failed to delete image:', error);
       message.error('Không thể xóa hình ảnh');
+    } finally {
+      setSubmitting(false);
     }
   };
   
-  // Lấy sports từ fieldGroups
-  const extractSportsFromFieldGroups = React.useMemo(() => {
-    if (!facility?.fieldGroups || facility.fieldGroups.length === 0) return [];
-    
-    // Thu thập tất cả các thông tin sport từ tất cả các fieldGroups
-    const allSports: Array<{id: number, name: string}> = [];
-    
-    facility.fieldGroups.forEach(group => {
-      if (group.sports && Array.isArray(group.sports)) {
-        group.sports.forEach(sport => {
-          if (!allSports.some(s => s.id === sport.id)) {
-            allSports.push(sport);
-          }
-        });
-      }
-    });
-    
-    return allSports;
-  }, [facility?.fieldGroups]);
-
   if (loading) {
     return (
       <div className="flex items-center justify-center p-12">
@@ -786,62 +841,70 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
           )}
           
           {activeTab === 'documents' && (
-            <Card title="Giấy tờ xác thực">
-              <div className="mb-6">
-                <Card title="Giấy chứng nhận" size="small" className="mb-4">
-                  {facility.certificate && (facility.certificate.verified || facility.certificate.temporary) ? (
-                    <Space direction="vertical" className="w-full">
-                      {facility.certificate.verified && (
-                        <div className="flex justify-between items-center p-3 border rounded-lg bg-gray-50">
-                          <div className="flex items-center">
-                            <FileOutlined className="text-blue-500 mr-3 text-lg" />
-                            <div>
-                              <Text strong>Giấy chứng nhận chính thức</Text>
-                              <Text className="block text-gray-500 text-sm">Đã được xác thực</Text>
-                            </div>
-                          </div>
-                          <Button type="link" href={facility.certificate.verified} target="_blank">
-                            Xem
-                          </Button>
+            <div>
+              <Card title="Giấy chứng nhận cơ sở" className="mb-6">
+                <div className="mb-4">
+                  <Title level={5}>Giấy chứng nhận hiện tại</Title>
+                  {facility?.certificate?.verified ? (
+                    <div className="p-4 border rounded-lg">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center">
+                          <FileOutlined className="mr-2" />
+                          <Text>Giấy chứng nhận</Text>
                         </div>
-                      )}
-                      
-                      {facility.certificate.temporary && (
-                        <div className="flex justify-between items-center p-3 border rounded-lg bg-gray-50">
-                          <div className="flex items-center">
-                            <FileOutlined className="text-orange-500 mr-3 text-lg" />
-                            <div>
-                              <Text strong>Giấy chứng nhận tạm thời</Text>
-                              <Text className="block text-gray-500 text-sm">Đang chờ xác thực</Text>
-                            </div>
-                          </div>
-                          <Button type="link" href={facility.certificate.temporary} target="_blank">
-                            Xem
-                          </Button>
-                        </div>
-                      )}
-                    </Space>
+                        <a href={facility.certificate.verified} target="_blank" rel="noopener noreferrer">
+                          <Button type="link">Xem</Button>
+                        </a>
+                      </div>
+                    </div>
                   ) : (
-                    <Empty description="Chưa có giấy chứng nhận" />
+                    <Empty description="Không có giấy chứng nhận" />
                   )}
-                  
-                  <Divider>Cập nhật giấy chứng nhận</Divider>
-                  
-                  <Upload 
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    beforeUpload={handleCertificateUpload}
-                    maxCount={1}
-                    showUploadList={true}
-                  >
-                    <Button icon={<UploadOutlined />}>Tải lên giấy chứng nhận mới</Button>
-                  </Upload>
-                  <Text type="secondary" className="block mt-2">
-                    Định dạng hỗ trợ: PDF, JPG, PNG. Kích thước tối đa: 5MB.
-                  </Text>
-                </Card>
+                </div>
                 
-                <Card title="Giấy phép kinh doanh" size="small">
-                  {facility.licenses && facility.licenses.length > 0 ? (
+                <Divider />
+                
+                <div className="mb-4">
+                  <Title level={5}>Cập nhật giấy chứng nhận</Title>
+                  <Text type="secondary" className="block mb-4">
+                    Việc cập nhật giấy chứng nhận mới sẽ yêu cầu phê duyệt từ quản trị viên. Giấy chứng nhận hiện tại vẫn được sử dụng cho đến khi giấy mới được duyệt.
+                  </Text>
+                  
+                  <Upload
+                    beforeUpload={handleCertificateUpload}
+                    accept="image/*,.pdf"
+                    maxCount={1}
+                    fileList={certificateFile ? [{ uid: '1', name: certificateFile.name, status: 'done' }] as UploadFile[] : []}
+                    onRemove={() => setCertificateFile(null)}
+                  >
+                    <Button icon={<UploadOutlined />}>Chọn file giấy chứng nhận</Button>
+                  </Upload>
+                  
+                  <Button 
+                    type="primary" 
+                    className="mt-4"
+                    onClick={handleCertificateSubmit}
+                    loading={submitting}
+                    disabled={!certificateFile || facility?.status !== 'active'}
+                  >
+                    Gửi yêu cầu cập nhật
+                  </Button>
+                  
+                  {facility?.status !== 'active' && (
+                    <div className="mt-2">
+                      <Text type="danger">
+                        <ExclamationCircleOutlined className="mr-1" />
+                        Cơ sở phải ở trạng thái hoạt động mới có thể cập nhật giấy tờ.
+                      </Text>
+                    </div>
+                  )}
+                </div>
+              </Card>
+              
+              <Card title="Giấy phép kinh doanh theo môn thể thao">
+                <div className="mb-4">
+                  <Title level={5}>Giấy phép hiện tại</Title>
+                  {facility?.licenses && facility.licenses.length > 0 ? (
                     <Table 
                       dataSource={facility.licenses}
                       rowKey={(record) => `${record.facilityId}-${record.sportId}`}
@@ -852,19 +915,11 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
                           dataIndex: 'sportId',
                           key: 'sportId',
                           render: (sportId) => {
-                            // Tìm sport trong các nguồn theo thứ tự ưu tiên
-                            // 1. Từ danh sách sports trong fieldGroups
-                            const fieldGroupSport = extractSportsFromFieldGroups.find(s => s.id === sportId);
-                            if (fieldGroupSport) {
-                              return getSportNameInVietnamese(fieldGroupSport.name);
+                            // Tìm sport trong danh sách allSports
+                            const sport = allSports.find(s => s.id === sportId);
+                            if (sport) {
+                              return getSportNameInVietnamese(sport.name);
                             }
-                            
-                            // 2. Từ danh sách allSports (mockSports)
-                            const mockSport = allSports.find(s => s.id === sportId);
-                            if (mockSport) {
-                              return getSportNameInVietnamese(mockSport.name);
-                            }
-                            
                             return "Không xác định";
                           }
                         },
@@ -878,35 +933,16 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
                           )
                         },
                         {
-                          title: 'Xem giấy phép',
-                          key: 'view',
+                          title: 'Hành động',
+                          key: 'action',
                           render: (_, record) => (
                             <Space>
                               {record.verified && (
                                 <Button type="link" href={record.verified} target="_blank">
-                                  Giấy phép chính thức
-                                </Button>
-                              )}
-                              {record.temporary && (
-                                <Button type="link" href={record.temporary} target="_blank">
-                                  Giấy phép tạm thời
+                                  Xem giấy phép
                                 </Button>
                               )}
                             </Space>
-                          )
-                        },
-                        {
-                          title: 'Cập nhật',
-                          key: 'update',
-                          render: (_, record) => (
-                            <Upload 
-                              accept=".pdf,.jpg,.jpeg,.png"
-                              beforeUpload={(file) => handleLicenseUpload(file, record.sportId || 0)}
-                              maxCount={1}
-                              showUploadList={false}
-                            >
-                              <Button size="small" icon={<UploadOutlined />}>Cập nhật</Button>
-                            </Upload>
                           )
                         }
                       ]}
@@ -914,15 +950,76 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
                   ) : (
                     <Empty description="Chưa có giấy phép kinh doanh" />
                   )}
+                </div>
+                
+                <Divider />
+                
+                <div>
+                  <Title level={5}>Cập nhật giấy phép</Title>
+                  <Text type="secondary" className="block mb-4">
+                    Việc cập nhật giấy phép mới sẽ yêu cầu phê duyệt từ quản trị viên. Giấy phép hiện tại vẫn được sử dụng cho đến khi giấy mới được duyệt.
+                  </Text>
                   
-                  <div className="mt-4">
-                    <Text type="secondary" className="mb-2 block">
-                      Lưu ý: Bạn cần cung cấp giấy phép kinh doanh cho từng môn thể thao được chọn.
-                    </Text>
-                  </div>
-                </Card>
-              </div>
-            </Card>
+                  {allSports.length > 0 ? (
+                    <div>
+                      {allSports.map(sport => (
+                        <Card key={sport.id} size="small" className="mb-3">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <Text strong>{getSportNameInVietnamese(sport.name)}</Text>
+                              
+                              {/* Check if license exists for this sport */}
+                              {facility?.licenses && facility.licenses.some(license => license.sportId === sport.id) && (
+                                <Tag color="success" className="ml-2">Đã có giấy phép</Tag>
+                              )}
+                            </div>
+                            
+                            <div className="flex items-center">
+                              <Upload
+                                beforeUpload={(file) => handleLicenseUpload(file, sport.id)}
+                                accept="image/*,.pdf"
+                                maxCount={1}
+                                fileList={licenseFiles[sport.id] ? [{ uid: '1', name: licenseFiles[sport.id].name, status: 'done' }] as UploadFile[] : []}
+                                onRemove={() => {
+                                  setLicenseFiles(prev => {
+                                    const newFiles = {...prev};
+                                    delete newFiles[sport.id];
+                                    return newFiles;
+                                  });
+                                }}
+                                className="mr-3"
+                              >
+                                <Button icon={<UploadOutlined />}>Chọn file</Button>
+                              </Upload>
+                              
+                              <Button 
+                                type="primary"
+                                onClick={() => handleLicenseSubmit(sport.id)}
+                                loading={submitting}
+                                disabled={!licenseFiles[sport.id] || facility?.status !== 'active'}
+                              >
+                                Gửi yêu cầu
+                              </Button>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <Empty description="Không có môn thể thao nào được đăng ký. Hãy thêm môn thể thao vào cơ sở trước." />
+                  )}
+                  
+                  {facility?.status !== 'active' && (
+                    <div className="mt-4">
+                      <Text type="danger">
+                        <ExclamationCircleOutlined className="mr-1" />
+                        Cơ sở phải ở trạng thái hoạt động mới có thể cập nhật giấy tờ.
+                      </Text>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            </div>
           )}
           
           {activeTab === 'status' && (

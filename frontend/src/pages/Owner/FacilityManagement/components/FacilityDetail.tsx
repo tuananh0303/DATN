@@ -815,62 +815,77 @@ const FacilityDetail: React.FC<FacilityDetailProps> = ({ facilityId, onClose, on
         
         {activeTab === 'history' && (
           <div>
-            {facility.verificationHistory && facility.verificationHistory.length > 0 ? (
+            {facility.approvals && facility.approvals.length > 0 ? (
               <Timeline>
-                {facility.verificationHistory.map((item, index) => (
-                  <Timeline.Item 
-                    key={item.id || index}
-                    color={
-                      item.status === 'approved' ? 'green' :
-                      item.status === 'pending' ? 'blue' : 'red'
-                    }
-                  >
-                    <div className="mb-1">
-                      <Text strong>{`Thay đổi trường "${item.field}"`}</Text>
-                      <Tag 
-                        className="ml-2"
-                        color={
-                          item.status === 'approved' ? 'success' :
-                          item.status === 'pending' ? 'processing' : 'error'
-                        }
-                      >
-                        {item.status === 'approved' ? 'Đã chấp thuận' :
-                         item.status === 'pending' ? 'Đang chờ' : 'Đã từ chối'
-                        }
-                      </Tag>
-                    </div>
-                    
-                    <div className="pl-4 border-l-2 border-gray-200 ml-1 mt-2">
-                      <div className="mb-2">
-                        <Text type="secondary">Giá trị cũ:</Text>
-                        <Text className="ml-2">{item.oldValue || '(Không có)'}</Text>
+                {facility.approvals.map((approval, index) => {
+                  // Xác định màu sắc cho timeline item dựa trên trạng thái phê duyệt
+                  const color = 
+                    approval.status === 'approved' ? 'green' :
+                    approval.status === 'pending' ? 'blue' : 'red';
+                  
+                  // Xác định nội dung hiển thị dựa trên loại approval
+                  let title = '';
+                  switch(approval.type) {
+                    case 'facility':
+                      title = 'Đăng ký cơ sở thể thao';
+                      break;
+                    case 'facility_name':
+                      title = `Cập nhật tên cơ sở: ${approval.name || ''}`;
+                      break;
+                    case 'certificate':
+                      title = 'Cập nhật giấy chứng nhận';
+                      break;
+                    case 'license':
+                      title = `Cập nhật giấy phép ${approval.sport ? ` (${getSportNameInVietnamese(approval.sport.name)})` : ''}`;
+                      break;
+                    default:
+                      title = 'Yêu cầu xác thực';
+                  }
+                  
+                  return (
+                    <Timeline.Item 
+                      key={approval.id || index}
+                      color={color}
+                    >
+                      <div className="mb-1">
+                        <Text strong>{title}</Text>
+                        <Tag 
+                          className="ml-2"
+                          color={
+                            approval.status === 'approved' ? 'success' :
+                            approval.status === 'pending' ? 'processing' : 'error'
+                          }
+                        >
+                          {approval.status === 'approved' ? 'Đã chấp thuận' :
+                           approval.status === 'pending' ? 'Đang chờ' : 'Đã từ chối'
+                          }
+                        </Tag>
                       </div>
-                      <div className="mb-2">
-                        <Text type="secondary">Giá trị mới:</Text>
-                        <Text className="ml-2">{item.newValue}</Text>
-                      </div>
-                      {item.note && (
-                        <div className="mb-2">
-                          <Text type="secondary">Ghi chú:</Text>
-                          <Text className="ml-2">{item.note}</Text>
-                        </div>
-                      )}
-                      <div>
-                        <Text type="secondary">Ngày yêu cầu:</Text>
-                        <Text className="ml-2">{new Date(item.requestDate).toLocaleString('vi-VN')}</Text>
-                      </div>
-                      {item.updatedDate && (
+                      
+                      <div className="pl-4 border-l-2 border-gray-200 ml-1 mt-2">
+                        {approval.note && (
+                          <div className="mb-2">
+                            <Text type="secondary">Ghi chú:</Text>
+                            <Text className="ml-2">{approval.note}</Text>
+                          </div>
+                        )}
                         <div>
-                          <Text type="secondary">Ngày xử lý:</Text>
-                          <Text className="ml-2">{new Date(item.updatedDate).toLocaleString('vi-VN')}</Text>
+                          <Text type="secondary">Ngày yêu cầu:</Text>
+                          <Text className="ml-2">{new Date(approval.createdAt).toLocaleString('vi-VN')}</Text>
                         </div>
-                      )}
-                    </div>
-                  </Timeline.Item>
-                ))}
+                        {approval.updatedAt && approval.updatedAt !== approval.createdAt && (
+                          <div>
+                            <Text type="secondary">Ngày xử lý:</Text>
+                            <Text className="ml-2">{new Date(approval.updatedAt).toLocaleString('vi-VN')}</Text>
+                          </div>
+                        )}
+                      </div>
+                    </Timeline.Item>
+                  );
+                })}
               </Timeline>
             ) : (
-              <Empty description="Không có lịch sử thay đổi" />
+              <Empty description="Không có lịch sử xác thực" />
             )}
           </div>
         )}

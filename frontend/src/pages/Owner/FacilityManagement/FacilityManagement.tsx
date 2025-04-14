@@ -288,7 +288,7 @@ const FacilityManagement: React.FC = () => {
           </div>
         ) : filteredFacilities.length > 0 ? (
           <>
-            <Row gutter={[16, 16]} className="facility-cards-grid">
+            <Row gutter={[16, 16]} className="facility-cards-grid" style={{ rowGap: '36px' }}>
               {filteredFacilities.map((facility) => (
                 <Col key={facility.id} xs={24} sm={12} lg={8} xl={8}>
                   <Card 
