@@ -433,7 +433,7 @@ const FacilityManagement: React.FC = () => {
                   }
                 </span>
               }
-              imageStyle={{ height: containerWidth < 640 ? 80 : 100 }}
+              styles={{ image: { height: containerWidth < 640 ? 80 : 100 } }}
             >
               {!searchQuery && activeFilter === 'all' && facilities.length === 0 && (
                 <Button 

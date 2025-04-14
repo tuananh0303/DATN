@@ -28,17 +28,28 @@ const ROUTE_PATTERNS = [
   '/owner/banking',
   '/owner/contact-support',
   '/owner/review-management',
-  '/owner/chat'
+  '/owner/chat',
+  '/owner/create-facility',
+  '/owner/create-field-group',
+  '/owner/create-service',
+  '/owner/create-voucher',
+  '/owner/create-event',
+  
 ];
 
 // Tiêu đề tương ứng cho mỗi route
 const ROUTE_TITLES: Record<string, string> = {
   '/owner/facility-management': 'Quản lý cơ sở',
+  '/owner/create-facility': 'Quản lý cơ sở',
   '/owner/service-management': 'Quản lý dịch vụ',
+  '/owner/create-service': 'Quản lý dịch vụ',
   '/owner/voucher-management': 'Quản lý voucher',
+  '/owner/create-voucher': 'Quản lý voucher',
   '/owner/field-group-management': 'Quản lý nhóm sân',
+  '/owner/create-field-group': 'Quản lý nhóm sân',
   '/owner/play-schedule': 'Lịch đặt sân',
   '/owner/event-management': 'Quản lý sự kiện',
+  '/owner/create-event': 'Quản lý sự kiện',
   '/owner': 'Trang chủ',
   '/owner/report-management': 'Báo cáo tài chính',
   '/owner/banking': 'Ngân hàng',

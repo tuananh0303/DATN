@@ -537,7 +537,7 @@ const HomePage = () => {
                 }
               }
             ]}
-            className="custom-carousel mx-[-8px]"
+            className="custom-carousel"
           >
             {promotions.map(promo => (
               <div key={promo.id} className="px-2">

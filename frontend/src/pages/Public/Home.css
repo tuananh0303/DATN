@@ -20,11 +20,11 @@
 }
 
 .custom-carousel .slick-prev {
-  left: -20px !important;
+  left: 0 !important;
 }
 
 .custom-carousel .slick-next {
-  right: -20px !important;
+  right: 0 !important;
 }
 
 /* Completely hide default arrow elements */
@@ -69,11 +69,15 @@
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .custom-carousel .slick-prev {
-    left: -15px !important;
+    left: 0 !important;
   }
   
   .custom-carousel .slick-next {
-    right: -15px !important;
+    right: 0 !important;
+  }
+  
+  .custom-carousel {
+    padding: 0 8px !important;
   }
 }
 
@@ -153,4 +157,11 @@
 /* Background style overrides for sections */
 .bg-gray-50 {
   background-color: #f9fafb;
-} 
+}
+
+/* Make sure the parent containers don't allow horizontal overflow */
+.custom-carousel {
+  position: relative !important;
+  padding: 0 10px !important;
+  overflow: hidden !important;
+}

@@ -249,7 +249,7 @@ class FacilityService {
   // Get facilities for dropdown
   async getFacilitiesDropdown(): Promise<FacilityDropdownItem[]> {
     try {
-      const response = await api.get('/facility/drop-down');
+      const response = await api.get('/facility/drop-down');      
       return response.data;
     } catch (error) {
       console.error('API call failed:', error);
