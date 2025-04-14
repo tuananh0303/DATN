@@ -434,17 +434,14 @@ const FacilityDetail: React.FC<FacilityDetailProps> = ({ facilityId, onClose, on
                   >
                     <div>
                       <div className="flex justify-between items-start mb-2">
-                        <Title level={5}>{service.name}</Title>
-                        <Tag color={service.status === 'available' ? 'success' : 'warning'}>
-                          {service.status === 'available' ? 'Có sẵn' : 'Sắp hết hàng'}
-                        </Tag>
+                        <Title level={5}>{service.name}</Title>                        
                       </div>
                       
                       <Paragraph className="text-gray-500 mb-4">{service.description}</Paragraph>
                       
                       <div className="flex justify-between items-center mb-3">
                         <div>
-                          <Text type="secondary">{service.serviceType === 'rental' ? 'Cho thuê' : 'Dịch vụ'}</Text>
+                          <Text type="secondary">{service.type === 'rental' ? 'Cho thuê' : 'Dịch vụ'}</Text>
                           <Tag color="blue" className="ml-2">{service.sport?.name}</Tag>
                         </div>
                         <Text className="text-lg font-bold text-blue-600">{service.price.toLocaleString()}đ/{service.unit}</Text>
@@ -457,22 +454,22 @@ const FacilityDetail: React.FC<FacilityDetailProps> = ({ facilityId, onClose, on
                           <Text type="secondary">Số lượng còn lại:</Text>
                           <Text strong className="ml-1 text-green-600">{service.amount?.toLocaleString() || 0}</Text>
                         </div>
-                        {service.popularityScore !== undefined && (
+                        {/* {service.popularityScore !== undefined && (
                           <div>
                             <Text type="secondary">Độ phổ biến:</Text>
                             <Text strong className="ml-1">{service.popularityScore}/100</Text>
                           </div>
-                        )}
+                        )} */}
                         {service.bookedCount !== undefined && (
                           <div>
                             <Text type="secondary">Lượt đặt:</Text>
                             <Text strong className="ml-1">{service.bookedCount}</Text>
                           </div>
                         )}
-                        {service.inUseCount !== undefined && (
+                        {service.bookedCountOnDate !== undefined && (
                           <div>
                             <Text type="secondary">Đang sử dụng:</Text>
-                            <Text strong className="ml-1">{service.inUseCount}</Text>
+                            <Text strong className="ml-1">{service.bookedCountOnDate}</Text>
                           </div>
                         )}
                       </div>

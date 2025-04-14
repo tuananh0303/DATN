@@ -40,6 +40,7 @@ import { Sport } from '@/types/sport.type';
 import { getSportNameInVietnamese } from '@/utils/translateSport';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
+import type { UploadFile as AntdUploadFile, RcFile } from 'antd/es/upload/interface';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -66,13 +67,13 @@ interface FacilityFormValues {
 }
 
 // Khai báo interface cho file upload từ Ant Design
-interface UploadFile {
+interface UploadFile extends Omit<AntdUploadFile, 'originFileObj'> {
   uid: string;
   name: string;
   status?: 'uploading' | 'done' | 'error' | 'removed';
   url?: string;
   thumbUrl?: string;
-  originFileObj?: File;
+  originFileObj?: RcFile;
   response?: unknown;
   error?: unknown;
   linkProps?: unknown;
@@ -164,7 +165,7 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
   
   // File upload configuration
   const uploadProps = {
-    beforeUpload: (file: File) => {
+    beforeUpload: (file: RcFile) => {
       const isImage = file.type.startsWith('image/');
       if (!isImage) {
         message.error('Bạn chỉ có thể tải lên file hình ảnh!');
@@ -218,9 +219,7 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
         // Gọi API để lấy dữ liệu cơ sở
         const data = await facilityService.getFacilityById(facilityId);
         setFacility(data);
-        setNumberOfShifts(data.numberOfShifts || 1);
-        
-        console.log('Loaded facility data:', data);
+        setNumberOfShifts(data.numberOfShifts || 1);        
         
         // Set initial form values
         form.setFieldsValue({
@@ -667,13 +666,10 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
                       <List.Item>
                         <Card size="small">
                           <div className="flex justify-between mb-2">
-                            <Text strong>{service.name}</Text>
-                            <Tag color={service.status === 'available' ? 'success' : 'warning'}>
-                              {service.status === 'available' ? 'Có sẵn' : 'Sắp hết hàng'}
-                            </Tag>
+                            <Text strong>{service.name}</Text>                           
                           </div>
                           <div className="flex justify-between text-sm">
-                            <Text type="secondary">{service.serviceType === 'rental' ? 'Cho thuê' : 'Dịch vụ'}</Text>
+                            <Text type="secondary">{service.type === 'rental' ? 'Cho thuê' : 'Dịch vụ'}</Text>
                             <Text className="text-blue-600">{service.price.toLocaleString()}đ/{service.unit}</Text>
                           </div>
                         </Card>

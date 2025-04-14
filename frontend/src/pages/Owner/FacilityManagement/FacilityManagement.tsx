@@ -143,9 +143,10 @@ const FacilityManagement: React.FC = () => {
   const filterButtons = [
     { id: 'all', label: 'Tất cả cơ sở' },
     { id: 'active', label: 'Đang hoạt động' },
-    { id: 'unactive', label: 'Đang đóng cửa' },
+    { id: 'closed', label: 'Đang đóng cửa' },
     { id: 'pending', label: 'Đang chờ phê duyệt' },
-    { id: 'rejected', label: 'Đã bị từ chối' }
+    { id: 'unactive', label: 'Đã bị từ chối' },
+    { id: 'banned', label: 'Đã bị cấm' }
   ];
   
   // Generate tab items for Tabs component
@@ -212,9 +213,10 @@ const FacilityManagement: React.FC = () => {
   const getStatusColor = (status: string) => {
     switch(status) {
       case 'active': return 'success';
-      case 'unactive': return 'default';
+      case 'closed': return 'default';
       case 'pending': return 'warning';
-      case 'rejected': return 'error';
+      case 'unactive': return 'error';
+      case 'banned': return 'error';
       default: return 'default';
     }
   };
@@ -222,9 +224,10 @@ const FacilityManagement: React.FC = () => {
   const getStatusText = (status: string) => {
     switch(status) {
       case 'active': return 'Đang hoạt động';
-      case 'unactive': return 'Đang đóng cửa';
+      case 'closed': return 'Đang đóng cửa';
       case 'pending': return 'Đang chờ phê duyệt';
-      case 'rejected': return 'Đã bị từ chối';
+      case 'unactive': return 'Đã bị từ chối';
+      case 'banned': return 'Đã bị cấm';
       default: return 'Không xác định';
     }
   };
