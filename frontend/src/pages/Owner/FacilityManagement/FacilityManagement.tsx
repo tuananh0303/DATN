@@ -349,59 +349,62 @@ const FacilityManagement: React.FC = () => {
                   >
                     <div className="p-1 sm:p-2">
                       {/* Tên cơ sở */}
-                      <h3 className="text-base sm:text-lg font-semibold line-clamp-2 mb-1 sm:mb-2">{facility.name}</h3>
+                      <h3 className="text-base sm:text-lg font-semibold line-clamp-1 mb-3 ">{facility.name}</h3>
                       
                       {/* Giờ hoạt động */}
-                      <div className="flex items-center text-gray-500 mb-1 sm:mb-2 text-xs sm:text-sm">
-                        <OperatingHoursDisplay facility={facility} />
+                      <div className="flex items-center text-gray-500 mb-1 sm:mb-2 text-xs sm:text-sm h-5 sm:h-6">
+                        <div className="truncate flex-1">
+                          <OperatingHoursDisplay facility={facility} />
+                        </div>
                         
                         {/* Rating */}
-                        <div className="ml-auto flex items-center">
+                        <div className="ml-auto flex items-center flex-shrink-0">
                           <StarOutlined className="text-yellow-500 mr-1" />
                           <span className="font-medium">{facility.avgRating.toFixed(1)}</span>
                         </div>
                       </div>
                       
                       {/* Môn thể thao */}
-                      <div className="mb-2 sm:mb-3">
-                        <div className="flex flex-wrap gap-1">
-                          {facility.sports && facility.sports.slice(0, containerWidth < 380 ? 2 : 4).map((sport) => (
-                            <Tag key={sport.id} color="blue" className="text-xs sm:text-sm">{getSportNameInVietnamese(sport.name)}</Tag>
+                      <div className="mb-2">
+                        <div className="flex flex-wrap gap-1 overflow-hidden">
+                          {facility.sports && facility.sports.slice(0, containerWidth < 380 ? 1 : 2).map((sport) => (
+                            <Tag key={sport.id} color="blue" className="text-xs sm:text-sm mb-1">{getSportNameInVietnamese(sport.name)}</Tag>
                           ))}
-                          {facility.sports && facility.sports.length > (containerWidth < 380 ? 2 : 4) && (
-                            <Tag className="text-xs sm:text-sm">+{facility.sports.length - (containerWidth < 380 ? 2 : 4)}</Tag>
+                          {facility.sports && facility.sports.length > (containerWidth < 380 ? 1 : 2) && (
+                            <Tag className="text-xs sm:text-sm mb-1">+{facility.sports.length - (containerWidth < 380 ? 1 : 2)}</Tag>
                           )}
                         </div>
                       </div>
                       
                       {/* Địa chỉ */}
-                      <div className="flex items-start mb-2 sm:mb-3 text-gray-600">
+                      <div className="flex items-start mb-2 sm:mb-3 text-gray-600 h-10 sm:h-10">
                         <EnvironmentOutlined className="mr-1 sm:mr-2 mt-1 flex-shrink-0 text-xs sm:text-sm" />
-                        <p className="line-clamp-2 text-xs sm:text-sm">{facility.location}</p>
+                        <p className="line-clamp-2 text-xs sm:text-sm m-0">{facility.location}</p>
                       </div>
                       
                       {/* Khoảng giá */}
-                      <div className="flex items-center text-blue-600 font-medium text-xs sm:text-sm">
-                        <DollarOutlined className="mr-1 sm:mr-2 text-green-600" />
-                        {facility.minPrice !== undefined && facility.maxPrice !== undefined ? (
-                          <>
-                            <span className="text-blue-600 font-medium">
-                              {facility.minPrice.toLocaleString('vi-VN', { useGrouping: true }).replace(/,/g, '.')}đ - {facility.maxPrice.toLocaleString('vi-VN', { useGrouping: true }).replace(/,/g, '.')}đ
-                            </span>
-                            <span className="text-gray-500 text-xs ml-1">/giờ</span>
-                          </>
-                        ) : facility.fieldGroups && facility.fieldGroups.length > 0 ? (
-                          <>
-                            <span className="text-blue-600 font-medium">
-                              {Math.min(...facility.fieldGroups.map(g => g.basePrice)).toLocaleString('vi-VN', { useGrouping: true }).replace(/,/g, '.')}đ - {Math.max(...facility.fieldGroups.map(g => g.basePrice)).toLocaleString('vi-VN', { useGrouping: true }).replace(/,/g, '.')}đ
-                            </span>
-                            <span className="text-gray-500 text-xs ml-1">/giờ</span>
-                          </>
-                        ) : (
-                          <span className="text-gray-500">Chưa có thông tin giá</span>
-                        )}
+                      <div className="flex items-center text-blue-600 font-medium text-xs sm:text-sm h-5 sm:h-6">
+                        <DollarOutlined className="mr-1 sm:mr-2 text-green-600 flex-shrink-0" />
+                        <div className="truncate">
+                          {facility.minPrice !== undefined && facility.maxPrice !== undefined ? (
+                            <>
+                              <span className="text-blue-600 font-medium">
+                                {facility.minPrice.toLocaleString('vi-VN', { useGrouping: true }).replace(/,/g, '.')}đ - {facility.maxPrice.toLocaleString('vi-VN', { useGrouping: true }).replace(/,/g, '.')}đ
+                              </span>
+                              <span className="text-gray-500 text-xs ml-1">/giờ</span>
+                            </>
+                          ) : facility.fieldGroups && facility.fieldGroups.length > 0 ? (
+                            <>
+                              <span className="text-blue-600 font-medium">
+                                {Math.min(...facility.fieldGroups.map(g => g.basePrice)).toLocaleString('vi-VN', { useGrouping: true }).replace(/,/g, '.')}đ - {Math.max(...facility.fieldGroups.map(g => g.basePrice)).toLocaleString('vi-VN', { useGrouping: true }).replace(/,/g, '.')}đ
+                              </span>
+                              <span className="text-gray-500 text-xs ml-1">/giờ</span>
+                            </>
+                          ) : (
+                            <span className="text-gray-500">Chưa có thông tin giá</span>
+                          )}
+                        </div>
                       </div>
-                                             
                     </div>
                   </Card>
                 </Col>

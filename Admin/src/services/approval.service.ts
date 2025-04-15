@@ -4,8 +4,9 @@ import apiClient from './api.service';
 export const approvalService = {
   async getApprovals(filter: ApprovalFilter = {}) {
     try {
-      // Gọi API thực tế để lấy dữ liệu
+      // API không hỗ trợ filter, lấy tất cả dữ liệu
       const response = await apiClient.get('/approval/all');
+      
       return {
         data: response.data,
         total: response.data.length,

@@ -158,7 +158,7 @@ class FacilityService {
   // Update an existing facility
   async updateFacility(id: string, facilityData: Partial<Facility>): Promise<Facility> {
     try {
-      const response = await api.patch(`/facility/${id}`, facilityData);
+      const response = await api.put(`/facility/${id}/update-info`, facilityData);
       return response.data;
     } catch (error) {
       console.error('API call failed:', error);
@@ -199,16 +199,24 @@ class FacilityService {
   
   
   // Cập nhật tên cơ sở (tạo approval)
-  async updateFacilityName(facilityId: string, newName: string): Promise<{ message: string }> {
+  async updateFacilityName(id: string, data: { name: string, certificate: File | null }): Promise<{ message: string }> {
     try {
-      const response = await api.put(`/facility/${facilityId}/update-name?name=${encodeURIComponent(newName)}`, {}, {
+      const formData = new FormData();
+      
+      // Nếu có certificate, thêm vào formData
+      if (data.certificate) {
+        formData.append('certificate', data.certificate);
+      }
+      
+      // Sử dụng API với tham số name trong query
+      const response = await api.put(`/facility/${id}/update-name?name=${encodeURIComponent(data.name)}`, formData, {
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'multipart/form-data',
         },
       });
       return response.data;
     } catch (error) {
-      console.error('API call failed:', error);
+      console.error('Error updating facility name:', error);
       throw error;
     }
   }

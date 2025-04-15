@@ -45,6 +45,7 @@ import { getSportNameInVietnamese } from '@/utils/translateSport';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import type { UploadFile as AntdUploadFile, RcFile } from 'antd/es/upload/interface';
+import { sportService } from '@/services/sport.service';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -114,6 +115,8 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
   const [numberOfShifts, setNumberOfShifts] = useState<number>(1);
   const [uploadFileList, setUploadFileList] = useState<UploadFile[]>([]);
   const navigate = useNavigate();
+  // Thêm state riêng để lưu certificate khi đổi tên
+  const [nameChangeFile, setNameChangeFile] = useState<File | null>(null);
   
   // Hàm thêm khung giờ hoạt động
   const addShift = () => {
@@ -212,11 +215,24 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
       // Nếu tên bị thay đổi, sử dụng API approval cho cập nhật tên
       if (facility && values.name !== facility.name) {
         try {
-          await facilityService.updateFacilityName(facilityId, values.name);
-          message.success('Yêu cầu cập nhật tên cơ sở đã được gửi và đang chờ phê duyệt');
+          await facilityService.updateFacilityName(facilityId, { 
+            name: values.name,
+            certificate: nameChangeFile
+          });
+          
+          // Thông báo chi tiết hơn
+          Modal.success({
+            title: 'Đã gửi yêu cầu thành công',
+            content: (
+              <div>
+                <p>Yêu cầu cập nhật tên cơ sở đã được gửi và đang chờ phê duyệt.</p>
+                <p>Trong thời gian chờ phê duyệt, tên cơ sở hiện tại vẫn được sử dụng.</p>
+              </div>
+            ),
+          });
         } catch (error) {
-          console.error('Không thể gửi yêu cầu cập nhật tên:', error);
-          message.error('Không thể gửi yêu cầu cập nhật tên cơ sở');
+          console.error('Failed to update facility name:', error);
+          message.error('Không thể cập nhật tên cơ sở');
         } finally {
           setSubmitting(false);
         }
@@ -304,7 +320,18 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
     try {
       setSubmitting(true);
       await facilityService.updateCertificate(facilityId, certificateFile);
-      message.success('Yêu cầu cập nhật giấy chứng nhận đã được gửi và đang chờ phê duyệt');
+      
+      // Thông báo chi tiết hơn
+      Modal.success({
+        title: 'Đã gửi yêu cầu thành công',
+        content: (
+          <div>
+            <p>Yêu cầu cập nhật giấy chứng nhận đã được gửi và đang chờ phê duyệt.</p>
+            <p>Trong thời gian chờ phê duyệt, giấy chứng nhận hiện tại (nếu có) vẫn được sử dụng.</p>
+          </div>
+        ),
+      });
+      
       setCertificateFile(null);
       // Refresh data
       const data = await facilityService.getFacilityById(facilityId);
@@ -337,13 +364,25 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
     try {
       setSubmitting(true);
       await facilityService.updateLicense(facilityId, sportId, licenseFile);
-      message.success('Yêu cầu cập nhật giấy phép đã được gửi và đang chờ phê duyệt');
+      
+      // Thông báo chi tiết hơn
+      Modal.success({
+        title: 'Đã gửi yêu cầu thành công',
+        content: (
+          <div>
+            <p>Yêu cầu cập nhật giấy phép kinh doanh đã được gửi và đang chờ phê duyệt.</p>
+            <p>Trong thời gian chờ phê duyệt, giấy phép hiện tại (nếu có) vẫn được sử dụng.</p>
+          </div>
+        ),
+      });
+      
       // Xóa file đã upload khỏi state
       setLicenseFiles(prev => {
         const newFiles = {...prev};
         delete newFiles[sportId];
         return newFiles;
       });
+      
       // Refresh data
       const data = await facilityService.getFacilityById(facilityId);
       setFacility(data);
@@ -417,25 +456,10 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
     
     // Gọi API lấy danh sách thể thao - Nếu không có getAllSports, sử dụng mock data
     const fetchSports = async () => {
-      try {
-        // TODO: Thay thế bằng API thực tế khi có
-        // Nếu có thực hiện và khi có getAllSports:
-        // const data = await facilityService.getAllSports();
-        // setAllSports(data || []);
-        
+      try {        
+        const data = await sportService.getSport();
         // Tạm thời sử dụng mock data
-        const sportsList = [
-          { id: 1, name: 'football' },
-          { id: 2, name: 'badminton' },
-          { id: 3, name: 'futsal' },
-          { id: 4, name: 'basketball' },
-          { id: 5, name: 'volleyball' },
-          { id: 6, name: 'tennis' },
-          { id: 7, name: 'golf' },
-          { id: 8, name: 'swimming' },
-          { id: 9, name: 'table_tennis' },
-          { id: 10, name: 'baseball' }
-        ];
+        const sportsList = data;         
         setAllSports(sportsList);
       } catch (error) {
         console.error('Failed to fetch sports:', error);
@@ -478,6 +502,12 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
       console.error('Failed to delete image:', error);
       message.error('Không thể xóa hình ảnh');
     }
+  };
+  
+  // Thêm hàm xử lý upload cho phần đổi tên
+  const handleNameCertificateUpload = (file: File) => {
+    setNameChangeFile(file);
+    return false; // prevent auto upload
   };
   
   if (loading) {
@@ -561,63 +591,111 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
             <div className="max-h-[calc(100vh-240px)] overflow-y-auto pr-2">
               {/* Khối 1: Đổi tên cơ sở */}
               <Card title="Tên cơ sở" className="mb-4">
-                <div className="flex items-start">
-                  <div className="flex-grow mr-4">
-                    {facility.status === 'active' ? (
-                      <>
-                        <Form.Item name="name" noStyle>
-                          <Input placeholder="Nhập tên cơ sở" className="w-full" />
-                </Form.Item>
-                        <div className="mt-2">
-                          <Text type="secondary">
-                            Tên cơ sở sẽ hiển thị trên hệ thống và cho người dùng. Việc thay đổi tên cơ sở cần được phê duyệt.
-                          </Text>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="bg-gray-50 p-3 rounded-md">
-                          <Text>{facility.name}</Text>
-                        </div>
-                        <div className="mt-2">
-                          <Text type="secondary">
-                            Cơ sở phải ở trạng thái hoạt động mới có thể yêu cầu đổi tên
-                          </Text>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                  <Button 
-                    type="primary" 
-                    disabled={facility.status !== 'active'}
-                    onClick={() => {
-                      const nameValue = form.getFieldValue('name');
-                      if (nameValue !== facility.name) {
-                        // Hiển thị modal xác nhận trước khi gửi
-                        Modal.confirm({
-                          title: 'Xác nhận cập nhật tên cơ sở',
-                          content: 'Việc thay đổi tên cơ sở sẽ cần được phê duyệt bởi admin. Bạn có chắc chắn muốn gửi yêu cầu cập nhật tên?',
-                          onOk: async () => {
-                            try {
-                              setSubmitting(true);
-                              await facilityService.updateFacilityName(facilityId, nameValue);
-                              message.success('Yêu cầu cập nhật tên cơ sở đã được gửi và đang chờ phê duyệt');
-                            } catch (error) {
-                              console.error('Không thể gửi yêu cầu cập nhật tên:', error);
-                              message.error('Không thể gửi yêu cầu cập nhật tên cơ sở');
-                            } finally {
-                              setSubmitting(false);
-                            }
+                <Form.Item shouldUpdate={(prevValues, currentValues) => prevValues.name !== currentValues.name}>
+                  {() => (
+                    <div className="flex items-start">
+                      <div className="flex-grow mr-4">
+                        {facility.status === 'active' ? (
+                          <>
+                            <Form.Item name="name" noStyle>
+                              <Input placeholder="Nhập tên cơ sở" className="w-full" />
+                            </Form.Item>
+                            <div className="mt-2">
+                              <Text type="secondary">
+                                Tên cơ sở sẽ hiển thị trên hệ thống và cho người dùng. Việc thay đổi tên cơ sở cần được phê duyệt.
+                              </Text>
+                            </div>
+                            
+                            {facility.name !== form.getFieldValue('name') && (
+                              <div className="mt-3 bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+                                <div className="mb-2">
+                                  <Text strong className="text-yellow-700">Yêu cầu bắt buộc: Tải lên giấy chứng nhận</Text>
+                                </div>
+                                <div className="mb-3">
+                                  <Text className="text-yellow-700">
+                                    Để thay đổi tên cơ sở, bạn cần tải lên giấy chứng nhận kinh doanh có tên mới.
+                                  </Text>
+                                </div>
+                                <Upload
+                                  beforeUpload={handleNameCertificateUpload}
+                                  accept=".pdf,.jpg,.jpeg,.png"
+                                  maxCount={1}
+                                  fileList={nameChangeFile ? [{ uid: '1', name: nameChangeFile.name, status: 'done' }] as UploadFile[] : []}
+                                  onRemove={() => setNameChangeFile(null)}
+                                >
+                                  <Button icon={<UploadOutlined />}>
+                                    Chọn file giấy chứng nhận
+                                  </Button>
+                                </Upload>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <div className="bg-gray-50 p-3 rounded-md">
+                              <Text>{facility.name}</Text>
+                            </div>
+                            <div className="mt-2">
+                              <Text type="secondary">
+                                Cơ sở phải ở trạng thái hoạt động mới có thể yêu cầu đổi tên
+                              </Text>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      <Button 
+                        type="primary" 
+                        disabled={
+                          facility.status !== 'active' || 
+                          facility.name === form.getFieldValue('name') || 
+                          (facility.name !== form.getFieldValue('name') && !nameChangeFile)
+                        }
+                        onClick={() => {
+                          const nameValue = form.getFieldValue('name');
+                          if (nameValue !== facility.name) {
+                            // Hiển thị modal xác nhận trước khi gửi
+                            Modal.confirm({
+                              title: 'Xác nhận cập nhật tên cơ sở',
+                              content: 'Việc thay đổi tên cơ sở sẽ cần được phê duyệt bởi admin. Bạn có chắc chắn muốn gửi yêu cầu cập nhật tên?',
+                              onOk: async () => {
+                                try {
+                                  setSubmitting(true);
+                                  await facilityService.updateFacilityName(facilityId, {
+                                    name: nameValue,
+                                    certificate: nameChangeFile
+                                  });
+                                  
+                                  // Thông báo chi tiết hơn
+                                  Modal.success({
+                                    title: 'Đã gửi yêu cầu thành công',
+                                    content: (
+                                      <div>
+                                        <p>Yêu cầu cập nhật tên cơ sở đã được gửi và đang chờ phê duyệt.</p>
+                                        <p>Trong thời gian chờ phê duyệt, tên cơ sở hiện tại vẫn được sử dụng.</p>
+                                      </div>
+                                    ),
+                                  });
+                                  
+                                  // Reset certificate file sau khi submit thành công
+                                  setNameChangeFile(null);
+                                } catch (error) {
+                                  console.error('Failed to update facility name:', error);
+                                  message.error('Không thể cập nhật tên cơ sở');
+                                } finally {
+                                  setSubmitting(false);
+                                }
+                              }
+                            });
+                          } else {
+                            message.info('Bạn chưa thay đổi tên cơ sở');
                           }
-                        });
-                      } else {
-                        message.info('Bạn chưa thay đổi tên cơ sở');
-                      }
-                    }}
-                  >
-                    Yêu cầu đổi tên
-                  </Button>
-                </div>
+                        }}
+                      >
+                        Yêu cầu đổi tên
+                      </Button>
+                    </div>
+                  )}
+                </Form.Item>
               </Card>
 
               {/* Khối 2: Thông tin không thể chỉnh sửa */}
@@ -911,14 +989,13 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
                         
                         // Format times for submission
                         const formattedValues: Partial<Facility> = {
-                          description: values.description,
-                          numberOfShifts: numberOfShifts,
-                          openTime1: values.openTime1 ? dayjs(values.openTime1).format('HH:mm') : '',
-                          closeTime1: values.closeTime1 ? dayjs(values.closeTime1).format('HH:mm') : '',
-                          openTime2: values.openTime2 ? dayjs(values.openTime2).format('HH:mm') : '',
-                          closeTime2: values.closeTime2 ? dayjs(values.closeTime2).format('HH:mm') : '',
-                          openTime3: values.openTime3 ? dayjs(values.openTime3).format('HH:mm') : '',
-                          closeTime3: values.closeTime3 ? dayjs(values.closeTime3).format('HH:mm') : ''
+                          description: values.description,                          
+                          openTime1: values.openTime1 ? dayjs(values.openTime1).format('HH:mm') : undefined,
+                          closeTime1: values.closeTime1 ? dayjs(values.closeTime1).format('HH:mm') : undefined,
+                          openTime2: values.openTime2 ? dayjs(values.openTime2).format('HH:mm') : undefined,
+                          closeTime2: values.closeTime2 ? dayjs(values.closeTime2).format('HH:mm') : undefined,
+                          openTime3: values.openTime3 ? dayjs(values.openTime3).format('HH:mm') : undefined,
+                          closeTime3: values.closeTime3 ? dayjs(values.closeTime3).format('HH:mm') : undefined
                         };
                         
                         // Cập nhật thông tin cơ bản của cơ sở
