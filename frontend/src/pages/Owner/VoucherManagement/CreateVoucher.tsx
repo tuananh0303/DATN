@@ -32,7 +32,20 @@ const CreateVoucher: React.FC = () => {
   
   // States
   const [selectedFacilityId, setSelectedFacilityId] = useState<string>(() => {
-    return localStorage.getItem(SELECTED_FACILITY_KEY) || '';
+    const savedFacilityId = localStorage.getItem(SELECTED_FACILITY_KEY);
+    
+    // Kiểm tra xem savedFacilityId có còn hợp lệ không (có tồn tại trong danh sách facilities không)
+    const isValidSavedId = savedFacilityId && mockFacilitiesDropdown.some(f => f.id === savedFacilityId);
+    
+    // Nếu ID trong localStorage không hợp lệ, sử dụng ID đầu tiên trong danh sách
+    const initialFacilityId = isValidSavedId ? savedFacilityId : (mockFacilitiesDropdown.length > 0 ? mockFacilitiesDropdown[0].id : '');
+    
+    // Nếu ID đã thay đổi, cập nhật lại localStorage
+    if (initialFacilityId !== savedFacilityId && initialFacilityId) {
+      localStorage.setItem(SELECTED_FACILITY_KEY, initialFacilityId);
+    }
+    
+    return initialFacilityId;
   });
   const [submitting, setSubmitting] = useState(false);
   const [voucherType, setVoucherType] = useState<'cash' | 'percent'>('cash');

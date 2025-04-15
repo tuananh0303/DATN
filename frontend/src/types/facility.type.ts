@@ -154,3 +154,5 @@ export interface FacilityStatusChange {
   newStatus: 'active' | 'unactive';
   note?: string;
 }
+
+
