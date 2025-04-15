@@ -481,7 +481,7 @@ const FacilityManagement: React.FC = () => {
           open={editModalVisible}
           onCancel={() => closeEditModal()}
           footer={null}
-          width={containerWidth < 768 ? '95%' : 800}
+          width={containerWidth < 768 ? '95%' : 900}
           style={{ top: containerWidth < 768 ? 10 : 20 }}
           styles={{ body: { padding: 0 } }}
           destroyOnClose

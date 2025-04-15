@@ -22,7 +22,7 @@ export interface Facility {
     sports: Sport[];
     status: 'pending' | 'active' | 'unactive' | 'closed' | 'banned';
     avgRating: number;
-    numberOfRatings: number;
+    numberOfRating: number;
     imagesUrl: string[];
     createdAt: string;
     updatedAt: string;
