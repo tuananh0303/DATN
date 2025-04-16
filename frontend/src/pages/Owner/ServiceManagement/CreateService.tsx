@@ -8,6 +8,7 @@ import { FacilityDropdownItem } from '@/services/facility.service';
 import { Sport } from '@/types/sport.type';
 import { serviceService } from '@/services/service.service';
 import { getSportNameInVietnamese } from '@/utils/translateSport';
+import { AxiosError } from 'axios';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -178,9 +179,23 @@ const CreateService: React.FC<CreateServiceProps> = ({ onCancel, onSubmit }) => 
       } else {
         navigate('/owner/service-management');
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error creating services:', error);
-      message.error('Không thể tạo dịch vụ. Vui lòng thử lại sau.');
+      
+      // Kiểm tra thông báo lỗi
+      const axiosError = error as AxiosError<{message: string}>;
+      if (axiosError.response?.data?.message && axiosError.response.data.message.includes('Not found license with sport')) {
+        // Hiển thị thông báo lỗi về giấy phép
+        const sportId = axiosError.response.data.message.match(/sport (\d+)/)?.[1];
+        const sportName = sportId ? getSportName(Number(sportId)) : 'này';
+        
+        Modal.error({
+          title: 'Thiếu giấy phép kinh doanh',
+          content: `Cơ sở chưa được cập nhật giấy phép kinh doanh môn thể thao ${sportName}. Vui lòng cập nhật giấy phép trước khi tạo dịch vụ.`
+        });
+      } else {
+        message.error('Không thể tạo dịch vụ. Vui lòng thử lại sau.');
+      }
     } finally {
       setSubmitting(false);
     }

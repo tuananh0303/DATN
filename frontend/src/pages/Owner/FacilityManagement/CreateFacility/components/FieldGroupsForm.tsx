@@ -23,7 +23,7 @@ import { FacilityFormData } from '@/types/facility.type';
 import { Sport } from '@/types/sport.type';
 import { FieldGroupFormData } from '@/types/field.type';
 import { getSportNameInVietnamese } from '@/utils/translateSport';
-import FieldGroupForm from '@/pages/Owner/FieldManagement/CreateFieldGroup/components/FieldGroupForm';
+import FieldGroupForm from './FieldGroupForm';
 
 const { Title, Text, Paragraph } = Typography;
 
