@@ -1,5 +1,6 @@
 import api from './api';
 import { Booking } from '@/types/booking.type';
+import { AvailableFieldGroup } from '@/types/field.type';
 
 /**
  * Service for handling booking-related API calls
@@ -86,15 +87,13 @@ export const bookingService = {
     dates: string[],
     startTime: string,
     endTime: string
-  ) {
+  ): Promise<AvailableFieldGroup[]> {
     try {
-      const response = await api.get(`/field-group/${facilityId}/available-field-in-facility`, {
-        params: {
-          sportId,
-          dates,
-          startTime,
-          endTime
-        }
+      const response = await api.post(`/field-group/${facilityId}/available-field-in-facility`, {
+        sportId,
+        dates,
+        startTime,
+        endTime
       });
       return response.data;
     } catch (error) {
@@ -109,7 +108,7 @@ export const bookingService = {
    */
   async getSportsByFacility(facilityId: string) {
     try {
-      const response = await api.get(`/sport/facility/${facilityId}`);
+      const response = await api.get(`/sport/${facilityId}/all-sports`);
       return response.data;
     } catch (error) {
       console.error('Error fetching sports by facility:', error);
@@ -158,9 +157,9 @@ export const bookingService = {
   /**
    * Get payment result (for handling post-payment redirects)
    */
-  async getPaymentResult() {
+  async getPaymentResult(queryParams: Record<string, string>) {
     try {
-      const response = await api.get('/payment/inp');
+      const response = await api.get('/payment/ipn', { params: queryParams });
       return response.data;
     } catch (error) {
       console.error('Error getting payment result:', error);

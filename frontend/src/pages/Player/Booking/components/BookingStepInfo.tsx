@@ -3,6 +3,7 @@ import { Form, Card, Col, Select, DatePicker, TimePicker, Tag, FormInstance, But
 import { CalendarOutlined, InfoCircleOutlined, EyeOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { RecurringType, BookingFormData } from '@/types/booking.type';
+import { getSportNameInVietnamese } from '@/utils/translateSport';
 
 const { Option } = Select;
 const { RangePicker } = TimePicker;
@@ -372,7 +373,7 @@ const BookingStepInfo: React.FC<BookingStepInfoProps> = ({
           >
             <Select placeholder="Chọn loại hình thể thao">
               {sports.map(sport => (
-                <Option key={sport.id} value={sport.id}>{sport.name}</Option>
+                <Option key={sport.id} value={sport.id}>{getSportNameInVietnamese(sport.name)}</Option>
               ))}
             </Select>
           </Form.Item>

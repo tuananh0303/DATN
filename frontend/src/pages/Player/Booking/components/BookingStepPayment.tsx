@@ -4,7 +4,7 @@ import {
   BankOutlined, WalletOutlined, CreditCardOutlined 
 } from '@ant-design/icons';
 import { BookingFormData } from '@/types/booking.type';
-import { FieldGroup } from '@/types/field.type';
+import { AvailableFieldGroup } from '@/types/field.type';
 import { Service } from '@/types/service.type';
 import dayjs from 'dayjs';
 
@@ -13,7 +13,7 @@ const { Title, Text } = Typography;
 interface BookingStepPaymentProps {
   form: FormInstance;
   formData: Partial<BookingFormData>;
-  fieldGroups: FieldGroup[];
+  fieldGroups: AvailableFieldGroup[];
   services: Service[];
   sports: { id: number; name: string }[];
   selectedDates: dayjs.Dayjs[];

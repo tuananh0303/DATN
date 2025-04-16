@@ -1,18 +1,41 @@
-import React, { useState } from 'react';
-import { Form, Card, Radio, Space, FormInstance, Typography, Divider, Tag, Tooltip, Badge, Empty, Row, Col } from 'antd';
-import { FieldGroup } from '@/types/field.type';
+import React, { useState, useEffect } from 'react';
+import { Form, Card, Radio, Space, FormInstance, Typography, Divider, Tag, Tooltip, 
+  Empty, Row, Col, Select, Table, Alert } from 'antd';
+import { AvailableFieldGroup } from '@/types/field.type';
 import { BookingFormData } from '@/types/booking.type';
 import { 
   InfoCircleOutlined, 
-  EnvironmentOutlined, TeamOutlined, FieldTimeOutlined 
+  EnvironmentOutlined, TeamOutlined, FieldTimeOutlined,
+  CalendarOutlined, CheckCircleOutlined, CloseCircleOutlined
 } from '@ant-design/icons';
+import dayjs from 'dayjs';
 
 const { Title, Text, Paragraph } = Typography;
+const { Option } = Select;
+
+// Interface cho các lựa chọn sân của từng ngày
+interface FieldSelection {
+  [date: string]: number | null;
+}
+
+// Interface cho Field trong booking slot
+interface Field {
+  id: number;
+  name: string;
+  status: string;
+}
+
+// Interface cho table row data
+interface TableRowData {
+  key: number;
+  date: string;
+  fields: Field[];
+}
 
 interface BookingStepFieldProps {
   form: FormInstance;
   formData: Partial<BookingFormData>;
-  fieldGroups: FieldGroup[];
+  fieldGroups: AvailableFieldGroup[];
   formatCurrency: (amount: number) => string;
 }
 
@@ -22,14 +45,62 @@ const BookingStepField: React.FC<BookingStepFieldProps> = ({
   fieldGroups,
   formatCurrency
 }) => {
-  const [selectedFieldGroup, setSelectedFieldGroup] = useState<FieldGroup | null>(
+  const [selectedFieldGroup, setSelectedFieldGroup] = useState<AvailableFieldGroup | null>(
     formData.fieldGroupId ? fieldGroups.find(g => String(g.id) === String(formData.fieldGroupId)) || null : null
   );
+  
+  // State để lưu trữ lựa chọn sân cho từng ngày
+  const [fieldSelections, setFieldSelections] = useState<FieldSelection>({});
 
-  const renderPriceInfo = (fieldGroup: FieldGroup) => {
+  // Cập nhật lại field selections khi chọn field group hoặc khi formData thay đổi
+  useEffect(() => {
+    if (formData.fieldGroupId) {
+      const fieldGroup = fieldGroups.find(g => String(g.id) === String(formData.fieldGroupId));
+      if (fieldGroup) {
+        setSelectedFieldGroup(fieldGroup);
+        
+        // Khởi tạo lựa chọn sân cho mỗi ngày
+        if (fieldGroup.bookingSlot) {
+          const initialSelections: FieldSelection = {};
+          
+          fieldGroup.bookingSlot.forEach(slot => {
+            const dateStr = dayjs(slot.date).format('YYYY-MM-DD');
+            
+            // Nếu đã có sân được chọn trước đó trong formData
+            if (formData.fieldId) {
+              const existingField = slot.fields.find(f => f.id === Number(formData.fieldId));
+              if (existingField && existingField.status === 'active') {
+                initialSelections[dateStr] = existingField.id;
+                return;
+              }
+            }
+            
+            // Nếu không, chọn sân đầu tiên có status là 'active'
+            const firstActiveField = slot.fields.find(field => field.status === 'active');
+            if (firstActiveField) {
+              initialSelections[dateStr] = firstActiveField.id;
+            } else {
+              initialSelections[dateStr] = null;
+            }
+          });
+          
+          setFieldSelections(initialSelections);
+          
+          // Cập nhật form với fieldId sân đầu tiên được chọn
+          const firstSelectedField = Object.values(initialSelections).find(id => id !== null);
+          if (firstSelectedField) {
+            form.setFieldValue('fieldId', firstSelectedField);
+          }
+        }
+      }
+    }
+  }, [formData.fieldGroupId, formData.fieldId, fieldGroups, form]);
+
+  // Render thông tin giá
+  const renderPriceInfo = (fieldGroup: AvailableFieldGroup) => {
     const prices = [];
 
-    // Base price
+    // Giá cơ bản
     prices.push(
       <div key="base" className="flex justify-between">
         <span>Giá cơ bản:</span>
@@ -37,13 +108,13 @@ const BookingStepField: React.FC<BookingStepFieldProps> = ({
       </div>
     );
 
-    // Peak time prices
+    // Các mức giá cao điểm
     if (fieldGroup.peakStartTime1 && fieldGroup.peakEndTime1 && fieldGroup.priceIncrease1) {
       prices.push(
         <div key="peak1" className="flex justify-between text-orange-500">
           <span>
             <FieldTimeOutlined className="mr-1" />
-            Cao điểm ({fieldGroup.peakStartTime1}-{fieldGroup.peakEndTime1}):
+            Cao điểm ({fieldGroup.peakStartTime1.substring(0, 5)}-{fieldGroup.peakEndTime1.substring(0, 5)}):
           </span>
           <span className="font-medium">{formatCurrency(fieldGroup.basePrice + fieldGroup.priceIncrease1)}/giờ</span>
         </div>
@@ -55,7 +126,7 @@ const BookingStepField: React.FC<BookingStepFieldProps> = ({
         <div key="peak2" className="flex justify-between text-orange-500">
           <span>
             <FieldTimeOutlined className="mr-1" />
-            Cao điểm ({fieldGroup.peakStartTime2}-{fieldGroup.peakEndTime2}):
+            Cao điểm ({fieldGroup.peakStartTime2.substring(0, 5)}-{fieldGroup.peakEndTime2.substring(0, 5)}):
           </span>
           <span className="font-medium">{formatCurrency(fieldGroup.basePrice + fieldGroup.priceIncrease2)}/giờ</span>
         </div>
@@ -67,7 +138,7 @@ const BookingStepField: React.FC<BookingStepFieldProps> = ({
         <div key="peak3" className="flex justify-between text-orange-500">
           <span>
             <FieldTimeOutlined className="mr-1" />
-            Cao điểm ({fieldGroup.peakStartTime3}-{fieldGroup.peakEndTime3}):
+            Cao điểm ({fieldGroup.peakStartTime3.substring(0, 5)}-{fieldGroup.peakEndTime3.substring(0, 5)}):
           </span>
           <span className="font-medium">{formatCurrency(fieldGroup.basePrice + fieldGroup.priceIncrease3)}/giờ</span>
         </div>
@@ -81,40 +152,207 @@ const BookingStepField: React.FC<BookingStepFieldProps> = ({
     );
   };
 
-  const renderFieldList = (fieldGroup: FieldGroup) => {
-    if (!fieldGroup.fields || fieldGroup.fields.length === 0) {
-      return <Empty description="Không có sân" />;
+  // Xử lý khi thay đổi field group
+  const handleFieldGroupChange = (fieldGroupId: string) => {
+    const selected = fieldGroups.find(g => g.id === fieldGroupId) || null;
+    setSelectedFieldGroup(selected);
+    
+    // Reset và khởi tạo lại lựa chọn sân
+    if (selected) {
+      const initialSelections: FieldSelection = {};
+      
+      if (selected.bookingSlot) {
+        selected.bookingSlot.forEach(slot => {
+          const dateStr = dayjs(slot.date).format('YYYY-MM-DD');
+          
+          // Chọn sân đầu tiên có status là 'active'
+          const firstActiveField = slot.fields.find(field => field.status === 'active');
+          if (firstActiveField) {
+            initialSelections[dateStr] = firstActiveField.id;
+          } else {
+            initialSelections[dateStr] = null;
+          }
+        });
+      }
+      
+      setFieldSelections(initialSelections);
+      
+      // Cập nhật form với fieldId và fieldGroupId
+      const firstSelectedField = Object.values(initialSelections).find(id => id !== null);
+      form.setFieldsValue({
+        fieldGroupId,
+        fieldId: firstSelectedField || ""
+      });
+    } else {
+      // Reset nếu không có field group nào được chọn
+      setFieldSelections({});
+      form.setFieldsValue({
+        fieldGroupId: null,
+        fieldId: ""
+      });
+    }
+  };
+
+  // Xử lý khi chọn sân cho một ngày cụ thể
+  const handleFieldSelect = (date: string, fieldId: number) => {
+    // Cập nhật field selection cho ngày đã chọn
+    setFieldSelections(prev => ({
+      ...prev,
+      [date]: fieldId
+    }));
+    
+    // Cập nhật form với fieldId mới nhất được chọn
+    form.setFieldValue('fieldId', fieldId);
+    
+    console.log(`Selected field ID ${fieldId} for date ${date}`);
+  };
+
+  // Format ngày hiển thị
+  const formatDate = (dateString: string) => {
+    return dayjs(dateString).format('DD/MM/YYYY');
+  };
+
+  // Render bảng lựa chọn sân
+  const renderFieldsTable = () => {
+    if (!selectedFieldGroup || !selectedFieldGroup.bookingSlot || selectedFieldGroup.bookingSlot.length === 0) {
+      return <Empty description="Không có dữ liệu sân khả dụng" />;
     }
 
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3">
-        {fieldGroup.fields.map(field => (
-          <Card 
-            key={field.id} 
-            size="small" 
-            className={`transition-all duration-200 border ${field.status === 'active' ? 'border-green-400' : 'border-red-300'}`}
-          >
-            <div className="flex justify-between items-center">
-              <div>
-                <Text strong>{field.name}</Text>
-              </div>
-              <Badge 
-                status={field.status === 'active' ? 'success' : 'error'} 
-                text={field.status === 'active' ? 'Khả dụng' : 'Đã đóng'}
+    // Định nghĩa cột cho bảng
+    const columns = [
+      {
+        title: 'Ngày đặt sân',
+        dataIndex: 'date',
+        key: 'date',
+        width: '40%',
+        render: (text: string) => (
+          <div className="flex items-center">
+            <CalendarOutlined className="mr-2" />
+            <span>{formatDate(text)}</span>
+          </div>
+        )
+      },
+      {
+        title: 'Sân khả dụng',
+        dataIndex: 'fields',
+        key: 'fields',
+        width: '60%',
+        render: (fields: Field[], record: TableRowData) => {
+          const dateStr = dayjs(record.date).format('YYYY-MM-DD');
+          
+          // Kiểm tra xem có sân nào khả dụng không
+          const availableFields = fields.filter(f => f.status === 'active');
+          
+          if (availableFields.length === 0) {
+            return (
+              <Alert 
+                message="Không có sân khả dụng" 
+                type="error" 
+                showIcon 
+                icon={<CloseCircleOutlined />}
               />
+            );
+          }
+          
+          const selectedId = fieldSelections[dateStr] || undefined;
+          
+          return (
+            <div>
+              <Select
+                style={{ width: '100%' }}
+                placeholder="Chọn sân"
+                value={selectedId}
+                onChange={(value) => handleFieldSelect(dateStr, Number(value))}
+              >
+                {availableFields.map(field => (
+                  <Option key={field.id} value={field.id}>{field.name}</Option>
+                ))}
+              </Select>
+              {selectedId && (
+                <div className="mt-2 text-green-500 flex items-center">
+                  <CheckCircleOutlined className="mr-1" /> Đã chọn
+                </div>
+              )}
             </div>
-          </Card>
-        ))}
+          );
+        }
+      }
+    ];
+
+    // Tạo data source từ bookingSlot
+    const dataSource = selectedFieldGroup.bookingSlot.map((slot, idx) => ({
+      key: idx,
+      date: slot.date,
+      fields: slot.fields
+    }));
+
+    return (
+      <div className="mt-3">
+        <Table 
+          dataSource={dataSource}
+          columns={columns}
+          pagination={false}
+          size="middle"
+          bordered
+        />
       </div>
     );
   };
 
-  const handleFieldGroupChange = (fieldGroupId: string) => {
-    const selected = fieldGroups.find(g => String(g.id) === String(fieldGroupId)) || null;
-    setSelectedFieldGroup(selected);
+  // Kiểm tra xem đã chọn sân cho tất cả các ngày có sân khả dụng chưa
+  const hasSelectedAllFields = () => {
+    if (!selectedFieldGroup || !selectedFieldGroup.bookingSlot) return false;
     
-    // When changing field group, update form value
-    form.setFieldsValue({ fieldGroupId });
+    // Lấy tất cả các ngày có sân khả dụng
+    const datesWithAvailableFields = selectedFieldGroup.bookingSlot
+      .filter(slot => slot.fields.some(field => field.status === 'active'))
+      .map(slot => dayjs(slot.date).format('YYYY-MM-DD'));
+    
+    // Kiểm tra xem tất cả các ngày đều có sân được chọn chưa
+    return datesWithAvailableFields.every(date => fieldSelections[date] !== undefined && fieldSelections[date] !== null);
+  };
+
+  // Tóm tắt sân đã chọn cho mỗi ngày
+  const renderSelectedFieldsSummary = () => {
+    if (!selectedFieldGroup || !selectedFieldGroup.bookingSlot) return null;
+    
+    const summary = selectedFieldGroup.bookingSlot.map(slot => {
+      const dateStr = dayjs(slot.date).format('YYYY-MM-DD');
+      const selectedFieldId = fieldSelections[dateStr];
+      
+      if (selectedFieldId === undefined || selectedFieldId === null) {
+        if (!slot.fields.some(f => f.status === 'active')) {
+          return (
+            <div key={dateStr} className="mb-1">
+              <span>{formatDate(slot.date)}: </span>
+              <span className="text-red-500">Không có sân khả dụng</span>
+            </div>
+          );
+        }
+        return (
+          <div key={dateStr} className="mb-1">
+            <span>{formatDate(slot.date)}: </span>
+            <span className="text-orange-500">Chưa chọn sân</span>
+          </div>
+        );
+      }
+      
+      const selectedField = slot.fields.find(f => f.id === selectedFieldId);
+      
+      return (
+        <div key={dateStr} className="mb-1">
+          <span>{formatDate(slot.date)}: </span>
+          <span className="text-green-500">{selectedField ? selectedField.name : 'Unknown'}</span>
+        </div>
+      );
+    });
+    
+    return (
+      <div className="mt-4 p-3 bg-gray-50 rounded-md">
+        <Text strong>Tóm tắt lựa chọn sân:</Text>
+        <div className="mt-2">{summary}</div>
+      </div>
+    );
   };
 
   return (
@@ -125,8 +363,19 @@ const BookingStepField: React.FC<BookingStepFieldProps> = ({
         <Form
           form={form}
           layout="vertical"
-          initialValues={formData}
+          initialValues={{
+            ...formData,
+            fieldId: formData.fieldId || "",
+          }}
         >
+          <Form.Item 
+            name="fieldId" 
+            rules={[{ required: true, message: 'Vui lòng chọn sân' }]}
+            style={{ display: 'none' }}
+          >
+            <input type="hidden" />
+          </Form.Item>
+          
           <Row gutter={[24, 24]}>
             <Col xs={24} md={12}>
               <Title level={5} className="mb-4">Chọn loại sân</Title>
@@ -143,11 +392,11 @@ const BookingStepField: React.FC<BookingStepFieldProps> = ({
                       <Radio key={group.id} value={group.id} className="w-full">
                         <Card 
                           className={`w-full mb-2 cursor-pointer hover:bg-gray-50 transition-all ${
-                            selectedFieldGroup && String(selectedFieldGroup.id) === String(group.id) 
+                            selectedFieldGroup && selectedFieldGroup.id === group.id 
                               ? 'border-blue-500 shadow-sm' 
                               : 'border-gray-200'
                           }`}
-                          bodyStyle={{ padding: '12px' }}
+                          style={{ padding: '12px' }}
                         >
                           <div className="flex justify-between items-start">
                             <div>
@@ -160,6 +409,11 @@ const BookingStepField: React.FC<BookingStepFieldProps> = ({
                                 <div className="flex items-center mt-1">
                                   <TeamOutlined className="mr-1" />
                                   <span>Bề mặt: {group.surface}</span>
+                                </div>
+                                <div className="flex items-center mt-1">
+                                  <FieldTimeOutlined className="mr-1" />
+                                  <span>Số sân: {group.bookingSlot && group.bookingSlot[0] ? 
+                                    group.bookingSlot[0].fields.length : 0}</span>
                                 </div>
                               </div>
                               <div className="mt-2">
@@ -193,22 +447,33 @@ const BookingStepField: React.FC<BookingStepFieldProps> = ({
                 <div className="bg-gray-50 p-4 rounded-lg h-full">
                   <Title level={5}>Thông tin chi tiết</Title>
                   <Paragraph className="mb-4">
-                    <strong>{selectedFieldGroup.name}</strong> - Xem chi tiết các sân có thể sử dụng
+                    <strong>{selectedFieldGroup.name}</strong> - Chọn sân cho từng ngày đặt
                   </Paragraph>
                   
                   {renderPriceInfo(selectedFieldGroup)}
                   
                   <Divider />
                   
-                  <Title level={5}>Danh sách sân</Title>
-                  {renderFieldList(selectedFieldGroup)}
+                  <Title level={5}>Danh sách sân khả dụng</Title>
+                  {renderFieldsTable()}
                   
-                  <div className="mt-4 p-3 bg-blue-50 rounded-md">
-                    <Text type="secondary">
-                      <InfoCircleOutlined className="mr-2" />
-                      Sân sẽ được tự động phân bổ dựa trên lịch đặt hiện tại khi xác nhận đặt sân
-                    </Text>
-                  </div>
+                  {renderSelectedFieldsSummary()}
+                  
+                  {!hasSelectedAllFields() ? (
+                    <div className="mt-4 p-3 bg-yellow-50 rounded-md">
+                      <Text type="warning">
+                        <InfoCircleOutlined className="mr-2" />
+                        Vui lòng chọn sân cho tất cả các ngày có sân khả dụng
+                      </Text>
+                    </div>
+                  ) : (
+                    <div className="mt-4 p-3 bg-blue-50 rounded-md">
+                      <Text type="secondary">
+                        <InfoCircleOutlined className="mr-2" />
+                        Bạn đã chọn sân cho tất cả các ngày. Nhấn "Tiếp theo" để tiếp tục
+                      </Text>
+                    </div>
+                  )}
                 </div>
               )}
             </Col>

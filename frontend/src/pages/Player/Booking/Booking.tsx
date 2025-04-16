@@ -10,7 +10,7 @@ import dayjs from 'dayjs';
 import { BookingFormData, RecurringType, RecurringConfig } from '@/types/booking.type';
 import { bookingService } from '@/services/booking.service';
 import { serviceService } from '@/services/service.service';
-import { FieldGroup } from '@/types/field.type';
+import { AvailableFieldGroup } from '@/types/field.type';
 import { Service } from '@/types/service.type';
 import { Sport } from '@/types/sport.type';
 
@@ -70,7 +70,7 @@ const BookingPage: React.FC = () => {
   const [previousRecurringOption, setPreviousRecurringOption] = useState<string>('none');
   
   // State for API data
-  const [availableFieldGroups, setAvailableFieldGroups] = useState<FieldGroup[]>([]);
+  const [availableFieldGroups, setAvailableFieldGroups] = useState<AvailableFieldGroup[]>([]);
   const [availableServices, setAvailableServices] = useState<Service[]>([]);
   const [uniqueSports, setUniqueSports] = useState<Sport[]>([]);
   const [bookingId, setBookingId] = useState<string | null>(null);
@@ -437,30 +437,77 @@ const BookingPage: React.FC = () => {
     }
   };
 
+  // Hàm tiện ích để đảm bảo timeRange luôn là dayjs objects
+  const ensureDayjsTimeRange = (timeRange: unknown): [dayjs.Dayjs, dayjs.Dayjs] | null => {
+    if (!timeRange || !Array.isArray(timeRange) || timeRange.length < 2) {
+      return null;
+    }
+    
+    // Đảm bảo các phần tử là dayjs objects
+    const start = dayjs.isDayjs(timeRange[0]) ? timeRange[0] : dayjs(timeRange[0]);
+    const end = dayjs.isDayjs(timeRange[1]) ? timeRange[1] : dayjs(timeRange[1]);
+    
+    if (!start.isValid() || !end.isValid()) {
+      return null;
+    }
+    
+    return [start, end];
+  };
+
   // Create draft booking
   const createDraftBooking = async () => {
     try {
       setLoading(true);
       
-      const values = await form.validateFields();
+      // Sử dụng formData đã lưu thay vì validate lại form
+      console.log("Create draft booking with formData:", formData);
+      
+      // Kiểm tra và đảm bảo timeRange là đúng định dạng
+      const timeRange = ensureDayjsTimeRange(formData.timeRange);
+      if (!timeRange) {
+        message.error('Thời gian đặt sân không hợp lệ');
+        console.error('Invalid timeRange in formData:', formData.timeRange);
+        setLoading(false);
+        return false;
+      }
       
       // Get start and end time
-      const startTime = values.timeRange[0].format('HH:mm');
-      const endTime = values.timeRange[1].format('HH:mm');
+      const startTime = timeRange[0].format('HH:mm');
+      const endTime = timeRange[1].format('HH:mm');
+      
+      // Ensure fieldId is a number
+      const fieldId = Number(formData.fieldId);      
+      
+      // Ensure selectedDates is not empty
+      if (!selectedDates || selectedDates.length === 0) {
+        message.error('Vui lòng chọn ngày đặt sân');
+        setLoading(false);
+        return false;
+      }
       
       // Prepare booking slots
       const bookingSlots = selectedDates.map(date => ({
         date: date.format('YYYY-MM-DD'),
-        fieldId: values.fieldId
+        fieldId: fieldId
       }));
+      
+      console.log("Booking slots:", bookingSlots);
+      console.log("Request body:", {
+        startTime,
+        endTime,
+        bookingSlots,
+        sportId: formData.sportId
+      });
       
       // Create draft booking
       const response = await bookingService.createDraftBooking(
         startTime,
         endTime,
         bookingSlots,
-        values.sportId
+        formData.sportId || 0 // Fallback to 0 if sportId is undefined
       );
+      
+      console.log("Draft booking response:", response);
       
       // Store the booking ID and payment ID
       setBookingId(response.id);
@@ -470,7 +517,14 @@ const BookingPage: React.FC = () => {
       return true;
     } catch (error) {
       console.error('Error creating draft booking:', error);
-      message.error('Không thể tạo đơn đặt sân. Vui lòng thử lại sau.');
+      
+      // Hiển thị thông báo lỗi chi tiết hơn
+      if (error instanceof Error) {
+        message.error(`Không thể tạo đơn đặt sân: ${error.message}`);
+      } else {
+        message.error('Không thể tạo đơn đặt sân. Vui lòng thử lại sau.');
+      }
+      
       setLoading(false);
       return false;
     }
@@ -487,16 +541,45 @@ const BookingPage: React.FC = () => {
         return false;
       }
       
-      const values = await form.validateFields();
+      // Sử dụng formData đã lưu thay vì validate lại form
+      console.log("Update booking slot with formData:", formData);
+      
+      // Kiểm tra và đảm bảo timeRange là đúng định dạng
+      const timeRange = ensureDayjsTimeRange(formData.timeRange);
+      if (!timeRange) {
+        message.error('Thời gian đặt sân không hợp lệ');
+        console.error('Invalid timeRange in formData:', formData.timeRange);
+        setLoading(false);
+        return false;
+      }
+      
+      // Ensure fieldId is a number
+      const fieldId = Number(formData.fieldId);
+      if (!fieldId || isNaN(fieldId)) {
+        message.error('ID sân không hợp lệ');
+        console.error('Invalid fieldId:', formData.fieldId);
+        setLoading(false);
+        return false;
+      }
+      
+      // Ensure selectedDates is not empty
+      if (!selectedDates || selectedDates.length === 0) {
+        message.error('Vui lòng chọn ngày đặt sân');
+        setLoading(false);
+        return false;
+      }
       
       // Prepare booking slots
       const bookingSlots = selectedDates.map(date => ({
         date: date.format('YYYY-MM-DD'),
-        fieldId: values.fieldId
+        fieldId: fieldId
       }));
+      
+      console.log("Updated booking slots:", bookingSlots);
       
       // Update booking slots
       const response = await bookingService.updateBookingSlot(bookingId, bookingSlots);
+      console.log("Update booking slot response:", response);
       
       // Update payment ID if needed
       if (response.payment && response.payment.id) {
@@ -507,7 +590,14 @@ const BookingPage: React.FC = () => {
       return true;
     } catch (error) {
       console.error('Error updating booking slot:', error);
-      message.error('Không thể cập nhật thông tin sân. Vui lòng thử lại sau.');
+      
+      // Hiển thị thông báo lỗi chi tiết hơn
+      if (error instanceof Error) {
+        message.error(`Không thể cập nhật thông tin sân: ${error.message}`);
+      } else {
+        message.error('Không thể cập nhật thông tin sân. Vui lòng thử lại sau.');
+      }
+      
       setLoading(false);
       return false;
     }
@@ -601,20 +691,50 @@ const BookingPage: React.FC = () => {
   const handleNext = async () => {
     try {
       setError(null);
-      const values = await form.validateFields();
-      setFormData(prev => ({ ...prev, ...values }));
       
       if (currentStep === 0) {
-        // Going to field selection step - fetch available fields
-        await fetchAvailableFieldGroups();
+        // Step 0: Validate thông tin cơ bản và fetch available fields
+        const basicValues = await form.validateFields(['sportId', 'date', 'timeRange']);
+        console.log("Step 0 basic values:", basicValues);
+        
+        // Kiểm tra và chuyển đổi timeRange
+        const timeRange = ensureDayjsTimeRange(basicValues.timeRange);
+        if (!timeRange) {
+          message.error('Thời gian đặt sân không hợp lệ');
+          return;
+        }
+        
+        // Cập nhật timeRange với giá trị đã chuyển đổi
+        basicValues.timeRange = timeRange;
+        
+        // Lưu trữ thông tin vào formData và state
+        const updatedFormData = { ...formData, ...basicValues };
+        setFormData(updatedFormData);
+        console.log("Updated formData after step 0:", updatedFormData);
+        
+        // Gọi API để lấy danh sách sân
+        await fetchAvailableFieldGroups();        
+       
       } else if (currentStep === 1) {
-        // Going to services step
+        // Step 1: Validate field selection
+        const fieldValues = await form.validateFields(['fieldGroupId', 'fieldId']);
+        console.log("Step 1 field values:", fieldValues);
+        
+        if (!fieldValues.fieldId) {
+          message.error('Vui lòng chọn một sân cụ thể để tiếp tục');
+          return;
+        }
+        
+        // Cập nhật formData bằng cách kết hợp với dữ liệu hiện có
+        const updatedFormData = { ...formData, ...fieldValues };
+        setFormData(updatedFormData);
+        console.log("Updated formData after step 1:", updatedFormData);
+        
+        // First time creating draft booking or update existing
         if (!bookingId) {
-          // First time creating draft booking
           const success = await createDraftBooking();
           if (!success) return;
         } else {
-          // Update existing booking
           const success = await updateBookingSlot();
           if (!success) return;
         }
@@ -622,15 +742,36 @@ const BookingPage: React.FC = () => {
         // Fetch available services for the next step
         await fetchAvailableServices();
       } else if (currentStep === 2) {
+        // Step 2: Validate service selection (if any)
+        const serviceValues = await form.validateFields(['services']);
+        
+        // Cập nhật formData
+        const updatedFormData = { ...formData, ...serviceValues };
+        setFormData(updatedFormData);
+        console.log("Updated formData after step 2:", updatedFormData);
+        
         // Going to payment step - update services if any
         const success = await updateAdditionalServices();
         if (!success) return;
+      } else if (currentStep === 3) {
+        // Step 3: Validate payment information
+        const paymentValues = await form.validateFields(['paymentMethod', 'voucherId']);
+        
+        // Cập nhật formData
+        const updatedFormData = { ...formData, ...paymentValues };
+        setFormData(updatedFormData);
+        console.log("Updated formData after step 3:", updatedFormData);
       }
       
       // Move to next step
       setCurrentStep(prev => prev + 1);
     } catch (error) {
       console.error('Validation failed:', error);
+      
+      // Hiển thị thông báo lỗi chi tiết hơn
+      if (error instanceof Error) {
+        message.error(`Lỗi xác thực: ${error.message}`);
+      }
     }
   };
 
