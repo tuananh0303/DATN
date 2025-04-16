@@ -36,7 +36,6 @@ import {
   LinkOutlined,
   ExclamationCircleOutlined,
   PlusOutlined,
-  ArrowLeftOutlined
 } from '@ant-design/icons';
 import { Facility } from '@/types/facility.type';
 import { facilityService } from '@/services/facility.service';
@@ -300,9 +299,9 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
   };
   
   // Handle cancel
-  const handleCancel = () => {
-    onClose();
-  };
+  // const handleCancel = () => {
+  //   onClose();
+  // };
   
   // Certificate file upload
   const handleCertificateUpload = (file: File) => {
@@ -1911,7 +1910,7 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
        
       </div>
         
-        {/* Add floating back button at bottom right */}
+        {/* Add floating back button at bottom right
         <div className="fixed bottom-6 right-6">
           <Button 
             type="default" 
@@ -1923,7 +1922,7 @@ const FacilityEdit: React.FC<FacilityEditProps> = ({ facilityId, onClose }) => {
           >
             Quay lại
           </Button>
-      </div>
+      </div> */}
     </div>
   );
 };

@@ -906,6 +906,7 @@ const ApprovalPage: React.FC = () => {
           }}
           cancelButtonProps={{ disabled: actionLoading }}
           width={containerWidth < 576 ? '95%' : 500}
+          zIndex={1052}
         >
           <p className="mb-3">Vui lòng nhập lý do từ chối yêu cầu:</p>
           <Input.TextArea
@@ -937,6 +938,7 @@ const ApprovalPage: React.FC = () => {
           }}
           cancelButtonProps={{ disabled: actionLoading }}
           width={containerWidth < 576 ? '95%' : 500}
+          zIndex={1052}
         >
           <p className="mb-3">Bạn có chắc chắn muốn {confirmAction === 'reject' ? 'từ chối' : 'phê duyệt'} yêu cầu này?</p>
         </Modal>

@@ -23,39 +23,17 @@ import {
   StarOutlined,
   DollarOutlined
 } from '@ant-design/icons';
-import { mockFacilities } from '@/mocks/facility/mockFacilities';
+import { facilityService } from '@/services/facility.service';
 import { getSportNameInVietnamese } from '@/utils/translateSport';
 import { sportService } from '@/services/sport.service';
+import { Facility } from '@/types/facility.type';
 import './ResultSearch.css';
 
 const { Title, Text } = Typography;
 
-// Interface for facility data based on mock data
-interface FacilityData {
-  id: string;
-  name: string;
-  description: string;
-  location: string;
-  openTime1: string;
-  closeTime1: string;
-  openTime2: string;
-  closeTime2: string;
-  openTime3: string;
-  closeTime3: string;
-  numberOfShifts: number;
-  status: string;
-  avgRating: number;
+// Interface for facility data
+interface FacilityData extends Facility {
   numberOfRatings: number;
-  imagesUrl: string[];
-  sports: {
-    id: number;
-    name: string;
-  }[];
-  minPrice?: number;
-  maxPrice?: number;
-  fieldGroups?: {
-    basePrice: number;
-  }[];
 }
 
 const ResultSearch: React.FC = () => {
@@ -99,9 +77,13 @@ const ResultSearch: React.FC = () => {
     const fetchFacilities = async () => {
       setLoading(true);
       try {
-        // Simulate API call delay
-        await new Promise(resolve => setTimeout(resolve, 100));
-        setFacilities(mockFacilities);
+        const facilitiesData = await facilityService.getAllFacilities();
+        // Map to FacilityData format (adding numberOfRatings)
+        const mappedFacilities: FacilityData[] = facilitiesData.map(facility => ({
+          ...facility,
+          numberOfRatings: facility.numberOfRating
+        }));
+        setFacilities(mappedFacilities);
         setError(null);
       } catch (err) {
         console.error('Error fetching facilities:', err);

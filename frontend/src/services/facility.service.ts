@@ -72,6 +72,17 @@ class FacilityService {
     }
   }
 
+  // get all facilities
+  async getAllFacilities(): Promise<Facility[]> {
+    try {
+      const response = await api.get('/facility/all');
+      return response.data;
+    } catch (error) {
+      console.error('API call failed:', error);
+      throw error;
+    }
+  }
+
   // Create a new facility - real API implementation
   async createFacility(data: FormData | FacilityFormData): Promise<{ message: string }> {
     try {

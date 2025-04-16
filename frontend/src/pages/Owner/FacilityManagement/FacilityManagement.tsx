@@ -294,6 +294,7 @@ const FacilityManagement: React.FC = () => {
                   <Card 
                     hoverable
                     className="h-full shadow-sm hover:shadow-md transition-shadow"
+                    onClick={() => handleViewDetail(facility.id)}
                     cover={
                       <div className="h-40 sm:h-48 overflow-hidden relative">
                         {facility.imagesUrl && facility.imagesUrl.length > 0 ? (
@@ -327,14 +328,20 @@ const FacilityManagement: React.FC = () => {
                         <Button 
                           type="text" 
                           icon={<EyeOutlined style={{ color: '#1890ff' }} />} 
-                          onClick={() => handleViewDetail(facility.id)}
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent card click event
+                            handleViewDetail(facility.id);
+                          }}
                         />
                       </Tooltip>,
                       <Tooltip title="Chỉnh sửa">
                         <Button 
                           type="text" 
                           icon={<EditOutlined style={{ color: '#52c41a' }} />} 
-                          onClick={() => handleEditFacility(facility.id)}
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent card click event
+                            handleEditFacility(facility.id);
+                          }}
                         />
                       </Tooltip>,
                       <Tooltip title="Xóa">
@@ -342,7 +349,10 @@ const FacilityManagement: React.FC = () => {
                           type="text" 
                           danger 
                           icon={<DeleteOutlined />} 
-                          onClick={() => showDeleteConfirm(facility.id)}
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent card click event
+                            showDeleteConfirm(facility.id);
+                          }}
                         />
                       </Tooltip>
                     ]}
