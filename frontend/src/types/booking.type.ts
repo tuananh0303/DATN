@@ -2,7 +2,12 @@ import { Dayjs } from 'dayjs';
 
 export enum BookingStatus {
   DRAFT = 'draft',
-  COMPLETED = 'completed'
+  COMPLETED = 'completed',
+  PENDING_PAYMENT = 'pending_payment',
+  PAYMENT_CONFIRMED = 'payment_confirmed',
+  IN_PROGRESS = 'in_progress',
+  CANCELLED = 'cancelled',
+  REFUNDED = 'refunded'
 }
 
 export enum PaymentStatus {

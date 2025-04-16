@@ -1,0 +1,143 @@
+/* BookingDetail.css */
+
+/* ===== Main Layout ===== */
+/* Outer wrapper to completely isolate the booking page */
+.booking-detail-page {
+  width: 100%;
+  position: relative;
+  padding-bottom: 3rem;
+  min-height: calc(100vh - 64px);
+  background-color: #f5f5f5;
+  z-index: 100;
+}
+
+/* Main container with isolation */
+.booking-detail-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  z-index: 20;
+  padding: 1rem;
+  overflow: visible;
+}
+
+/* Content container */
+.booking-detail-content {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 1.5rem;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  position: relative;
+  z-index: 30;
+}
+
+/* Content wrapper */
+.booking-content-wrapper {
+  width: 100%;
+  position: relative;
+  display: block;
+  z-index: 40;
+}
+
+/* ===== Card Styling ===== */
+.booking-card {
+  margin-bottom: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  overflow: hidden;
+  width: 100%;
+  background-color: #ffffff;
+}
+
+.booking-card:last-child {
+  margin-bottom: 0;
+}
+
+.booking-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* ===== Layout Fixes ===== */
+/* Fix for Row */
+.booking-content-wrapper .ant-row {
+  margin-right: 0 !important;
+  margin-left: 0 !important;
+  width: 100%;
+}
+
+/* Fix for Col */
+.booking-content-wrapper .ant-col {
+  padding-right: 12px !important;
+  padding-left: 12px !important;
+}
+
+/* ===== Element Styling ===== */
+/* Breadcrumb */
+.ant-breadcrumb {
+  margin-bottom: 1rem;
+}
+
+.ant-breadcrumb a {
+  color: #1890ff;
+}
+
+/* Tag */
+.ant-tag {
+  font-size: 0.875rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+}
+
+/* Description lists */
+.ant-descriptions-bordered .ant-descriptions-item-label {
+  background-color: #fafafa;
+  font-weight: 500;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+table th, table td {
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+/* ===== Responsive Design ===== */
+@media (max-width: 768px) {
+  .booking-detail-content {
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .booking-card {
+    margin-bottom: 1rem;
+  }
+}
+
+/* ===== Print Styling ===== */
+@media print {
+  .booking-detail-page,
+  .booking-detail-container {
+    background-color: white;
+    padding: 0;
+  }
+  
+  .booking-detail-content {
+    box-shadow: none;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .ant-btn,
+  .ant-breadcrumb {
+    display: none;
+  }
+} 

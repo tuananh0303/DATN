@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Table, Card, Tag, Button, Modal, Typography, Space, Tabs, Select, 
-  DatePicker, Input, Badge, Row, Col, Statistic, Avatar, Empty, notification, Tooltip, Alert
+  DatePicker, Input, Badge, Row, Col, Statistic, Avatar, Empty, notification, Tooltip, Alert, Breadcrumb
 } from 'antd';
 import type { TabsProps } from 'antd';
 import type { ColumnType } from 'antd/lib/table';
@@ -9,14 +9,14 @@ import {
   EyeOutlined, CloseCircleOutlined, StarOutlined, SearchOutlined, 
   InfoCircleOutlined, CalendarOutlined, FilterOutlined, ReloadOutlined,
   CheckCircleOutlined, HistoryOutlined, ClockCircleOutlined, SyncOutlined, 
-  ExclamationCircleOutlined, ArrowRightOutlined, HeartOutlined, DollarOutlined
+  ExclamationCircleOutlined, ArrowRightOutlined, HeartOutlined
 } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 dayjs.extend(isBetween);
 import { mockBookingHistory } from '@/mocks/booking/bookingData';
-import { BookingStatus, PaymentStatus, Booking } from '@/types/booking.type';
+import { BookingStatus, Booking } from '@/types/booking.type';
 
 const { Title } = Typography;
 const { RangePicker } = DatePicker;
@@ -65,44 +65,44 @@ interface BookingSummaryData {
 // Tách thành component riêng để dễ quản lý
 const BookingSummaryCard = ({ data }: { data: BookingSummaryData }) => {
   return (
-    <Row gutter={[16, 16]}>
+    <Row gutter={[16, 16]} className="mb-6">
       <Col xs={24} sm={12} lg={6}>
-        <Card className="summary-card">
+        <Card className="summary-card hover:shadow-md transition-all" hoverable>
           <Statistic
-            title="Tổng lượt đặt sân"
+            title={<span className="font-medium">Tổng lượt đặt sân</span>}
             value={data.total}
-            prefix={<HistoryOutlined />}
-            valueStyle={{ color: '#1890ff' }}
+            prefix={<HistoryOutlined className="text-blue-500" />}
+            valueStyle={{ color: '#1890ff', fontWeight: 600 }}
           />
         </Card>
       </Col>
       <Col xs={24} sm={12} lg={6}>
-        <Card className="summary-card">
+        <Card className="summary-card hover:shadow-md transition-all" hoverable>
           <Statistic
-            title="Đang chờ/Sắp diễn ra"
+            title={<span className="font-medium">Sắp diễn ra</span>}
             value={data.upcoming}
-            prefix={<ClockCircleOutlined />}
-            valueStyle={{ color: '#fa8c16' }}
+            prefix={<ClockCircleOutlined className="text-orange-500" />}
+            valueStyle={{ color: '#fa8c16', fontWeight: 600 }}
           />
         </Card>
       </Col>
       <Col xs={24} sm={12} lg={6}>
-        <Card className="summary-card">
+        <Card className="summary-card hover:shadow-md transition-all" hoverable>
           <Statistic
-            title="Hoàn thành"
+            title={<span className="font-medium">Hoàn thành</span>}
             value={data.completed}
-            prefix={<CheckCircleOutlined />}
-            valueStyle={{ color: '#52c41a' }}
+            prefix={<CheckCircleOutlined className="text-green-500" />}
+            valueStyle={{ color: '#52c41a', fontWeight: 600 }}
           />
         </Card>
       </Col>
       <Col xs={24} sm={12} lg={6}>
-        <Card className="summary-card">
+        <Card className="summary-card hover:shadow-md transition-all" hoverable>
           <Statistic
-            title="Đã hủy/Hoàn tiền"
+            title={<span className="font-medium">Đã hủy/Hoàn tiền</span>}
             value={data.cancelled}
-            prefix={<CloseCircleOutlined />}
-            valueStyle={{ color: '#ff4d4f' }}
+            prefix={<CloseCircleOutlined className="text-red-500" />}
+            valueStyle={{ color: '#ff4d4f', fontWeight: 600 }}
           />
         </Card>
       </Col>
@@ -141,7 +141,7 @@ const HistoryBookingPage: React.FC = () => {
     setLoading(true);
     try {
       // Trong thực tế, đây sẽ là API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 100));
       
       // Cập nhật thống kê
       updateBookingStats(mockBookingHistory as BookingHistoryItem[]);
@@ -258,9 +258,15 @@ const HistoryBookingPage: React.FC = () => {
     let icon = <InfoCircleOutlined />;
 
     switch (status) {
-      case BookingStatus.DRAFT:
+      case BookingStatus.PENDING_PAYMENT:
+      case BookingStatus.PAYMENT_CONFIRMED:
         color = 'blue';
-        text = 'Đang xử lý';
+        text = 'Sắp diễn ra';
+        icon = <ClockCircleOutlined />;
+        break;
+      case BookingStatus.IN_PROGRESS:
+        color = 'processing';
+        text = 'Đang diễn ra';
         icon = <SyncOutlined spin />;
         break;
       case BookingStatus.COMPLETED:
@@ -268,77 +274,17 @@ const HistoryBookingPage: React.FC = () => {
         text = 'Hoàn thành';
         icon = <CheckCircleOutlined />;
         break;
-      case 'pending_payment' as BookingStatus:
-        color = 'orange';
-        text = 'Chờ thanh toán';
-        icon = <ClockCircleOutlined />;
-        break;
-      case 'payment_confirmed' as BookingStatus:
-        color = 'cyan';
-        text = 'Đã xác nhận';
-        icon = <CheckCircleOutlined />;
-        break;
-      case 'in_progress' as BookingStatus:
-        color = 'processing';
-        text = 'Đang diễn ra';
-        icon = <SyncOutlined spin />;
-        break;
-      case 'cancelled' as BookingStatus:
+      case BookingStatus.CANCELLED:
+      case BookingStatus.REFUNDED:
         color = 'red';
         text = 'Đã hủy';
         icon = <CloseCircleOutlined />;
         break;
-      case 'refunded' as BookingStatus:
-        color = 'purple';
-        text = 'Đã hoàn tiền';
-        icon = <DollarOutlined />;
-        break;
-    }
-
-    return (
-      <Tag icon={icon} color={color}>
-        {text}
-      </Tag>
-    );
-  };
-
-  // Hàm render trạng thái thanh toán
-  const renderPaymentStatus = (status: PaymentStatus) => {
-    let color = 'default';
-    let text = 'Không xác định';
-    let icon = <InfoCircleOutlined />;
-
-    switch (status) {
-      case PaymentStatus.UNPAID:
-        color = 'red';
-        text = 'Chưa thanh toán';
-        icon = <CloseCircleOutlined />;
-        break;
-      case PaymentStatus.PAID:
-        color = 'green';
-        text = 'Đã thanh toán';
-        icon = <CheckCircleOutlined />;
-        break;
-      case PaymentStatus.CANCELLED:
-        color = 'red';
-        text = 'Đã hủy';
-        icon = <CloseCircleOutlined />;
-        break;
-      case 'pending' as PaymentStatus:
-        color = 'orange';
+      case BookingStatus.DRAFT:
+        color = 'default';
         text = 'Đang xử lý';
         icon = <SyncOutlined spin />;
         break;
-      case 'released' as PaymentStatus:
-        color = 'green';
-        text = 'Đã chuyển cho chủ sân';
-        icon = <DollarOutlined />;
-        break;
-      case 'refunded' as PaymentStatus:
-        color = 'purple';
-        text = 'Đã hoàn tiền';
-        icon = <DollarOutlined />;
-        break;
     }
 
     return (
@@ -347,7 +293,7 @@ const HistoryBookingPage: React.FC = () => {
       </Tag>
     );
   };
-  
+
   // Lọc dữ liệu theo tab đang chọn và các filter
   const applyFilters = () => {
     setFilterLoading(true);
@@ -373,15 +319,24 @@ const HistoryBookingPage: React.FC = () => {
     }, 500);
   };
 
+  // Breadcrumb items
+  const breadcrumbItems = [
+    {
+      title: <Link to="/">Trang chủ</Link>,
+    },
+    {
+      title: 'Lịch sử đặt sân',
+    },
+  ];
+
   // Lọc dữ liệu theo tab đang chọn
   const filteredBookings = (mockBookingHistory as BookingHistoryItem[]).filter(booking => {
     // Lọc theo tab
     if (activeTab !== 'all') {
-      if (activeTab === 'pending_payment' && booking.status.toString() !== 'pending_payment') return false;
-      if (activeTab === 'payment_confirmed' && booking.status.toString() !== 'payment_confirmed') return false;
-      if (activeTab === 'in_progress' && booking.status.toString() !== 'in_progress') return false;
+      if (activeTab === 'upcoming' && !(booking.status === BookingStatus.PAYMENT_CONFIRMED || booking.status === BookingStatus.PENDING_PAYMENT)) return false;
+      if (activeTab === 'in_progress' && booking.status !== BookingStatus.IN_PROGRESS) return false;
       if (activeTab === 'completed' && booking.status !== BookingStatus.COMPLETED) return false;
-      if (activeTab === 'cancelled' && booking.status.toString() !== 'cancelled') return false;
+      if (activeTab === 'cancelled' && booking.status !== BookingStatus.CANCELLED) return false;
     }
 
     // Lọc theo khoảng thời gian
@@ -435,42 +390,36 @@ const HistoryBookingPage: React.FC = () => {
       ),
     },
     {
-      title: 'Sân',
+      title: 'Nhóm sân',
       dataIndex: 'field',
       key: 'field',
-      render: (field: FieldInfo) => `${field.name} (${field.fieldGroup.name})`,
+      render: (field: FieldInfo) => `${field.fieldGroup.name} (${field.name})`,
     },
     {
       title: 'Thời gian',
       key: 'time',
       render: (_: unknown, record: BookingHistoryItem) => (
-        <Tooltip title={`Ngày: ${dayjs(record.bookingSlots[0]?.date).format('DD/MM/YYYY')}`}>
-          <span>
+        <div>
+          <div>
             <CalendarOutlined style={{ marginRight: 8 }} />
-            {record.startTime.substring(0, 5)} - {record.endTime.substring(0, 5)}
-          </span>
-        </Tooltip>
+            <span>{dayjs(record.bookingSlots[0]?.date).format('DD/MM/YYYY')}</span>
+            <span style={{ marginLeft: 8 }}>{record.startTime.substring(0, 5)} - {record.endTime.substring(0, 5)}</span>
+          </div>
+          <div style={{ marginLeft: 16, marginTop: 4 }}>
+            {renderBookingStatus(record.status)}
+          </div>
+        </div>
       ),
     },
     {
-      title: 'Trạng thái',
-      key: 'status',
-      render: (_: unknown, record: BookingHistoryItem) => (
-        <Space direction="vertical" size="small" style={{ width: '100%' }}>
-          {renderBookingStatus(record.status)}
-          {renderPaymentStatus(record.payment.status)}
-        </Space>
+      title: 'Môn thể thao',
+      key: 'sport',
+      dataIndex: 'sport',
+      render: (sport: SportInfo) => (
+        <Tag color="blue">
+          {sport.name}
+        </Tag>
       ),
-      filters: [
-        { text: 'Đang xử lý', value: 'DRAFT' },
-        { text: 'Chờ thanh toán', value: 'pending_payment' },
-        { text: 'Đã xác nhận', value: 'payment_confirmed' },
-        { text: 'Đang diễn ra', value: 'in_progress' },
-        { text: 'Hoàn thành', value: 'COMPLETED' },
-        { text: 'Đã hủy', value: 'cancelled' },
-        { text: 'Đã hoàn tiền', value: 'refunded' },
-      ],
-      onFilter: (value, record: BookingHistoryItem) => record.status.toString() === String(value),
     },
     {
       title: 'Tổng tiền',
@@ -484,8 +433,8 @@ const HistoryBookingPage: React.FC = () => {
       key: 'action',
       render: (_: unknown, record: BookingHistoryItem) => {
         // Kiểm tra xem có thể hủy booking không
-        const canCancel = record.status.toString() === 'pending_payment' || 
-                          record.status.toString() === 'payment_confirmed';
+        const canCancel = record.status === BookingStatus.PENDING_PAYMENT || 
+                          record.status === BookingStatus.PAYMENT_CONFIRMED;
         
         // Kiểm tra xem có thể đánh giá không
         const canReview = record.status === BookingStatus.COMPLETED && !record.hasReview;
@@ -540,7 +489,11 @@ const HistoryBookingPage: React.FC = () => {
   const getBookingCount = (status: string) => {
     return (mockBookingHistory as BookingHistoryItem[]).filter(booking => {
       if (status === 'all') return true;
-      return booking.status.toString() === status;
+      if (status === 'upcoming') return booking.status === BookingStatus.PAYMENT_CONFIRMED || booking.status === BookingStatus.PENDING_PAYMENT;
+      if (status === 'in_progress') return booking.status === BookingStatus.IN_PROGRESS;
+      if (status === 'completed') return booking.status === BookingStatus.COMPLETED;
+      if (status === 'cancelled') return booking.status === BookingStatus.CANCELLED || booking.status === BookingStatus.REFUNDED;
+      return false;
     }).length;
   };
 
@@ -555,18 +508,10 @@ const HistoryBookingPage: React.FC = () => {
       ),
     },
     {
-      key: 'pending_payment',
+      key: 'upcoming',
       label: (
-        <Badge count={getBookingCount('pending_payment')} offset={[10, 0]}>
-          Chờ thanh toán
-        </Badge>
-      ),
-    },
-    {
-      key: 'payment_confirmed',
-      label: (
-        <Badge count={getBookingCount('payment_confirmed')} offset={[10, 0]}>
-          Đã xác nhận
+        <Badge count={getBookingCount('upcoming')} offset={[10, 0]}>
+          Sắp diễn ra
         </Badge>
       ),
     },
@@ -581,7 +526,7 @@ const HistoryBookingPage: React.FC = () => {
     {
       key: 'completed',
       label: (
-        <Badge count={getBookingCount('COMPLETED')} offset={[10, 0]}>
+        <Badge count={getBookingCount('completed')} offset={[10, 0]}>
           Hoàn thành
         </Badge>
       ),
@@ -597,23 +542,29 @@ const HistoryBookingPage: React.FC = () => {
   ];
 
   return (
-    <div className="w-full px-4 py-6">
+    <div className="w-full px-4 py-6 bg-gray-50">
       <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-4 md:mb-6">
-          <Title level={2} className="m-0 text-xl md:text-2xl lg:text-3xl">
+        {/* Breadcrumb */}
+        <Breadcrumb items={breadcrumbItems} className="mb-4" />
+        
+        <div className="flex justify-between items-center mb-6">
+          <Title level={2} className="m-0 text-xl md:text-2xl lg:text-3xl font-bold">
             Lịch sử đặt sân
           </Title>
           <Space>
             <Button 
               icon={<FilterOutlined />} 
               onClick={() => setFilterVisible(!filterVisible)}
+              className="flex items-center"
             >
               Bộ lọc
             </Button>
             <Button 
+              type="primary"
               icon={<ReloadOutlined />} 
               onClick={fetchBookings}
               loading={loading}
+              className="flex items-center"
             >
               Làm mới
             </Button>
@@ -625,7 +576,7 @@ const HistoryBookingPage: React.FC = () => {
 
         {/* Hiển thị booking sắp tới */}
         {upcomingBookings.length > 0 && (
-          <Card className="mb-4 md:mb-6 mt-4" title="Đặt sân sắp tới">
+          <Card className="mb-6 shadow-sm rounded-lg" title={<span className="font-semibold">Đặt sân sắp tới</span>}>
             <div className="space-y-4">
               {upcomingBookings.slice(0, 3).map(booking => (
                 <Alert
@@ -633,32 +584,32 @@ const HistoryBookingPage: React.FC = () => {
                   type="info"
                   message={
                     <div className="flex justify-between items-center">
-                      <Space>
-                        <CalendarOutlined />
-                        <span>
+                      <Space wrap>
+                        <CalendarOutlined className="text-blue-500" />
+                        <span className="font-medium">
                           {dayjs(booking.bookingSlots[0]?.date).format('DD/MM/YYYY')} ({booking.startTime.substring(0, 5)} - {booking.endTime.substring(0, 5)})
                         </span>
-                        <span>•</span>
+                        <span className="text-gray-400">•</span>
                         <span>{booking.facility.name}</span>
-                        <span>•</span>
-                        <span>{booking.field.name}</span>
+                        <span className="text-gray-400">•</span>
+                        <span>{booking.field.fieldGroup.name}</span>
                       </Space>
-                      <Space>
-                        <Button 
-                          type="primary" 
-                          size="small"
-                          onClick={() => viewBookingDetail(booking.id)}
-                        >
-                          Chi tiết <ArrowRightOutlined />
-                        </Button>
-                      </Space>
+                      <Button 
+                        type="primary" 
+                        size="small"
+                        onClick={() => viewBookingDetail(booking.id)}
+                        className="flex items-center"
+                      >
+                        Chi tiết <ArrowRightOutlined />
+                      </Button>
                     </div>
                   }
+                  className="drop-shadow-sm"
                 />
               ))}
               {upcomingBookings.length > 3 && (
                 <div className="text-right">
-                  <Button type="link" onClick={() => setActiveTab('payment_confirmed')}>
+                  <Button type="link" onClick={() => setActiveTab('upcoming')}>
                     Xem tất cả ({upcomingBookings.length})
                   </Button>
                 </div>
@@ -669,34 +620,37 @@ const HistoryBookingPage: React.FC = () => {
 
         {/* Bộ lọc nâng cao */}
         {filterVisible && (
-          <Card className="mb-4 md:mb-6">
+          <Card className="mb-6 shadow-sm rounded-lg" title={<span className="font-semibold">Bộ lọc nâng cao</span>}>
             <Row gutter={[16, 16]}>
               <Col xs={24} md={8}>
-                <div className="mb-2">Khoảng thời gian</div>
+                <div className="mb-2 font-medium">Khoảng thời gian</div>
                 <RangePicker 
                   style={{ width: '100%' }} 
                   value={filterTimeRange}
                   onChange={(dates) => setFilterTimeRange(dates as [dayjs.Dayjs, dayjs.Dayjs])}
                   placeholder={['Từ ngày', 'Đến ngày']}
+                  className="w-full"
                 />
               </Col>
               <Col xs={24} md={8}>
-                <div className="mb-2">Tìm kiếm</div>
+                <div className="mb-2 font-medium">Tìm kiếm</div>
                 <Input
                   placeholder="Tìm theo mã, tên sân, môn thể thao..."
-                  prefix={<SearchOutlined />}
+                  prefix={<SearchOutlined className="text-gray-400" />}
                   value={searchText}
                   onChange={(e) => setSearchText(e.target.value)}
+                  className="w-full"
                 />
               </Col>
               <Col xs={24} md={8}>
-                <div className="mb-2">Môn thể thao</div>
+                <div className="mb-2 font-medium">Môn thể thao</div>
                 <Select
                   style={{ width: '100%' }}
                   placeholder="Chọn môn thể thao"
                   value={sportFilter}
                   onChange={(value) => setSportFilter(value)}
                   allowClear
+                  className="w-full"
                 >
                   <Option value={1}>Bóng đá</Option>
                   <Option value={2}>Cầu lông</Option>
@@ -722,11 +676,13 @@ const HistoryBookingPage: React.FC = () => {
           </Card>
         )}
 
-        <Card className="shadow-md mb-4 md:mb-6">
+        <Card className="shadow-sm rounded-lg">
           <Tabs 
             activeKey={activeTab} 
             onChange={setActiveTab} 
             items={tabs}
+            className="mb-3 font-medium"
+            tabBarStyle={{ marginBottom: 16, fontWeight: 500 }}
           />
           
           <Table
@@ -737,14 +693,19 @@ const HistoryBookingPage: React.FC = () => {
             pagination={{
               pageSize: 10,
               showSizeChanger: true,
-              showTotal: (total) => `Tổng ${total} đặt sân`,
+              showTotal: (total) => `Tổng ${total} lượt đặt sân`,
+              className: "pagination-custom"
             }}
+            rowClassName="hover:bg-gray-50 cursor-pointer transition-colors"
+            onRow={(record) => ({
+              onClick: () => viewBookingDetail(record.id)
+            })}
             locale={{
               emptyText: (
                 <Empty
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                   description={
-                    <span>
+                    <span className="text-gray-500">
                       Không có dữ liệu đặt sân nào{' '}
                       {activeTab !== 'all' ? 'trong trạng thái này' : ''}
                     </span>
@@ -752,8 +713,13 @@ const HistoryBookingPage: React.FC = () => {
                 />
               ),
             }}
+            className="custom-table"
           />
         </Card>
+
+        <div className="mt-6 text-center text-gray-500 text-sm">
+          <p>Lưu ý: Nếu bạn cần hỗ trợ, vui lòng liên hệ với chúng tôi qua hotline: 1900-xxxx</p>
+        </div>
       </div>
     </div>
   );
