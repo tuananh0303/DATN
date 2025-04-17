@@ -186,7 +186,28 @@ export const bookingService = {
       console.error('Error fetching active operating time:', error);
       throw error;
     }
+  },
+
+  async getBookingPlayer() {
+    try {
+      const response = await api.get(`/booking/player`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching booking detail:', error);
+      throw error;
+    }
+  },
+
+  async getBookingDetail(bookingId: string) {
+    try {
+      const response = await api.get(`/booking/${bookingId}/detail`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching booking detail:', error); 
+      throw error;
+    }
   }
+  
 };
 
 export default bookingService;

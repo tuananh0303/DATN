@@ -749,13 +749,7 @@ const BookingPage: React.FC = () => {
         paymentId,
         values.paymentMethod,
         values.voucherId
-      );
-      
-      // If payment is cash, redirect to booking history
-      if (values.paymentMethod === 'cash') {
-        navigate('/user/booking');
-        return;
-      }
+      );      
       
       // For online payment, redirect to payment URL
       if (response.paymentUrl) {

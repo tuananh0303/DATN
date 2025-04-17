@@ -9,7 +9,7 @@ const ResultBookingVNPay: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-
+  const [paymentSuccess, setPaymentSuccess] = useState<boolean | null>(null);
   const [paymentMessage, setPaymentMessage] = useState<string | null>(null);
   
   useEffect(() => {
@@ -21,22 +21,37 @@ const ResultBookingVNPay: React.FC = () => {
         // Gọi API để kiểm tra trạng thái thanh toán
         const result = await bookingService.getPaymentResult(queryParams);
         
+        // Log message nhận được để debug
+        console.log('Payment result message:', result.message);
+        console.log('Payment result data:', result);
+        
         // Lưu message từ API response
         setPaymentMessage(result.message);
+        
+        // Kiểm tra kết quả thanh toán linh hoạt hơn
+        // Xem nếu message chứa từ khóa "success" hoặc có thuộc tính success = true
+        const isSuccess = 
+          (typeof result.message === 'string' && 
+            (result.message.toLowerCase().includes('success') || 
+             result.message.toLowerCase().includes('thành công'))) || 
+          result.success === true || 
+          result.code === '00' ||
+          result.statusCode === 200;
+          
+        setPaymentSuccess(isSuccess);
       } catch (error) {
         console.error('Error checking payment status:', error);
         setPaymentMessage(null);
+        setPaymentSuccess(false);
       }
     };
     
     fetchPaymentStatus();
   }, [location.search]);
   
-  // ... existing code ...
-  
   return (
     <div style={{ padding: '24px', maxWidth: '800px', margin: '0 auto' }}>
-      {paymentMessage === "Payment success" ? (
+      {paymentSuccess ? (
         <Result
           status="success"
           icon={<CheckCircleOutlined style={{ color: '#52c41a' }} />}

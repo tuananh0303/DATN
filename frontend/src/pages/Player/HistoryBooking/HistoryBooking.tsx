@@ -15,43 +15,100 @@ import { useNavigate, Link } from 'react-router-dom';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 dayjs.extend(isBetween);
-import { mockBookingHistory } from '@/mocks/booking/bookingData';
-import { BookingStatus, Booking } from '@/types/booking.type';
+import api from '@/services/api';
+import { getSportNameInVietnamese } from '@/utils/translateSport';
 
 const { Title } = Typography;
 const { RangePicker } = DatePicker;
 const { Option } = Select;
 const { confirm } = Modal;
 
-interface FacilityInfo {
-  id: number;
+// Service methods for bookings
+const bookingService = {
+  // Get player's bookings
+  async getPlayerBookings() {
+    try {
+      const response = await api.get('/booking/player');
+      return response;
+    } catch (error) {
+      console.error('Error fetching player bookings:', error);
+      throw error;
+    }
+  },
+
+  // Cancel a booking
+  async cancelBooking(bookingId: string) {
+    try {
+      const response = await api.put(`/booking/${bookingId}/cancel`);
+      return response.data;
+    } catch (error) {
+      console.error('Error cancelling booking:', error);
+      throw error;
+    }
+  }
+};
+
+interface Facility {
+  id: string;
   name: string;
-  address: string;
+  description: string;
+  location: string;
+  status: string;
+  avgRating: number;
+  numberOfRating: number;
+  imagesUrl: string[];
+  fieldGroups: FieldGroup[];
 }
 
-interface SportInfo {
-  id: number;
+interface FieldGroup {
+  id: string;
   name: string;
-}
-
-interface FieldGroupInfo {
-  id: number;
-  name: string;
+  dimension: string;
+  surface: string;
   basePrice: number;
 }
 
-interface FieldInfo {
+interface Sport {
   id: number;
   name: string;
-  fieldGroup: FieldGroupInfo;
 }
 
-interface BookingHistoryItem extends Booking {
-  facility: FacilityInfo;
-  sport: SportInfo;
-  field: FieldInfo;
-  hasReview?: boolean;
-  totalPrice: number;
+interface Field {
+  id: number;
+  name: string;
+  status: string;
+}
+
+interface BookingSlot {
+  id: number;
+  date: string;
+  field: Field;
+}
+
+interface Payment {
+  id: string;
+  fieldPrice: number;
+  servicePrice: number | null;
+  discount: number | null;
+  status: string;
+  updatedAt: string;
+}
+
+interface BookingData {
+  id: string;
+  startTime: string;
+  endTime: string;
+  createdAt: string;
+  updatedAt: string;
+  status: string;
+  sport: Sport;
+  bookingSlots: BookingSlot[];
+  payment: Payment;
+}
+
+interface BookingHistoryItem {
+  facility: Facility;
+  booking: BookingData;
 }
 
 // Định nghĩa kiểu dữ liệu cho BookingSummaryCard
@@ -120,6 +177,9 @@ const HistoryBookingPage: React.FC = () => {
   const [sportFilter, setSportFilter] = useState<number | null>(null);
   const [filterVisible, setFilterVisible] = useState(false);
   
+  // Thêm state để lưu bookings từ API
+  const [bookings, setBookings] = useState<BookingHistoryItem[]>([]);
+  
   // Thêm state cho việc hiển thị booking sắp tới
   const [upcomingBookings, setUpcomingBookings] = useState<BookingHistoryItem[]>([]);
   
@@ -136,22 +196,22 @@ const HistoryBookingPage: React.FC = () => {
     fetchBookings();
   }, []);
 
-  // Giả lập API call
+  // Gọi API để lấy dữ liệu
   const fetchBookings = async () => {
     setLoading(true);
     try {
-      // Trong thực tế, đây sẽ là API call
-      await new Promise(resolve => setTimeout(resolve, 100));
+      const response = await bookingService.getPlayerBookings();
+      const bookingsData = response.data as BookingHistoryItem[];
+      
+      setBookings(bookingsData);
       
       // Cập nhật thống kê
-      updateBookingStats(mockBookingHistory as BookingHistoryItem[]);
+      updateBookingStats(bookingsData);
       
       // Lấy các booking sắp diễn ra
-      const upcoming = (mockBookingHistory as BookingHistoryItem[]).filter(booking => {
-        const bookingDate = dayjs(booking.bookingSlots[0]?.date);
-        const status = booking.status.toString();
-        return bookingDate.isAfter(dayjs(), 'day') && 
-          (status === 'payment_confirmed' || status === 'pending_payment');
+      const upcoming = bookingsData.filter(item => {
+        const displayStatus = getBookingDisplayStatus(item);
+        return displayStatus === 'upcoming';
       });
       setUpcomingBookings(upcoming);
       
@@ -167,22 +227,20 @@ const HistoryBookingPage: React.FC = () => {
   };
 
   // Cập nhật thống kê booking
-  const updateBookingStats = (bookings: BookingHistoryItem[]) => {
-    const total = bookings.length;
+  const updateBookingStats = (bookingsData: BookingHistoryItem[]) => {
+    const total = bookingsData.length;
     
-    const upcoming = bookings.filter(booking => {
-      const status = booking.status.toString();
-      return status === 'payment_confirmed' || status === 'pending_payment' || status === 'in_progress';
-    }).length;
-    
-    const completed = bookings.filter(booking => 
-      booking.status === BookingStatus.COMPLETED
+    const upcoming = bookingsData.filter(item => 
+      getBookingDisplayStatus(item) === 'upcoming'
     ).length;
     
-    const cancelled = bookings.filter(booking => {
-      const status = booking.status.toString();
-      return status === 'cancelled' || status === 'refunded';
-    }).length;
+    const completed = bookingsData.filter(item => 
+      getBookingDisplayStatus(item) === 'completed'
+    ).length;
+    
+    const cancelled = bookingsData.filter(item => 
+      getBookingDisplayStatus(item) === 'cancelled'
+    ).length;
     
     setBookingStats({
       total,
@@ -192,7 +250,7 @@ const HistoryBookingPage: React.FC = () => {
     });
   };
 
-  const handleCancelBooking = (id: string) => {
+  const handleCancelBooking = async (id: string) => {
     confirm({
       title: 'Xác nhận hủy đặt sân',
       icon: <ExclamationCircleOutlined />,
@@ -203,8 +261,7 @@ const HistoryBookingPage: React.FC = () => {
       onOk: async () => {
         setLoading(true);
         try {
-          // TODO: Implement API call to cancel booking
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await bookingService.cancelBooking(id);
           
           notification.success({
             message: 'Hủy đặt sân thành công',
@@ -237,11 +294,21 @@ const HistoryBookingPage: React.FC = () => {
   };
 
   // Thêm sân vào yêu thích
-  const addToFavorites = (facilityId: number) => {
-    notification.success({
-      message: 'Đã thêm vào yêu thích',
-      description: 'Sân thể thao đã được thêm vào danh sách yêu thích của bạn'
-    });
+  const addToFavorites = async (facilityId: string) => {
+    try {
+      // Implement API call when available
+      console.log(`Adding facility ${facilityId} to favorites`);
+      notification.success({
+        message: 'Đã thêm vào yêu thích',
+        description: 'Sân thể thao đã được thêm vào danh sách yêu thích của bạn'
+      });
+    } catch (error: unknown) {
+      console.error('Error adding facility to favorites:', error);
+      notification.error({
+        message: 'Không thể thêm vào yêu thích',
+        description: 'Đã xảy ra lỗi. Vui lòng thử lại sau.'
+      });
+    }
   };
 
   const formatCurrency = (amount: number) => {
@@ -251,44 +318,65 @@ const HistoryBookingPage: React.FC = () => {
     }).format(amount);
   };
 
-  // Hàm render trạng thái booking
-  const renderBookingStatus = (status: BookingStatus) => {
+  // Hàm render trạng thái booking dựa theo thời gian
+  const renderBookingStatusByTime = (record: BookingHistoryItem) => {
+    const displayStatus = getBookingDisplayStatus(record);
     let color = 'default';
     let text = 'Không xác định';
     let icon = <InfoCircleOutlined />;
 
-    switch (status) {
-      case BookingStatus.PENDING_PAYMENT:
-      case BookingStatus.PAYMENT_CONFIRMED:
+    switch (displayStatus) {
+      case 'upcoming':
         color = 'blue';
         text = 'Sắp diễn ra';
         icon = <ClockCircleOutlined />;
         break;
-      case BookingStatus.IN_PROGRESS:
+      case 'in_progress':
         color = 'processing';
         text = 'Đang diễn ra';
         icon = <SyncOutlined spin />;
         break;
-      case BookingStatus.COMPLETED:
+      case 'completed':
         color = 'green';
         text = 'Hoàn thành';
         icon = <CheckCircleOutlined />;
         break;
-      case BookingStatus.CANCELLED:
-      case BookingStatus.REFUNDED:
+      case 'cancelled':
         color = 'red';
         text = 'Đã hủy';
         icon = <CloseCircleOutlined />;
-        break;
-      case BookingStatus.DRAFT:
-        color = 'default';
-        text = 'Đang xử lý';
-        icon = <SyncOutlined spin />;
         break;
     }
 
     return (
       <Tag icon={icon} color={color}>
+        {text}
+      </Tag>
+    );
+  };
+
+  // Hàm render trạng thái payment
+  const renderPaymentStatus = (status: string) => {
+    let color = 'default';
+    let text = 'Không xác định';
+
+    switch (status) {
+      case 'unpaid':
+        color = 'volcano';
+        text = 'Chưa thanh toán';
+        break;
+      case 'paid':
+        color = 'green';
+        text = 'Đã thanh toán';
+        break;
+      case 'refunded':
+        color = 'orange';
+        text = 'Đã hoàn tiền';
+        break;
+    }
+
+    return (
+      <Tag color={color} style={{ marginLeft: 8 }}>
         {text}
       </Tag>
     );
@@ -329,19 +417,54 @@ const HistoryBookingPage: React.FC = () => {
     },
   ];
 
+  // Xác định trạng thái booking dựa vào thời gian và status
+  const getBookingDisplayStatus = (item: BookingHistoryItem): string => {
+    // Nếu booking đã bị hủy hoặc hoàn tiền, luôn hiển thị là cancelled
+    if (item.booking.status === 'cancelled' || item.booking.status === 'refunded') {
+      return 'cancelled';
+    }
+    
+    // Lấy thời gian từ booking
+    const bookingDate = dayjs(item.booking.bookingSlots[0]?.date);
+    const startTime = item.booking.startTime;
+    const endTime = item.booking.endTime;
+    
+    // Tạo đối tượng dayjs cho thời gian bắt đầu và kết thúc
+    const bookingStart = bookingDate.hour(parseInt(startTime.split(':')[0])).minute(parseInt(startTime.split(':')[1]));
+    const bookingEnd = bookingDate.hour(parseInt(endTime.split(':')[0])).minute(parseInt(endTime.split(':')[1]));
+    
+    const today = dayjs();
+    
+    // Nếu đã qua thời điểm kết thúc, xem như hoàn thành, bất kể status là gì
+    if (today.isAfter(bookingEnd)) {
+      return 'completed';
+    } 
+    
+    // Nếu đang trong khoảng thời gian booking, xem như đang diễn ra
+    if (today.isAfter(bookingStart) && today.isBefore(bookingEnd)) {
+      return 'in_progress';
+    }
+    
+    // Nếu chưa đến thời điểm bắt đầu, xem như sắp diễn ra
+    return 'upcoming';
+  };
+
   // Lọc dữ liệu theo tab đang chọn
-  const filteredBookings = (mockBookingHistory as BookingHistoryItem[]).filter(booking => {
+  const filteredBookings = bookings.filter(item => {
+    // Lấy trạng thái hiển thị
+    const displayStatus = getBookingDisplayStatus(item);
+    
     // Lọc theo tab
     if (activeTab !== 'all') {
-      if (activeTab === 'upcoming' && !(booking.status === BookingStatus.PAYMENT_CONFIRMED || booking.status === BookingStatus.PENDING_PAYMENT)) return false;
-      if (activeTab === 'in_progress' && booking.status !== BookingStatus.IN_PROGRESS) return false;
-      if (activeTab === 'completed' && booking.status !== BookingStatus.COMPLETED) return false;
-      if (activeTab === 'cancelled' && booking.status !== BookingStatus.CANCELLED) return false;
+      if (activeTab === 'upcoming' && displayStatus !== 'upcoming') return false;
+      if (activeTab === 'in_progress' && displayStatus !== 'in_progress') return false;
+      if (activeTab === 'completed' && displayStatus !== 'completed') return false;
+      if (activeTab === 'cancelled' && !['cancelled', 'refunded'].includes(item.booking.status)) return false;
     }
 
     // Lọc theo khoảng thời gian
     if (filterTimeRange) {
-      const bookingDate = dayjs(booking.bookingSlots[0]?.date);
+      const bookingDate = dayjs(item.booking.bookingSlots[0]?.date);
       if (!bookingDate.isBetween(filterTimeRange[0], filterTimeRange[1], null, '[]')) {
         return false;
       }
@@ -351,26 +474,35 @@ const HistoryBookingPage: React.FC = () => {
     if (searchText) {
       const searchLower = searchText.toLowerCase();
       if (
-        !booking.id.toLowerCase().includes(searchLower) &&
-        !booking.facility.name.toLowerCase().includes(searchLower) &&
-        !booking.sport.name.toLowerCase().includes(searchLower)
+        !item.booking.id.toLowerCase().includes(searchLower) &&
+        !item.facility.name.toLowerCase().includes(searchLower) &&
+        !item.booking.sport.name.toLowerCase().includes(searchLower)
       ) {
         return false;
       }
     }
 
     // Lọc theo môn thể thao
-    if (sportFilter && booking.sport.id !== sportFilter) {
+    if (sportFilter && item.booking.sport.id !== sportFilter) {
       return false;
     }
 
     return true;
   });
 
+  // Tính tổng tiền từ payment
+  const calculateTotalPrice = (item: BookingHistoryItem): number => {
+    const fieldPrice = item.booking.payment?.fieldPrice || 0;
+    const servicePrice = item.booking.payment?.servicePrice || 0;
+    const discount = item.booking.payment?.discount || 0;
+    
+    return fieldPrice + servicePrice - discount;
+  };
+
   const columns: ColumnType<BookingHistoryItem>[] = [
     {
       title: 'Mã đặt sân',
-      dataIndex: 'id',
+      dataIndex: ['booking', 'id'],
       key: 'id',
       render: (id: string) => (
         <Button type="link" onClick={() => viewBookingDetail(id)}>
@@ -380,20 +512,33 @@ const HistoryBookingPage: React.FC = () => {
     },
     {
       title: 'Cơ sở thể thao',
-      dataIndex: 'facility',
+      dataIndex: ['facility', 'name'],
       key: 'facility',
-      render: (facility: FacilityInfo) => (
+      render: (name: string, record: BookingHistoryItem) => (
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <Avatar size="small" src={`https://ui-avatars.com/api/?name=${facility.name}&background=random`} style={{ marginRight: 8 }} />
-          <span>{facility.name}</span>
+          <Avatar size="small" src={record.facility.imagesUrl?.[0] || `https://ui-avatars.com/api/?name=${name}&background=random`} style={{ marginRight: 8 }} />
+          <span>{name}</span>
         </div>
       ),
     },
     {
       title: 'Nhóm sân',
-      dataIndex: 'field',
       key: 'field',
-      render: (field: FieldInfo) => `${field.fieldGroup.name} (${field.name})`,
+      render: (_: unknown, record: BookingHistoryItem) => {
+        const fieldGroupName = record.facility.fieldGroups[0]?.name || '';
+        const isRecurring = record.booking.bookingSlots.length > 1;
+        
+        return (
+          <div>
+            <div>{fieldGroupName}</div>
+            {isRecurring && (
+              <div style={{ marginTop: 4 }}>
+                <Tag color="purple">Định kỳ</Tag>
+              </div>
+            )}
+          </div>
+        );
+      },
     },
     {
       title: 'Thời gian',
@@ -402,11 +547,12 @@ const HistoryBookingPage: React.FC = () => {
         <div>
           <div>
             <CalendarOutlined style={{ marginRight: 8 }} />
-            <span>{dayjs(record.bookingSlots[0]?.date).format('DD/MM/YYYY')}</span>
-            <span style={{ marginLeft: 8 }}>{record.startTime.substring(0, 5)} - {record.endTime.substring(0, 5)}</span>
+            <span>{dayjs(record.booking.bookingSlots[0]?.date).format('DD/MM/YYYY')}</span>
+            <span style={{ marginLeft: 8 }}>{record.booking.startTime.substring(0, 5)} - {record.booking.endTime.substring(0, 5)}</span>
           </div>
           <div style={{ marginLeft: 16, marginTop: 4 }}>
-            {renderBookingStatus(record.status)}
+            {renderBookingStatusByTime(record)}
+            {renderPaymentStatus(record.booking.payment.status)}
           </div>
         </div>
       ),
@@ -414,30 +560,32 @@ const HistoryBookingPage: React.FC = () => {
     {
       title: 'Môn thể thao',
       key: 'sport',
-      dataIndex: 'sport',
-      render: (sport: SportInfo) => (
+      dataIndex: ['booking', 'sport', 'name'],
+      render: (name: string) => (
         <Tag color="blue">
-          {sport.name}
+          {getSportNameInVietnamese(name)}
         </Tag>
       ),
     },
     {
       title: 'Tổng tiền',
-      dataIndex: 'totalPrice',
       key: 'totalPrice',
-      render: (price: number) => formatCurrency(price),
-      sorter: (a: BookingHistoryItem, b: BookingHistoryItem) => a.totalPrice - b.totalPrice,
+      render: (_: unknown, record: BookingHistoryItem) => formatCurrency(calculateTotalPrice(record)),
+      sorter: (a: BookingHistoryItem, b: BookingHistoryItem) => 
+        calculateTotalPrice(a) - calculateTotalPrice(b),
     },
     {
       title: 'Thao tác',
       key: 'action',
       render: (_: unknown, record: BookingHistoryItem) => {
-        // Kiểm tra xem có thể hủy booking không
-        const canCancel = record.status === BookingStatus.PENDING_PAYMENT || 
-                          record.status === BookingStatus.PAYMENT_CONFIRMED;
+        // Kiểm tra xem có thể hủy booking không (chỉ cho phép hủy những đơn sắp diễn ra)
+        const displayStatus = getBookingDisplayStatus(record);
+        const canCancel = displayStatus === 'upcoming' && 
+                          (record.booking.status === 'pending_payment' || 
+                          record.booking.status === 'payment_confirmed');
         
-        // Kiểm tra xem có thể đánh giá không
-        const canReview = record.status === BookingStatus.COMPLETED && !record.hasReview;
+        // Kiểm tra xem có thể đánh giá không (chỉ đánh giá những đơn đã hoàn thành)
+        const canReview = displayStatus === 'completed' && record.booking.status !== 'cancelled' && record.booking.status !== 'refunded'; // Thêm kiểm tra hasReview khi có API
         
         return (
           <Space size="small">
@@ -446,7 +594,7 @@ const HistoryBookingPage: React.FC = () => {
                 type="primary"
                 size="small"
                 icon={<EyeOutlined />}
-                onClick={() => viewBookingDetail(record.id)}
+                onClick={() => viewBookingDetail(record.booking.id)}
               />
             </Tooltip>
             
@@ -456,7 +604,7 @@ const HistoryBookingPage: React.FC = () => {
                   type="default"
                   size="small"
                   icon={<StarOutlined />}
-                  onClick={() => goToReview(record.id)}
+                  onClick={() => goToReview(record.booking.id)}
                 />
               </Tooltip>
             )}
@@ -476,7 +624,7 @@ const HistoryBookingPage: React.FC = () => {
                   danger
                   size="small"
                   icon={<CloseCircleOutlined />}
-                  onClick={() => handleCancelBooking(record.id)}
+                  onClick={() => handleCancelBooking(record.booking.id)}
                 />
               </Tooltip>
             )}
@@ -487,12 +635,14 @@ const HistoryBookingPage: React.FC = () => {
   ];
 
   const getBookingCount = (status: string) => {
-    return (mockBookingHistory as BookingHistoryItem[]).filter(booking => {
+    return bookings.filter(item => {
+      const displayStatus = getBookingDisplayStatus(item);
+      
       if (status === 'all') return true;
-      if (status === 'upcoming') return booking.status === BookingStatus.PAYMENT_CONFIRMED || booking.status === BookingStatus.PENDING_PAYMENT;
-      if (status === 'in_progress') return booking.status === BookingStatus.IN_PROGRESS;
-      if (status === 'completed') return booking.status === BookingStatus.COMPLETED;
-      if (status === 'cancelled') return booking.status === BookingStatus.CANCELLED || booking.status === BookingStatus.REFUNDED;
+      if (status === 'upcoming') return displayStatus === 'upcoming';
+      if (status === 'in_progress') return displayStatus === 'in_progress';
+      if (status === 'completed') return displayStatus === 'completed';
+      if (status === 'cancelled') return item.booking.status === 'cancelled' || item.booking.status === 'refunded';
       return false;
     }).length;
   };
@@ -580,24 +730,24 @@ const HistoryBookingPage: React.FC = () => {
             <div className="space-y-4">
               {upcomingBookings.slice(0, 3).map(booking => (
                 <Alert
-                  key={booking.id}
+                  key={booking.booking.id}
                   type="info"
                   message={
                     <div className="flex justify-between items-center">
                       <Space wrap>
                         <CalendarOutlined className="text-blue-500" />
                         <span className="font-medium">
-                          {dayjs(booking.bookingSlots[0]?.date).format('DD/MM/YYYY')} ({booking.startTime.substring(0, 5)} - {booking.endTime.substring(0, 5)})
+                          {dayjs(booking.booking.bookingSlots[0]?.date).format('DD/MM/YYYY')} ({booking.booking.startTime.substring(0, 5)} - {booking.booking.endTime.substring(0, 5)})
                         </span>
                         <span className="text-gray-400">•</span>
                         <span>{booking.facility.name}</span>
                         <span className="text-gray-400">•</span>
-                        <span>{booking.field.fieldGroup.name}</span>
+                        <span>{booking.booking.bookingSlots[0]?.field.name}</span>
                       </Space>
                       <Button 
                         type="primary" 
                         size="small"
-                        onClick={() => viewBookingDetail(booking.id)}
+                        onClick={() => viewBookingDetail(booking.booking.id)}
                         className="flex items-center"
                       >
                         Chi tiết <ArrowRightOutlined />
@@ -688,7 +838,7 @@ const HistoryBookingPage: React.FC = () => {
           <Table
             columns={columns}
             dataSource={filteredBookings}
-            rowKey="id"
+            rowKey={(record) => record.booking.id}
             loading={loading}
             pagination={{
               pageSize: 10,
@@ -698,7 +848,7 @@ const HistoryBookingPage: React.FC = () => {
             }}
             rowClassName="hover:bg-gray-50 cursor-pointer transition-colors"
             onRow={(record) => ({
-              onClick: () => viewBookingDetail(record.id)
+              onClick: () => viewBookingDetail(record.booking.id)
             })}
             locale={{
               emptyText: (
