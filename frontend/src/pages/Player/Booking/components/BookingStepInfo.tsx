@@ -24,6 +24,15 @@ interface BookingStepInfoProps {
   maxBookingDate: dayjs.Dayjs;
   customRecurringOptions?: { value: string; label: string; type: RecurringType }[];
   onRecurringOptionChange?: (value: string) => void;
+  validateTimeRange?: (rule: unknown, timeRange: [dayjs.Dayjs, dayjs.Dayjs] | null) => Promise<void>;
+  operatingTimes?: {
+    openTime1: string | null;
+    closeTime1: string | null;
+    openTime2: string | null;
+    closeTime2: string | null;
+    openTime3: string | null;
+    closeTime3: string | null;
+  };
 }
 
 const BookingStepInfo: React.FC<BookingStepInfoProps> = ({
@@ -40,7 +49,9 @@ const BookingStepInfo: React.FC<BookingStepInfoProps> = ({
   getWeekdayName,
   maxBookingDate,
   customRecurringOptions,
-  onRecurringOptionChange
+  onRecurringOptionChange,
+  validateTimeRange,
+  operatingTimes
 }) => {
   const [showAllDates, setShowAllDates] = useState(false);
   const [recurringOption, setRecurringOption] = useState(formData.recurringOption || 'none');
@@ -414,7 +425,10 @@ const BookingStepInfo: React.FC<BookingStepInfoProps> = ({
             <Form.Item
               name="timeRange"
               label="Thời gian chơi"
-              rules={[{ required: true, message: 'Vui lòng chọn thời gian' }]}
+              rules={[
+                { required: true, message: 'Vui lòng chọn thời gian' },
+                ...(validateTimeRange ? [{ validator: validateTimeRange }] : [])
+              ]}
             >
               <RangePicker 
                 className="w-full" 
@@ -423,6 +437,14 @@ const BookingStepInfo: React.FC<BookingStepInfoProps> = ({
                 onChange={handleTimeRangeChange}
               />
             </Form.Item>
+            
+            {/* Hiển thị thông tin giờ hoạt động của cơ sở */}
+            {operatingTimes && operatingTimes.openTime1 && operatingTimes.closeTime1 && (
+              <div className="text-gray-500 text-xs mb-4 flex items-center">
+                <ClockCircleOutlined className="mr-1" />
+                Giờ hoạt động: <strong className="ml-1">{dayjs(operatingTimes.openTime1, 'HH:mm:ss').format('HH:mm')}</strong> - <strong>{dayjs(operatingTimes.closeTime1, 'HH:mm:ss').format('HH:mm')}</strong>
+              </div>
+            )}
             
             <Form.Item
               label="Đặt sân định kỳ"

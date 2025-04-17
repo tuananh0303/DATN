@@ -60,7 +60,7 @@ export const bookingService = {
    */
   async updateAdditionalServices(
     bookingId: string,
-    additionalServices: { serviceId: number; amount: number }[]
+    additionalServices: { serviceId: number; quantity: number }[]
   ): Promise<Booking> {
     try {
       const response = await api.put(`/booking/${bookingId}/update-additional-services`, {
@@ -119,10 +119,11 @@ export const bookingService = {
   /**
    * Get available services for a facility
    * @param facilityId The ID of the facility
+   * @param bookingId The ID of the booking
    */
-  async getAvailableServices(facilityId: string) {
+  async getAvailableServices(facilityId: string, bookingId: string) {
     try {
-      const response = await api.get(`/service/${facilityId}/available-service-in-facility`);
+      const response = await api.post(`/service/${facilityId}/${bookingId}/available-service-in-facility`);
       return response.data;
     } catch (error) {
       console.error('Error fetching available services:', error);
@@ -163,6 +164,26 @@ export const bookingService = {
       return response.data;
     } catch (error) {
       console.error('Error getting payment result:', error);
+      throw error;
+    }
+  },
+
+  async deleteBookingDraft(bookingId: string) {
+    try {
+      const response = await api.delete(`/booking/${bookingId}/delete-draft`);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting booking:', error);
+      throw error;
+    }
+  },
+
+  async getActiveOperatingTime(facilityId: string) {
+    try {
+      const response = await api.get(`/facility/${facilityId}/active-time`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching active operating time:', error);
       throw error;
     }
   }

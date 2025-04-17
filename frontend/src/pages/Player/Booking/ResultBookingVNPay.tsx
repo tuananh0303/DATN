@@ -42,7 +42,7 @@ const ResultBookingVNPay: React.FC = () => {
           icon={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
           title="Thanh toán thành công!"          
           extra={[
-            <Button type="primary" key="bookings" onClick={() => navigate(`/user/history-bookin`)}>
+            <Button type="primary" key="bookings" onClick={() => navigate(`/user/history-booking`)}>
               Xem lịch sử đặt sân
             </Button>,
             <Button key="home" onClick={() => navigate('/')}>

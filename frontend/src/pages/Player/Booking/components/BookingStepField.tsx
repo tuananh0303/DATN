@@ -9,6 +9,7 @@ import {
   CalendarOutlined, CheckCircleOutlined, CloseCircleOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import { getSportNameInVietnamese } from '@/utils/translateSport';
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -62,6 +63,7 @@ const BookingStepField: React.FC<BookingStepFieldProps> = ({
         // Khởi tạo lựa chọn sân cho mỗi ngày
         if (fieldGroup.bookingSlot) {
           const initialSelections: FieldSelection = {};
+          let firstSelectedFieldId: number | null = null;
           
           fieldGroup.bookingSlot.forEach(slot => {
             const dateStr = dayjs(slot.date).format('YYYY-MM-DD');
@@ -71,6 +73,7 @@ const BookingStepField: React.FC<BookingStepFieldProps> = ({
               const existingField = slot.fields.find(f => f.id === Number(formData.fieldId));
               if (existingField && existingField.status === 'active') {
                 initialSelections[dateStr] = existingField.id;
+                if (!firstSelectedFieldId) firstSelectedFieldId = existingField.id;
                 return;
               }
             }
@@ -79,6 +82,7 @@ const BookingStepField: React.FC<BookingStepFieldProps> = ({
             const firstActiveField = slot.fields.find(field => field.status === 'active');
             if (firstActiveField) {
               initialSelections[dateStr] = firstActiveField.id;
+              if (!firstSelectedFieldId) firstSelectedFieldId = firstActiveField.id;
             } else {
               initialSelections[dateStr] = null;
             }
@@ -86,15 +90,67 @@ const BookingStepField: React.FC<BookingStepFieldProps> = ({
           
           setFieldSelections(initialSelections);
           
-          // Cập nhật form với fieldId sân đầu tiên được chọn
-          const firstSelectedField = Object.values(initialSelections).find(id => id !== null);
-          if (firstSelectedField) {
-            form.setFieldValue('fieldId', firstSelectedField);
+          // Always update the form with a valid fieldId
+          if (firstSelectedFieldId) {
+            console.log('Setting default fieldId:', firstSelectedFieldId);
+            form.setFieldValue('fieldId', firstSelectedFieldId);
+            
+            // Đảm bảo cập nhật cả formData.fieldId để tránh lỗi
+            setTimeout(() => {
+              const formValues = form.getFieldsValue();
+              if (formValues.fieldId !== formData.fieldId) {
+                console.log('Updating parent form with fieldId:', firstSelectedFieldId);
+                form.setFieldsValue({ fieldId: firstSelectedFieldId });
+              }
+            }, 0);
           }
         }
       }
     }
   }, [formData.fieldGroupId, formData.fieldId, fieldGroups, form]);
+
+  // Thêm useEffect mới để đảm bảo fieldId luôn được khởi tạo sau khi render
+  useEffect(() => {
+    // Chỉ thực hiện nếu đã có fieldGroup nhưng chưa có fieldId
+    if (formData.fieldGroupId && (!formData.fieldId) && fieldGroups.length > 0) {
+      const fieldGroup = fieldGroups.find(g => String(g.id) === String(formData.fieldGroupId));
+      if (fieldGroup && fieldGroup.bookingSlot && fieldGroup.bookingSlot.length > 0) {
+        // Tìm field đầu tiên có status active trong slot đầu tiên
+        const firstSlot = fieldGroup.bookingSlot[0];
+        const firstActiveField = firstSlot.fields.find(field => field.status === 'active');
+        
+        if (firstActiveField) {
+          console.log('Auto-initializing fieldId on first render:', firstActiveField.id);
+          form.setFieldValue('fieldId', firstActiveField.id);
+          
+          // Update parent component via form values
+          setTimeout(() => {
+            console.log('Auto-updating parent form with fieldId:', firstActiveField.id);
+            form.setFieldsValue({ fieldId: firstActiveField.id });
+          }, 0);
+        }
+      }
+    }
+  }, [formData.fieldGroupId, formData.fieldId, fieldGroups, form]);
+
+  // Thêm effect để đảm bảo fieldId luôn có giá trị khi form được submit
+  useEffect(() => {
+    // Trigger this effect any time the selectedFieldGroup changes
+    if (selectedFieldGroup && selectedFieldGroup.bookingSlot && selectedFieldGroup.bookingSlot.length > 0) {
+      const currentFieldId = form.getFieldValue('fieldId');
+      
+      // If no fieldId is set, set a default
+      if (!currentFieldId) {
+        const firstSlot = selectedFieldGroup.bookingSlot[0];
+        const firstActiveField = firstSlot.fields.find(field => field.status === 'active');
+        
+        if (firstActiveField) {
+          console.log('Setting default field on group change:', firstActiveField.id);
+          form.setFieldValue('fieldId', firstActiveField.id);
+        }
+      }
+    }
+  }, [selectedFieldGroup, form]);
 
   // Render thông tin giá
   const renderPriceInfo = (fieldGroup: AvailableFieldGroup) => {
@@ -160,6 +216,7 @@ const BookingStepField: React.FC<BookingStepFieldProps> = ({
     // Reset và khởi tạo lại lựa chọn sân
     if (selected) {
       const initialSelections: FieldSelection = {};
+      let firstSelectedFieldId: number | null = null;
       
       if (selected.bookingSlot) {
         selected.bookingSlot.forEach(slot => {
@@ -169,6 +226,7 @@ const BookingStepField: React.FC<BookingStepFieldProps> = ({
           const firstActiveField = slot.fields.find(field => field.status === 'active');
           if (firstActiveField) {
             initialSelections[dateStr] = firstActiveField.id;
+            if (!firstSelectedFieldId) firstSelectedFieldId = firstActiveField.id;
           } else {
             initialSelections[dateStr] = null;
           }
@@ -177,12 +235,19 @@ const BookingStepField: React.FC<BookingStepFieldProps> = ({
       
       setFieldSelections(initialSelections);
       
-      // Cập nhật form với fieldId và fieldGroupId
-      const firstSelectedField = Object.values(initialSelections).find(id => id !== null);
-      form.setFieldsValue({
-        fieldGroupId,
-        fieldId: firstSelectedField || ""
-      });
+      // Always update with a valid fieldId to prevent API errors
+      if (firstSelectedFieldId) {
+        console.log('Setting default fieldId after group change:', firstSelectedFieldId);
+        form.setFieldsValue({
+          fieldGroupId,
+          fieldId: firstSelectedFieldId
+        });
+      } else {
+        form.setFieldsValue({
+          fieldGroupId,
+          fieldId: ""
+        });
+      }
     } else {
       // Reset nếu không có field group nào được chọn
       setFieldSelections({});
@@ -286,15 +351,36 @@ const BookingStepField: React.FC<BookingStepFieldProps> = ({
       fields: slot.fields
     }));
 
+    // Tính số ngày có sân khả dụng và tổng số ngày
+    const totalDays = dataSource.length;
+    const daysWithAvailableFields = dataSource.filter(item => 
+      item.fields.some(field => field.status === 'active')
+    ).length;
+
     return (
       <div className="mt-3">
-        <Table 
-          dataSource={dataSource}
-          columns={columns}
-          pagination={false}
-          size="middle"
-          bordered
-        />
+        <div className="flex justify-between items-center mb-2">
+          <div className="text-gray-600 text-sm">
+            <span className="font-semibold text-blue-600">{daysWithAvailableFields}</span>/{totalDays} ngày có sân khả dụng
+          </div>
+          {daysWithAvailableFields < totalDays && (
+            <div className="text-xs text-orange-500">
+              <InfoCircleOutlined className="mr-1" />
+              Một số ngày không có sân khả dụng
+            </div>
+          )}
+        </div>
+
+        <div className="table-container" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+          <Table 
+            dataSource={dataSource}
+            columns={columns}
+            pagination={false}
+            size="middle"
+            bordered
+            scroll={{ y: dataSource.length > 5 ? 350 : undefined }}
+          />
+        </div>
       </div>
     );
   };
@@ -376,7 +462,7 @@ const BookingStepField: React.FC<BookingStepFieldProps> = ({
             <input type="hidden" />
           </Form.Item>
           
-          <Row gutter={[24, 24]}>
+          <Row gutter={[10, 30]}>
             <Col xs={24} md={12}>
               <Title level={5} className="mb-4">Chọn loại sân</Title>
               <Form.Item
@@ -418,7 +504,7 @@ const BookingStepField: React.FC<BookingStepFieldProps> = ({
                               </div>
                               <div className="mt-2">
                                 {group.sports && group.sports.map(sport => (
-                                  <Tag color="blue" key={sport.id}>{sport.name}</Tag>
+                                  <Tag color="blue" key={sport.id}>{getSportNameInVietnamese(sport.name)}</Tag>
                                 ))}
                               </div>
                             </div>
@@ -444,7 +530,7 @@ const BookingStepField: React.FC<BookingStepFieldProps> = ({
             
             <Col xs={24} md={12}>
               {selectedFieldGroup && (
-                <div className="bg-gray-50 p-4 rounded-lg h-full">
+                <div className="bg-gray-50 p-3 rounded-lg h-full">
                   <Title level={5}>Thông tin chi tiết</Title>
                   <Paragraph className="mb-4">
                     <strong>{selectedFieldGroup.name}</strong> - Chọn sân cho từng ngày đặt
