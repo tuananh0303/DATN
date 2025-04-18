@@ -1313,7 +1313,8 @@ const BookingPage: React.FC = () => {
         const startTimeOfDay = dayjs().hour(startTime.hour()).minute(startTime.minute()).second(0);
         const endTimeOfDay = dayjs().hour(endTime.hour()).minute(endTime.minute()).second(0);
         
-        if (startTimeOfDay.isBefore(openTime) || endTimeOfDay.isAfter(closeTime)) {
+        // Điều kiện đã được sửa để cho phép thời gian kết thúc bằng với thời gian đóng cửa
+        if (startTimeOfDay.isBefore(openTime) || (endTimeOfDay.isAfter(closeTime) && !endTimeOfDay.isSame(closeTime, 'minute'))) {
           reject(`Thời gian phải nằm trong khung giờ hoạt động từ ${openTime.format('HH:mm')} đến ${closeTime.format('HH:mm')}`);
           return;
         }

@@ -56,6 +56,16 @@ interface FieldGroup {
   dimension: string;
   surface: string;
   basePrice: number;
+  numberOfPeaks: number;
+  peakStartTime1?: string;
+  peakEndTime1?: string;
+  peakStartTime2?: string;
+  peakEndTime2?: string;
+  peakStartTime3?: string;
+  peakEndTime3?: string;
+  priceIncrease1?: number;
+  priceIncrease2?: number;
+  priceIncrease3?: number;
 }
 
 interface Sport {
@@ -88,6 +98,16 @@ interface AdditionalService {
   serviceId: number;
   quantity: number;
   bookingId?: string;
+  service?: {
+    id: number;
+    name: string;
+    price: number;
+    type: string;
+    description: string;
+    amount: number;
+    bookedCount: number;
+    unit: string;
+  };
 }
 
 interface BookingData {
@@ -329,6 +349,35 @@ const BookingDetail: React.FC = () => {
                 <Descriptions.Item label="Đặt lặp lại">
                   {booking.bookingSlots.length > 1 ? 'Có' : 'Không'}
                 </Descriptions.Item>
+
+                <Descriptions.Item label="Giá cơ bản" span={2}>
+                  {formatCurrency(facility.fieldGroups[0]?.basePrice || 0)}
+                  {facility.fieldGroups[0]?.numberOfPeaks > 0 && (
+                    <div className="mt-1">
+                      <Text type="secondary" className="text-sm">Giá cao điểm:</Text>
+                      <ul className="list-disc pl-5 mt-1 text-sm">
+                        {facility.fieldGroups[0]?.peakStartTime1 && facility.fieldGroups[0]?.peakEndTime1 && (
+                          <li>
+                            {facility.fieldGroups[0].peakStartTime1.substring(0, 5)} - {facility.fieldGroups[0].peakEndTime1.substring(0, 5)}: 
+                            {' +' + formatCurrency(facility.fieldGroups[0].priceIncrease1 || 0)}
+                          </li>
+                        )}
+                        {facility.fieldGroups[0]?.peakStartTime2 && facility.fieldGroups[0]?.peakEndTime2 && (
+                          <li>
+                            {facility.fieldGroups[0].peakStartTime2.substring(0, 5)} - {facility.fieldGroups[0].peakEndTime2.substring(0, 5)}: 
+                            {' +' + formatCurrency(facility.fieldGroups[0].priceIncrease2 || 0)}
+                          </li>
+                        )}
+                        {facility.fieldGroups[0]?.peakStartTime3 && facility.fieldGroups[0]?.peakEndTime3 && (
+                          <li>
+                            {facility.fieldGroups[0].peakStartTime3.substring(0, 5)} - {facility.fieldGroups[0].peakEndTime3.substring(0, 5)}: 
+                            {' +' + formatCurrency(facility.fieldGroups[0].priceIncrease3 || 0)}
+                          </li>
+                        )}
+                      </ul>
+                    </div>
+                  )}
+                </Descriptions.Item>
                 
                 <Descriptions.Item label="Trạng thái" span={2}>
                   <Space wrap>
@@ -421,6 +470,7 @@ const BookingDetail: React.FC = () => {
                 <table className="min-w-full">
                   <thead className="bg-gray-50">
                     <tr>
+                      <th className="py-2 px-4 text-left">STT</th>
                       <th className="py-2 px-4 text-left">Tên dịch vụ</th>
                       <th className="py-2 px-4 text-right">Số lượng</th>
                       <th className="py-2 px-4 text-right">Đơn giá</th>
@@ -428,14 +478,33 @@ const BookingDetail: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {booking.additionalServices.map(service => (
-                      <tr key={service.serviceId}>
-                        <td className="py-2 px-4">Dịch vụ {service.serviceId}</td>
-                        <td className="py-2 px-4 text-right">{service.quantity}</td>
-                        <td className="py-2 px-4 text-right">{formatCurrency(15000)}</td>
-                        <td className="py-2 px-4 text-right">{formatCurrency(service.quantity * 15000)}</td>
-                      </tr>
-                    ))}
+                    {booking.additionalServices.map((service, index) => {
+                      // Calculate total price based on service unit type
+                      const unitPrice = service.service?.price || 0;
+                      let totalPrice = unitPrice * service.quantity;
+                      
+                      // If service unit is "time", multiply by duration in hours
+                      if (service.service?.unit === "time") {
+                        // Calculate duration in hours
+                        const startTime = dayjs(`2000-01-01 ${booking.startTime}`);
+                        const endTime = dayjs(`2000-01-01 ${booking.endTime}`);
+                        let durationHours = endTime.diff(startTime, 'hour', true);
+                        // Round to nearest 0.5 hour if needed
+                        durationHours = Math.round(durationHours * 2) / 2;
+                        
+                        totalPrice = unitPrice * service.quantity * durationHours;
+                      }
+                      
+                      return (
+                        <tr key={service.serviceId}>
+                          <td className="py-2 px-4">{index + 1}</td>
+                          <td className="py-2 px-4">{service.service?.name || `Dịch vụ ${service.serviceId}`}</td>
+                          <td className="py-2 px-4 text-right">{service.quantity}</td>
+                          <td className="py-2 px-4 text-right">{formatCurrency(unitPrice)}</td>
+                          <td className="py-2 px-4 text-right">{formatCurrency(totalPrice)}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </Card>
