@@ -56,6 +56,17 @@ interface BookingScheduleItem {
     discount: number | null;
     status: string;
   };
+  player?: {
+    id: string;
+    name: string;
+    email: string;
+    phoneNumber: string;
+  };
+  field: {
+    id: number;
+    name: string;
+    status: string;
+  };
 }
 
 interface SlotInfo {
@@ -260,72 +271,113 @@ const PlaySchedule: React.FC = () => {
   };
 
   const handleSlotClick = (time: string, fieldName: string, fieldId: number) => {
-    // Check if there's a booking for this slot
-    const booking = getBookingForSlot(time, fieldId);
+    // Get the time index
+    const timeIndex = timeSlots.findIndex(t => t === time);
     
-    // Set current slot info
-    setCurrentSlot({
-      time,
-      field: fieldName,
-      fieldId,
-      booking
-    });
+    // Get calendar data
+    const calendarData = prepareCalendarData();
+    
+    // Find field data
+    const fieldData = calendarData.find(data => data.fieldId === fieldId);
+    
+    if (!fieldData) {
+      // Field not found, create empty slot info
+      setCurrentSlot({
+        time,
+        field: fieldName,
+        fieldId,
+        booking: null
+      });
+    } else {
+      // Check if this time slot has a booking
+      // We need to check if this time index is within any booking's range
+      const bookingData = fieldData.bookings.find(
+        b => timeIndex >= b.startSlotIndex && timeIndex < b.endSlotIndex
+      );
+      
+      if (bookingData) {
+        // Slot has a booking
+        setCurrentSlot({
+          time,
+          field: fieldName,
+          fieldId,
+          booking: bookingData.booking
+        });
+      } else {
+        // Empty slot
+        setCurrentSlot({
+          time,
+          field: fieldName,
+          fieldId,
+          booking: null
+        });
+      }
+    }
     
     setIsModalVisible(true);
   };
 
-  // Find booking that includes this time and field
-  const getBookingForSlot = (time: string, fieldId: number) => {
-    const timeAsMinutes = timeToMinutes(time);
-    
-    // In a real implementation, we would filter by fieldId as well
-    return bookingSchedule.find(booking => {
-      const startMinutes = timeToMinutes(booking.startTime);
-      const endMinutes = timeToMinutes(booking.endTime);
-      
-      // Check if the time slot is within the booking's time range
-      return timeAsMinutes >= startMinutes && timeAsMinutes < endMinutes;
-    }) || null;
-  };
+  // Update the prepareCalendarData function
+  const prepareCalendarData = () => {
+    if (!selectedFieldGroup || !timeSlots.length) return [];
 
-  // Helper function to convert time string to minutes for comparison
-  const timeToMinutes = (timeString: string) => {
-    const [hours, minutes] = timeString.split(':').map(Number);
-    return hours * 60 + minutes;
-  };
-
-  // Check if a cell has a booking for styling
-  const getCellStyle = (time: string, fieldId: number) => {
-    const booking = getBookingForSlot(time, fieldId);
-    
-    if (!booking) return {};
-    
-    let backgroundColor = '';
-    let color = '';
-    
-    switch (booking.status) {
-      case 'completed':
-        backgroundColor = '#d6f5d6';
-        color = '#52c41a';
-        break;
-      case 'cancelled':
-        backgroundColor = '#fff1f0';
-        color = '#f5222d';
-        break;
-      case 'pending':
-        backgroundColor = '#fff7e6';
-        color = '#fa8c16';
-        break;
-      default:
-        backgroundColor = 'white';
-    }
-    
-    return {
-      backgroundColor,
-      color,
-      position: 'relative' as const,
-      overflow: 'hidden'
+    // Helper function to convert time string to minutes for comparison
+    const timeToMinutes = (timeString: string) => {
+      const [hours, minutes] = timeString.split(':').map(Number);
+      return hours * 60 + minutes;
     };
+
+    // Initialize calendar data structure
+    const calendarData = selectedFieldGroup.fields.map(field => {
+      return {
+        fieldId: field.id,
+        fieldName: field.name,
+        bookings: [] as {
+          booking: BookingScheduleItem;
+          startSlotIndex: number;
+          endSlotIndex: number;
+          rowSpan: number;
+        }[]
+      };
+    });
+
+    // Process bookings for each field
+    bookingSchedule.forEach(booking => {
+      // Find field in our calendar data
+      const fieldData = calendarData.find(data => data.fieldId === booking.field.id);
+      if (!fieldData) return;
+
+      // Find time slot indices for this booking
+      const startIndex = timeSlots.findIndex(time => time === booking.startTime.substring(0, 5));
+      let endIndex = timeSlots.findIndex(time => time === booking.endTime.substring(0, 5));
+      
+      // If end time is not exactly on a time slot, find the nearest slot before
+      if (endIndex === -1) {
+        // Find the slot just before the end time
+        const endTimeMinutes = timeToMinutes(booking.endTime.substring(0, 5));
+        endIndex = timeSlots.findIndex((time, index) => {
+          const slotMinutes = timeToMinutes(time);
+          const nextSlotMinutes = index < timeSlots.length - 1 ? timeToMinutes(timeSlots[index + 1]) : Infinity;
+          return slotMinutes <= endTimeMinutes && nextSlotMinutes > endTimeMinutes;
+        });
+      }
+
+      // If we couldn't find valid indices, skip this booking
+      if (startIndex === -1 || endIndex === -1) return;
+
+      // Calculate number of rows this booking spans
+      const rowSpan = endIndex - startIndex;
+      
+      // Add booking to field data
+      fieldData.bookings.push({
+        booking,
+        startSlotIndex: startIndex,
+        endSlotIndex: endIndex,
+        rowSpan: rowSpan > 0 ? rowSpan : 1
+      });
+    });
+
+    return calendarData;
   };
 
   return (
@@ -413,10 +465,22 @@ const PlaySchedule: React.FC = () => {
                   render: (record) => `${record.startTime} - ${record.endTime}`
                 },
                 {
+                  title: 'Sân',
+                  dataIndex: ['field', 'name'],
+                  key: 'field',
+                  width: isMobile ? '80px' : '100px',
+                },
+                {
+                  title: 'Người đặt',
+                  key: 'player',
+                  width: isMobile ? '120px' : '150px',
+                  render: (record) => record.player ? record.player.name : 'N/A',
+                },
+                {
                   title: 'Giá tiền',
                   dataIndex: ['payment', 'fieldPrice'],
                   key: 'price',
-                  width: isMobile ? '120px' : '150px',
+                  width: isMobile ? '100px' : '120px',
                   render: (price) => price ? `${price.toLocaleString()} đ` : 'N/A'
                 },
                 {
@@ -462,52 +526,108 @@ const PlaySchedule: React.FC = () => {
           <div className="overflow-x-auto -mx-4 px-4 sm:-mx-0 sm:px-0">
             <div className="min-w-[650px]">
               {selectedFieldGroup && (
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr>
-                      <th className="p-2 border text-center" style={{ width: '80px' }}>Thời gian</th>
-                      {selectedFieldGroup.fields.map(field => (
-                        <th key={field.id} className="p-2 border text-center">{field.name}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {timeSlots.map(time => (
-                      <tr key={time}>
-                        <td className="p-2 border text-center font-medium">{time}</td>
-                        {selectedFieldGroup.fields.map(field => {
-                          const booking = getBookingForSlot(time, field.id);
+                <>
+                  <div className="mb-2 text-sm text-gray-500">
+                    Lịch đặt sân ngày {selectedDate.format('DD/MM/YYYY')}
+                  </div>
+                  <div className="relative overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr>
+                          <th className="p-2 border text-center" style={{ width: '80px', minWidth: '80px', position: 'sticky', left: 0, backgroundColor: 'white', zIndex: 10 }}>Thời gian</th>
+                          {selectedFieldGroup.fields.map(field => (
+                            <th key={field.id} className="p-2 border text-center" style={{ width: isMobile ? '120px' : '150px', minWidth: isMobile ? '120px' : '150px' }}>
+                              {field.name}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {timeSlots.map((time, timeIndex) => {
+                          // Get preprocessed calendar data
+                          const calendarData = prepareCalendarData();
+                          
                           return (
-                            <td
-                              key={`${time}-${field.id}`}
-                              className="p-2 border cursor-pointer hover:bg-gray-50"
-                              style={getCellStyle(time, field.id)}
-                              onClick={() => handleSlotClick(time, field.name, field.id)}
-                            >
-                              {booking && (
-                                <div className="p-1">
-                                  <div className="text-sm font-medium">Đã đặt</div>
-                                  <div className="text-xs mt-1">
-                                    <Badge 
-                                      status={
-                                        booking.status === 'completed' ? 'success' :
-                                        booking.status === 'cancelled' ? 'error' : 'warning'
-                                      }
-                                      text={
-                                        booking.status === 'completed' ? 'Đã hoàn thành' :
-                                        booking.status === 'cancelled' ? 'Đã hủy' : 'Đang chờ'
-                                      }
-                                    />
-                                  </div>
-                                </div>
-                              )}
-                            </td>
+                            <tr key={time}>
+                              <td className="p-2 border text-center font-medium" style={{ position: 'sticky', left: 0, backgroundColor: 'white', zIndex: 5 }}>
+                                {time}
+                              </td>
+                              {calendarData.map(fieldData => {
+                                // Check if this time slot has the start of a booking
+                                const bookingData = fieldData.bookings.find(b => b.startSlotIndex === timeIndex);
+
+                                // Check if this time slot is in the middle of a booking (should be skipped as it's rowspan'd)
+                                const isInBookingSpan = fieldData.bookings.some(
+                                  b => timeIndex > b.startSlotIndex && timeIndex < b.endSlotIndex
+                                );
+
+                                // If this time slot is in the middle of a booking, don't render a cell
+                                if (isInBookingSpan) return null;
+                                
+                                if (bookingData) {
+                                  // This is the start of a booking, render a cell with rowSpan
+                                  const { booking, rowSpan } = bookingData;
+                                  return (
+                                    <td
+                                      key={`${time}-${fieldData.fieldId}`}
+                                      className="p-2 border cursor-pointer hover:bg-gray-50"
+                                      style={{
+                                        backgroundColor: booking.status === 'completed' ? '#d6f5d6' : 
+                                                        booking.status === 'cancelled' ? '#fff1f0' : 
+                                                        '#fff7e6',
+                                        color: booking.status === 'completed' ? '#52c41a' : 
+                                              booking.status === 'cancelled' ? '#f5222d' : 
+                                              '#fa8c16',
+                                        position: 'relative',
+                                        overflow: 'hidden'
+                                      }}
+                                      rowSpan={rowSpan || 1}
+                                      onClick={() => handleSlotClick(time, fieldData.fieldName, fieldData.fieldId)}
+                                    >
+                                      <div className="p-1">
+                                        <div className="text-sm font-medium">
+                                          {booking.player ? booking.player.name : 'Đã đặt'}
+                                        </div>
+                                        {booking.player && (
+                                          <div className="text-xs">{booking.player.phoneNumber}</div>
+                                        )}
+                                        <div className="text-xs mt-1">
+                                          <div className="flex items-center gap-1">
+                                            <div className={`w-2 h-2 rounded-full ${
+                                              booking.status === 'completed' ? 'bg-green-500' :
+                                              booking.status === 'cancelled' ? 'bg-red-500' : 
+                                              'bg-orange-500'
+                                            }`}></div>
+                                            <span>
+                                              {booking.status === 'completed' ? 'Đã hoàn thành' :
+                                              booking.status === 'cancelled' ? 'Đã hủy' : 'Đang chờ'}
+                                            </span>
+                                          </div>
+                                        </div>
+                                        <div className="text-xs mt-1">
+                                          {booking.startTime.substring(0, 5)} - {booking.endTime.substring(0, 5)}
+                                        </div>
+                                      </div>
+                                    </td>
+                                  );
+                                }
+                                
+                                // Empty cell (no booking)
+                                return (
+                                  <td
+                                    key={`${time}-${fieldData.fieldId}`}
+                                    className="p-2 border cursor-pointer hover:bg-gray-50"
+                                    onClick={() => handleSlotClick(time, fieldData.fieldName, fieldData.fieldId)}
+                                  />
+                                );
+                              })}
+                            </tr>
                           );
                         })}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </div>
           </div>
@@ -549,6 +669,18 @@ const PlaySchedule: React.FC = () => {
                     }
                   />
                 </div>
+                {currentSlot.booking.player && (
+                  <>
+                    <div className="mb-4">
+                      <Text strong className="mr-2">Người đặt:</Text>
+                      <Text>{currentSlot.booking.player.name}</Text>
+                    </div>
+                    <div className="mb-4">
+                      <Text strong className="mr-2">Số điện thoại:</Text>
+                      <Text>{currentSlot.booking.player.phoneNumber}</Text>
+                    </div>
+                  </>
+                )}
                 <div className="mb-4">
                   <Text strong className="mr-2">Thanh toán:</Text>
                   <Badge 
