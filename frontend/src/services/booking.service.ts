@@ -206,7 +206,21 @@ export const bookingService = {
       console.error('Error fetching booking detail:', error); 
       throw error;
     }
+  },
+
+  async getBookingSchedule(fieldGroupId: string, date: string) {
+    try {
+      const response = await api.get(`/booking/schedule`, {params: {
+        fieldGroupId: fieldGroupId,
+        date: date
+      }});
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching booking schedule:', error);
+      throw error;
+    }
   }
+  
   
 };
 

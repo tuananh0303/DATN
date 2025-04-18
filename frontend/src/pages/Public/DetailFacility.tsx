@@ -547,7 +547,7 @@ const DetailFacility: React.FC = () => {
                                     <Text>Giá cơ bản:</Text>
                                     <Text className="text-blue-600 font-semibold">{group.basePrice.toLocaleString()}đ/giờ</Text>
                                   </div>
-                                  {group.priceIncrease1 > 0 && (
+                                  {group.priceIncrease1 && group.priceIncrease1 > 0 && (
                                     <div className="flex justify-between items-center mt-1">
                                       <Text>Giờ cao điểm:</Text>
                                       <Text className="text-red-500 font-semibold">+{group.priceIncrease1.toLocaleString()}đ/giờ</Text>

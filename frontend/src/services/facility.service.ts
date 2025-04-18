@@ -278,6 +278,18 @@ class FacilityService {
       return [];
     }
   }
+
+  async getFacilityTop(): Promise<Facility[]> {
+    try {
+      const response = await api.get(`/facility/top-facility`);
+      return response.data;
+    } catch (error) {
+      console.error('API call failed:', error);
+      throw error;
+    }
+  }
+  
+
 }
 
 // Export instance of the service

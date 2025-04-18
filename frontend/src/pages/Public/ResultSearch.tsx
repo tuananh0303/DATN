@@ -18,8 +18,7 @@ import {
   Spin
 } from 'antd';
 import { 
-  EnvironmentOutlined, 
-  ClockCircleOutlined,
+  EnvironmentOutlined,
   StarOutlined,
   DollarOutlined
 } from '@ant-design/icons';
@@ -28,6 +27,7 @@ import { getSportNameInVietnamese } from '@/utils/translateSport';
 import { sportService } from '@/services/sport.service';
 import { Facility } from '@/types/facility.type';
 import './ResultSearch.css';
+import OperatingHoursDisplay from '@/components/shared/OperatingHoursDisplay';
 
 const { Title, Text } = Typography;
 
@@ -269,12 +269,9 @@ const ResultSearch: React.FC = () => {
         
         {/* Giờ hoạt động và Rating */}
         <div className="flex items-center text-gray-500 mb-2 text-xs sm:text-sm">
-          <ClockCircleOutlined className="mr-1 text-gray-600" />
-          <span>
-            {facility.openTime1 && facility.closeTime1 ? 
-              `${facility.openTime1.substring(0, 5)} - ${facility.closeTime1.substring(0, 5)}` : 
-              '08:00 - 22:00'}
-          </span>
+          <div className="flex-1">
+            <OperatingHoursDisplay facility={facility} />
+          </div>
           
           {/* Rating */}
           <div className="ml-auto flex items-center">
