@@ -4,6 +4,7 @@ import { CalendarOutlined, InfoCircleOutlined, EyeOutlined, ClockCircleOutlined 
 import dayjs from 'dayjs';
 import { RecurringType, BookingFormData } from '@/types/booking.type';
 import { getSportNameInVietnamese } from '@/utils/translateSport';
+import OperatingHoursDisplay from '@/components/shared/OperatingHoursDisplay';
 
 const { Option } = Select;
 const { RangePicker } = TimePicker;
@@ -440,9 +441,16 @@ const BookingStepInfo: React.FC<BookingStepInfoProps> = ({
             
             {/* Hiển thị thông tin giờ hoạt động của cơ sở */}
             {operatingTimes && operatingTimes.openTime1 && operatingTimes.closeTime1 && (
-              <div className="text-gray-500 text-xs mb-4 flex items-center">
-                <ClockCircleOutlined className="mr-1" />
-                Giờ hoạt động: <strong className="ml-1">{dayjs(operatingTimes.openTime1, 'HH:mm:ss').format('HH:mm')}</strong> - <strong>{dayjs(operatingTimes.closeTime1, 'HH:mm:ss').format('HH:mm')}</strong>
+              <div className="text-gray-500 text-xs mb-4">
+                <OperatingHoursDisplay 
+                  facility={operatingTimes as any} 
+                  showIcon={true}
+                  className="text-gray-600"
+                />
+                <div className="mt-1 text-xs italic">
+                  <InfoCircleOutlined className="mr-1" />
+                  Bạn chỉ có thể đặt sân trong khung giờ hoạt động của cơ sở
+                </div>
               </div>
             )}
             

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { 
   Card, Typography, Button, Descriptions, Tag, Modal, 
-  Divider, Statistic, Space, Input, Breadcrumb, notification
+  Divider, Statistic, Space, Input, Breadcrumb, notification, Tooltip
 } from 'antd';
 import { 
   StarOutlined, PrinterOutlined, RollbackOutlined,
@@ -110,6 +110,16 @@ interface AdditionalService {
   };
 }
 
+interface ReviewData {
+  id: number;
+  rating: number;
+  comment: string;
+  imageUrl: string[];
+  reviewAt: string;
+  feedbackAt?: string;
+  feedback?: string;
+}
+
 interface BookingData {
   id: string;
   startTime: string;
@@ -125,6 +135,7 @@ interface BookingData {
     pattern: string;
     count: number;
   };
+  review?: ReviewData | null;
 }
 
 interface BookingDetailData {
@@ -226,6 +237,67 @@ const BookingDetail: React.FC = () => {
     },
   ];
 
+  // Thêm hàm để xác định trạng thái hiển thị dựa trên thời gian thực tế
+  const getBookingDisplayStatus = (booking: BookingData): string => {
+    // Nếu booking đã bị hủy hoặc hoàn tiền, luôn hiển thị là đã hủy
+    if (booking.status === 'cancelled' || booking.status === 'refunded') {
+      return 'cancelled';
+    }
+    
+    const today = dayjs();
+    
+    // Lấy tất cả các ngày đặt sân
+    const bookingDates = booking.bookingSlots.map(slot => dayjs(slot.date));
+    const startTime = booking.startTime;
+    const endTime = booking.endTime;
+    
+    // Sắp xếp các ngày theo thứ tự tăng dần
+    bookingDates.sort((a, b) => a.valueOf() - b.valueOf());
+    
+    // Ngày cuối cùng trong lịch đặt sân
+    const lastBookingDate = bookingDates[bookingDates.length - 1];
+    const lastBookingEnd = lastBookingDate
+      .hour(parseInt(endTime.split(':')[0]))
+      .minute(parseInt(endTime.split(':')[1]));
+      
+    // Nếu đã qua thời điểm kết thúc của ngày cuối cùng, xem như hoàn thành
+    if (today.isAfter(lastBookingEnd)) {
+      return 'completed';
+    }
+    
+    // Ngày đầu tiên trong lịch đặt sân
+    const firstBookingDate = bookingDates[0];
+    const firstBookingStart = firstBookingDate
+      .hour(parseInt(startTime.split(':')[0]))
+      .minute(parseInt(startTime.split(':')[1]));
+      
+    // Nếu chưa đến thời điểm bắt đầu của ngày đầu tiên, xem như sắp diễn ra
+    if (today.isBefore(firstBookingStart)) {
+      return 'upcoming';
+    }
+    
+    // Kiểm tra xem có đang trong một phiên đặt sân nào không
+    for (const bookingDate of bookingDates) {
+      const bookingStart = bookingDate
+        .hour(parseInt(startTime.split(':')[0]))
+        .minute(parseInt(startTime.split(':')[1]));
+      const bookingEnd = bookingDate
+        .hour(parseInt(endTime.split(':')[0]))
+        .minute(parseInt(endTime.split(':')[1]));
+        
+      if (today.isAfter(bookingStart) && today.isBefore(bookingEnd)) {
+        return 'in_progress';
+      }
+    }
+    
+    // Kiểm tra xem có phải là đang ở giữa các phiên đặt sân không
+    if (today.isAfter(firstBookingStart) && today.isBefore(lastBookingEnd)) {
+      return 'upcoming'; // Đang ở giữa các phiên định kỳ, xem như sắp diễn ra
+    }
+    
+    return 'upcoming'; // Mặc định là sắp diễn ra nếu không rơi vào các trường hợp trên
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -299,15 +371,16 @@ const BookingDetail: React.FC = () => {
               className="shadow-sm rounded-lg"
               extra={
                 <Space wrap>
-                  {booking.status === 'completed' && (
+                  <Tooltip title={getBookingDisplayStatus(booking) !== 'completed' ? "Đơn đặt sân phải hoàn thành trước khi đánh giá" : ""}>
                     <Button 
                       type="primary" 
                       icon={<StarOutlined />}
                       onClick={() => navigate(`/user/booking/review/${booking.id}`)}
+                      disabled={getBookingDisplayStatus(booking) !== 'completed'}
                     >
                       Đánh giá
                     </Button>
-                  )}
+                  </Tooltip>
                   {canCancel && (
                     <Button 
                       danger 
@@ -381,23 +454,17 @@ const BookingDetail: React.FC = () => {
                 
                 <Descriptions.Item label="Trạng thái" span={2}>
                   <Space wrap>
-                    {booking.status === 'pending_payment' && (
-                      <Tag color="orange">Chờ thanh toán</Tag>
+                    {getBookingDisplayStatus(booking) === 'upcoming' && (
+                      <Tag color="blue">Sắp diễn ra</Tag>
                     )}
-                    {booking.status === 'payment_confirmed' && (
-                      <Tag color="cyan">Đã xác nhận</Tag>
-                    )}
-                    {booking.status === 'in_progress' && (
+                    {getBookingDisplayStatus(booking) === 'in_progress' && (
                       <Tag color="processing">Đang diễn ra</Tag>
                     )}
-                    {booking.status === 'completed' && (
+                    {getBookingDisplayStatus(booking) === 'completed' && (
                       <Tag color="green">Hoàn thành</Tag>
                     )}
-                    {booking.status === 'cancelled' && (
+                    {getBookingDisplayStatus(booking) === 'cancelled' && (
                       <Tag color="red">Đã hủy</Tag>
-                    )}
-                    {booking.status === 'refunded' && (
-                      <Tag color="purple">Đã hoàn tiền</Tag>
                     )}
                     
                     {booking.payment.status === 'unpaid' && (

@@ -1,5 +1,29 @@
-
 // Cấu trúc cơ bản của một cơ sở
+export interface BookingSlot {
+  id: number;
+  date: string;
+}
+
+export interface AdditionalService {
+  id: string;
+  name: string;
+  price: number;
+  amount: number;
+}
+
+export interface Player {
+  id: string;
+  name: string;
+  email: string;
+  phoneNumber: string;
+  avatarUrl: string | null;
+  gender: string | null;
+  dob: string | null;
+  role: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface review {
     id: string;
     rating: number;
@@ -15,6 +39,10 @@ export interface review {
       endTime: string;      
       createdAt: string;
       updatedAt: string;
+      status?: string;
+      player?: Player;
+      bookingSlots?: BookingSlot[];
+      additionalServices?: AdditionalService[];
     };    
   }
 

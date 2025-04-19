@@ -2,15 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   Card, Typography, Form, Rate, Input, Button, Space,
-  notification, Upload, Divider, Modal, Breadcrumb
+  notification, Upload, Divider, Modal, Breadcrumb, Image, Avatar
 } from 'antd';
 import {
-  StarOutlined, PictureOutlined, CheckCircleOutlined, HomeOutlined, HistoryOutlined, CommentOutlined
+  StarOutlined, PictureOutlined, CheckCircleOutlined, HomeOutlined, HistoryOutlined, CommentOutlined,
+  FieldTimeOutlined, CalendarOutlined, UserOutlined
 } from '@ant-design/icons';
 import type { UploadFile, UploadProps } from 'antd/es/upload/interface';
 import dayjs from 'dayjs';
 import { bookingService } from '@/services/booking.service';
-import { sportService } from '@/services/review.service';
+import { reviewService } from '@/services/review.service';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -81,11 +82,22 @@ interface BookingData {
   bookingSlots: BookingSlot[];
   payment: Payment;
   hasReview?: boolean;
+  review?: ReviewData | null;
 }
 
 interface BookingDetailData {
   facility: Facility;
   booking: BookingData;
+}
+
+interface ReviewData {
+  id: number;
+  rating: number;
+  comment: string;
+  imageUrl: string[];
+  reviewAt: string;
+  feedbackAt?: string;
+  feedback?: string;
 }
 
 interface ReviewFormValues {
@@ -99,6 +111,7 @@ const BookingReview: React.FC = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm<ReviewFormValues>();
   const [bookingDetail, setBookingDetail] = useState<BookingDetailData | null>(null);
+  const [existingReview, setExistingReview] = useState<ReviewData | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [fileList, setFileList] = useState<UploadFile[]>([]);
@@ -112,8 +125,23 @@ const BookingReview: React.FC = () => {
         setLoading(true);
         if (!bookingId) return;
         
+        // Get booking details
         const data = await bookingService.getBookingDetail(bookingId);
         setBookingDetail(data);
+        
+        // Debug log
+        console.log('BookingReview - Booking data received:', {
+          bookingId: data.booking.id,
+          status: data.booking.status,
+          hasReview: !!data.booking.review,
+          reviewType: data.booking.review ? typeof data.booking.review : 'N/A',
+          reviewData: data.booking.review
+        });
+        
+        // Check if the booking already has a review
+        if (data.booking.review) {
+          setExistingReview(data.booking.review);
+        }
       } catch (error) {
         console.error('Failed to fetch booking detail:', error);
         notification.error({
@@ -184,7 +212,7 @@ const BookingReview: React.FC = () => {
       }
       
       // Send the request
-      await sportService.createReview(formData);
+      await reviewService.createReview(formData);
       
       notification.success({
         message: 'Đánh giá thành công',
@@ -237,6 +265,7 @@ const BookingReview: React.FC = () => {
 
   const { facility, booking } = bookingDetail;
 
+  // Show review thank you page
   if (reviewSubmitted) {
     return (
       <div className="w-full px-4 py-6">
@@ -244,9 +273,9 @@ const BookingReview: React.FC = () => {
           <Breadcrumb
             className="mb-4"
             items={[
-              { title: <Link to="/"><HomeOutlined /> Trang chủ</Link> },
-              { title: <Link to="/user/history-booking"><HistoryOutlined /> Lịch sử đặt sân</Link> },
-              { title: <><CommentOutlined /> Đánh giá</> }
+              { title: <Link to="/">Trang chủ</Link> },
+              { title: <Link to="/user/history-booking"> Lịch sử đặt sân</Link> },
+              { title: <> Đánh giá</> }
             ]}
           />
           
@@ -275,6 +304,141 @@ const BookingReview: React.FC = () => {
     );
   }
 
+  // If there's an existing review, display it instead of the form
+  if (existingReview) {
+    return (
+      <div className="w-full px-4 py-6 bg-gray-50">
+        <div className="max-w-4xl mx-auto">
+          <Breadcrumb
+            className="mb-4"
+            items={[
+              { title: <Link to="/"> Trang chủ</Link> },
+              { title: <Link to="/user/history-booking"> Lịch sử đặt sân</Link> },
+              { title: <> Đánh giá</> }
+            ]}
+          />
+
+          <div className="mb-6">
+            <Title level={3}>Đánh giá của bạn</Title>
+            <Text type="secondary">
+              Bạn đã đánh giá sân này vào ngày {dayjs(existingReview.reviewAt).format('DD/MM/YYYY')}
+            </Text>
+          </div>
+
+          <Card className="shadow-md rounded-lg hover:shadow-lg transition-shadow duration-300">
+            <div className="mb-6">
+              <Title level={4}>{facility.name}</Title>
+              <Text className="text-green-600 font-medium">
+                Ngày đặt sân: {dayjs(booking.bookingSlots[0]?.date).format('DD/MM/YYYY')}
+              </Text>
+              <br />
+              <div className="flex items-center mt-2 bg-gray-50 rounded-md p-3">
+                <div className="mr-2">
+                  {facility.imagesUrl && facility.imagesUrl.length > 0 ? (
+                    <img 
+                      src={facility.imagesUrl[0]} 
+                      alt={facility.name} 
+                      className="w-16 h-16 rounded-md object-cover"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 bg-gray-200 rounded-md flex items-center justify-center">
+                      <span className="text-gray-400">No image</span>
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <Text className="block font-medium">{booking.bookingSlots[0]?.field.name}</Text>
+                  <Text className="block text-gray-600">{booking.startTime.substring(0, 5)} - {booking.endTime.substring(0, 5)}</Text>
+                  <Text className="block text-blue-600 font-medium">{formatCurrency(booking.payment.fieldPrice)}</Text>
+                </div>
+              </div>
+            </div>
+            
+            <Divider />
+            
+            {/* Display review content */}
+            <div className="mb-4">
+              <div className="flex items-center">
+                <Avatar icon={<UserOutlined />} className="mr-3" />
+                <div>
+                  <div className="font-medium">Đánh giá của bạn</div>
+                  <div className="text-gray-500 text-sm">
+                    <CalendarOutlined className="mr-1" /> {dayjs(existingReview.reviewAt).format('DD/MM/YYYY')}
+                    <span className="mx-2">•</span>
+                    <FieldTimeOutlined className="mr-1" /> {dayjs(existingReview.reviewAt).format('HH:mm')}
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mb-6">
+              <div className="font-medium text-lg">Đánh giá tổng thể</div>
+              <Rate
+                disabled
+                allowHalf
+                value={existingReview.rating}
+                style={{ fontSize: 36 }}
+                character={<StarOutlined />}
+              />
+            </div>
+            
+            <div className="mb-6">
+              <div className="font-medium text-lg">Nhận xét của bạn</div>
+              <div className="mt-2 bg-gray-50 p-4 rounded-md text-gray-700">
+                {existingReview.comment}
+              </div>
+            </div>
+            
+            {/* Display review images */}
+            {existingReview.imageUrl && existingReview.imageUrl.length > 0 && (
+              <div className="mb-6">
+                <div className="font-medium text-lg mb-2">Hình ảnh đánh giá</div>
+                <div className="flex flex-wrap gap-2">
+                  <Image.PreviewGroup>
+                    {existingReview.imageUrl.map((url, index) => (
+                      <Image
+                        key={index}
+                        width={100}
+                        height={100}
+                        className="object-cover rounded-md"
+                        src={url}
+                        alt={`Review image ${index + 1}`}
+                      />
+                    ))}
+                  </Image.PreviewGroup>
+                </div>
+              </div>
+            )}
+            
+            {/* Show owner's feedback if available */}
+            {existingReview.feedback && (
+              <div className="mb-6">
+                <div className="font-medium text-lg">Phản hồi từ chủ sân</div>
+                <div className="mt-2 bg-blue-50 p-4 rounded-md text-gray-700">
+                  {existingReview.feedback}
+                  {existingReview.feedbackAt && (
+                    <div className="mt-2 text-gray-500 text-sm">
+                      <CalendarOutlined className="mr-1" /> {dayjs(existingReview.feedbackAt).format('DD/MM/YYYY HH:mm')}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            <Button 
+              type="primary" 
+              onClick={() => navigate('/user/history-booking')}
+              className="mt-4"
+            >
+              Quay lại lịch sử đặt sân
+            </Button>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Show the review form if no existing review
   return (
     <div className="w-full px-4 py-6 bg-gray-50">
       <div className="max-w-4xl mx-auto">

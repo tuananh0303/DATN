@@ -1,14 +1,25 @@
 import api from './api';
 import { ReviewFormData } from '../types/review.type';
+
 // API Endpoints
-export const sportService = {
-  // Sport api
+export const reviewService = {
+  // Review APIs
   async getListReviewByFacilityId(facilityId: string) {
     try{
       const response = await api.get(`/review/facility/${facilityId}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching review list:', error);
+      throw error;
+    }
+  },
+
+  async getReviewById(reviewId: string) {
+    try{
+      const response = await api.get(`/review/${reviewId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching review:', error); 
       throw error;
     }
   },
@@ -53,7 +64,7 @@ export const sportService = {
       const response = await api.put(`/review/${reviewId}/feedback`, { feedback });
       return response.data;
     } catch (error) {
-      console.error('Error fetching review:', error);
+      console.error('Error updating review feedback:', error);
       throw error;
     }
   }

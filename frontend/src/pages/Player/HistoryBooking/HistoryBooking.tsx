@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Table, Card, Tag, Button, Modal, Typography, Space, Tabs, Select, 
-  DatePicker, Input, Badge, Row, Col, Statistic, Avatar, Empty, notification, Tooltip, Alert, Breadcrumb
+  DatePicker, Input, Badge, Row, Col, Statistic, Avatar, Empty, notification, Tooltip, Alert, Breadcrumb, Popover
 } from 'antd';
 import type { TabsProps } from 'antd';
 import type { ColumnType } from 'antd/lib/table';
@@ -17,36 +17,12 @@ import isBetween from 'dayjs/plugin/isBetween';
 dayjs.extend(isBetween);
 import api from '@/services/api';
 import { getSportNameInVietnamese } from '@/utils/translateSport';
+import bookingService from '@/services/booking.service';
 
 const { Title } = Typography;
 const { RangePicker } = DatePicker;
 const { Option } = Select;
 const { confirm } = Modal;
-
-// Service methods for bookings
-const bookingService = {
-  // Get player's bookings
-  async getPlayerBookings() {
-    try {
-      const response = await api.get('/booking/player');
-      return response;
-    } catch (error) {
-      console.error('Error fetching player bookings:', error);
-      throw error;
-    }
-  },
-
-  // Cancel a booking
-  async cancelBooking(bookingId: string) {
-    try {
-      const response = await api.put(`/booking/${bookingId}/cancel`);
-      return response.data;
-    } catch (error) {
-      console.error('Error cancelling booking:', error);
-      throw error;
-    }
-  }
-};
 
 interface Facility {
   id: string;
@@ -94,6 +70,16 @@ interface Payment {
   updatedAt: string;
 }
 
+interface ReviewData {
+  id: number;
+  rating: number;
+  comment: string;
+  imageUrl: string[];
+  reviewAt: string;
+  feedbackAt?: string;
+  feedback?: string;
+}
+
 interface BookingData {
   id: string;
   startTime: string;
@@ -104,6 +90,7 @@ interface BookingData {
   sport: Sport;
   bookingSlots: BookingSlot[];
   payment: Payment;
+  review?: ReviewData | null;
 }
 
 interface BookingHistoryItem {
@@ -167,6 +154,38 @@ const BookingSummaryCard = ({ data }: { data: BookingSummaryData }) => {
   );
 };
 
+// Add a BookingDate component to display multiple dates
+const BookingDates = ({ dates }: { dates: string[] }) => {
+  // If only one date, just show it
+  if (dates.length === 1) {
+    return <span>{dayjs(dates[0]).format('DD/MM/YYYY')}</span>;
+  }
+
+  // If multiple dates, show the first one with a popover for all dates
+  const content = (
+    <div className="p-1">
+      {dates.map((date, index) => (
+        <div key={index} className="mb-1 last:mb-0">
+          <Tag color="blue">{`${index + 1}: ${dayjs(date).format('DD/MM/YYYY')}`}</Tag>
+        </div>
+      ))}
+    </div>
+  );
+
+  return (
+    <Popover
+      content={content}
+      title="Lịch định kỳ"
+      trigger="hover"
+      placement="bottom"
+    >
+      <span className="cursor-pointer hover:text-blue-500">
+        {dayjs(dates[0]).format('DD/MM/YYYY')} <span className="font-medium text-blue-500 ml-1">[{dates.length}]</span>
+      </span>
+    </Popover>
+  );
+};
+
 const HistoryBookingPage: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -200,8 +219,7 @@ const HistoryBookingPage: React.FC = () => {
   const fetchBookings = async () => {
     setLoading(true);
     try {
-      const response = await bookingService.getPlayerBookings();
-      const bookingsData = response.data as BookingHistoryItem[];
+      const bookingsData = await bookingService.getBookingPlayer();
       
       setBookings(bookingsData);
       
@@ -209,7 +227,7 @@ const HistoryBookingPage: React.FC = () => {
       updateBookingStats(bookingsData);
       
       // Lấy các booking sắp diễn ra
-      const upcoming = bookingsData.filter(item => {
+      const upcoming = bookingsData.filter((item: BookingHistoryItem) => {
         const displayStatus = getBookingDisplayStatus(item);
         return displayStatus === 'upcoming';
       });
@@ -261,7 +279,8 @@ const HistoryBookingPage: React.FC = () => {
       onOk: async () => {
         setLoading(true);
         try {
-          await bookingService.cancelBooking(id);
+          // Thực hiện cancel booking khi API có sẵn
+          await api.put(`/booking/${id}/cancel`);
           
           notification.success({
             message: 'Hủy đặt sân thành công',
@@ -424,29 +443,58 @@ const HistoryBookingPage: React.FC = () => {
       return 'cancelled';
     }
     
-    // Lấy thời gian từ booking
-    const bookingDate = dayjs(item.booking.bookingSlots[0]?.date);
+    const today = dayjs();
+    
+    // Lấy tất cả các ngày đặt sân
+    const bookingDates = item.booking.bookingSlots.map(slot => dayjs(slot.date));
     const startTime = item.booking.startTime;
     const endTime = item.booking.endTime;
     
-    // Tạo đối tượng dayjs cho thời gian bắt đầu và kết thúc
-    const bookingStart = bookingDate.hour(parseInt(startTime.split(':')[0])).minute(parseInt(startTime.split(':')[1]));
-    const bookingEnd = bookingDate.hour(parseInt(endTime.split(':')[0])).minute(parseInt(endTime.split(':')[1]));
+    // Sắp xếp các ngày theo thứ tự tăng dần
+    bookingDates.sort((a, b) => a.valueOf() - b.valueOf());
     
-    const today = dayjs();
-    
-    // Nếu đã qua thời điểm kết thúc, xem như hoàn thành, bất kể status là gì
-    if (today.isAfter(bookingEnd)) {
+    // Ngày cuối cùng trong lịch đặt sân
+    const lastBookingDate = bookingDates[bookingDates.length - 1];
+    const lastBookingEnd = lastBookingDate
+      .hour(parseInt(endTime.split(':')[0]))
+      .minute(parseInt(endTime.split(':')[1]));
+      
+    // Nếu đã qua thời điểm kết thúc của ngày cuối cùng, xem như hoàn thành
+    if (today.isAfter(lastBookingEnd)) {
       return 'completed';
-    } 
-    
-    // Nếu đang trong khoảng thời gian booking, xem như đang diễn ra
-    if (today.isAfter(bookingStart) && today.isBefore(bookingEnd)) {
-      return 'in_progress';
     }
     
-    // Nếu chưa đến thời điểm bắt đầu, xem như sắp diễn ra
-    return 'upcoming';
+    // Ngày đầu tiên trong lịch đặt sân
+    const firstBookingDate = bookingDates[0];
+    const firstBookingStart = firstBookingDate
+      .hour(parseInt(startTime.split(':')[0]))
+      .minute(parseInt(startTime.split(':')[1]));
+      
+    // Nếu chưa đến thời điểm bắt đầu của ngày đầu tiên, xem như sắp diễn ra
+    if (today.isBefore(firstBookingStart)) {
+      return 'upcoming';
+    }
+    
+    // Kiểm tra xem có đang trong một phiên đặt sân nào không
+    for (const bookingDate of bookingDates) {
+      const bookingStart = bookingDate
+        .hour(parseInt(startTime.split(':')[0]))
+        .minute(parseInt(startTime.split(':')[1]));
+      const bookingEnd = bookingDate
+        .hour(parseInt(endTime.split(':')[0]))
+        .minute(parseInt(endTime.split(':')[1]));
+        
+      if (today.isAfter(bookingStart) && today.isBefore(bookingEnd)) {
+        return 'in_progress';
+      }
+    }
+    
+    // Kiểm tra xem có phải là đang ở giữa các phiên đặt sân không
+    if (today.isAfter(firstBookingStart) && today.isBefore(lastBookingEnd)) {
+      return 'upcoming'; // Đang ở giữa các phiên định kỳ, xem như sắp diễn ra
+    }
+    
+    return 'upcoming'; // Mặc định là sắp diễn ra nếu không rơi vào các trường hợp trên
   };
 
   // Lọc dữ liệu theo tab đang chọn
@@ -543,19 +591,24 @@ const HistoryBookingPage: React.FC = () => {
     {
       title: 'Thời gian',
       key: 'time',
-      render: (_: unknown, record: BookingHistoryItem) => (
-        <div>
+      render: (_: unknown, record: BookingHistoryItem) => {
+        // Lấy danh sách các ngày đặt sân
+        const bookingDates = record.booking.bookingSlots.map(slot => slot.date);
+        
+        return (
           <div>
-            <CalendarOutlined style={{ marginRight: 8 }} />
-            <span>{dayjs(record.booking.bookingSlots[0]?.date).format('DD/MM/YYYY')}</span>
-            <span style={{ marginLeft: 8 }}>{record.booking.startTime.substring(0, 5)} - {record.booking.endTime.substring(0, 5)}</span>
+            <div>
+              <CalendarOutlined style={{ marginRight: 8 }} />
+              <BookingDates dates={bookingDates} />
+              <span style={{ marginLeft: 8 }}>{record.booking.startTime.substring(0, 5)} - {record.booking.endTime.substring(0, 5)}</span>
+            </div>
+            <div style={{ marginLeft: 16, marginTop: 4 }}>
+              {renderBookingStatusByTime(record)}
+              {renderPaymentStatus(record.booking.payment.status)}
+            </div>
           </div>
-          <div style={{ marginLeft: 16, marginTop: 4 }}>
-            {renderBookingStatusByTime(record)}
-            {renderPaymentStatus(record.booking.payment.status)}
-          </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       title: 'Môn thể thao',
@@ -581,40 +634,45 @@ const HistoryBookingPage: React.FC = () => {
         // Kiểm tra xem có thể hủy booking không (chỉ cho phép hủy những đơn sắp diễn ra)
         const displayStatus = getBookingDisplayStatus(record);
         const canCancel = displayStatus === 'upcoming' && 
-                          (record.booking.status === 'pending_payment' || 
+                         (record.booking.status === 'pending_payment' || 
                           record.booking.status === 'payment_confirmed');
         
-        // Kiểm tra xem có thể đánh giá không (chỉ đánh giá những đơn đã hoàn thành)
-        const canReview = displayStatus === 'completed' && record.booking.status !== 'cancelled' && record.booking.status !== 'refunded'; // Thêm kiểm tra hasReview khi có API
-        
         return (
-          <Space size="small">
+          <Space size="small" onClick={(e) => e.stopPropagation()}>
             <Tooltip title="Xem chi tiết">
               <Button
                 type="primary"
                 size="small"
                 icon={<EyeOutlined />}
-                onClick={() => viewBookingDetail(record.booking.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  viewBookingDetail(record.booking.id);
+                }}
               />
             </Tooltip>
             
-            {canReview && (
-              <Tooltip title="Đánh giá">
-                <Button
-                  type="default"
-                  size="small"
-                  icon={<StarOutlined />}
-                  onClick={() => goToReview(record.booking.id)}
-                />
-              </Tooltip>
-            )}
+            <Tooltip title={displayStatus !== 'completed' ? "Đơn đặt sân phải hoàn thành trước khi đánh giá" : "Đánh giá"}>
+              <Button
+                type="default"
+                size="small"
+                icon={<StarOutlined />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  goToReview(record.booking.id);
+                }}
+                disabled={displayStatus !== 'completed'}
+              />
+            </Tooltip>
             
             <Tooltip title="Thêm vào yêu thích">
               <Button
                 type="default"
                 size="small"
                 icon={<HeartOutlined />}
-                onClick={() => addToFavorites(record.facility.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  addToFavorites(record.facility.id);
+                }}
               />
             </Tooltip>
             
@@ -624,7 +682,10 @@ const HistoryBookingPage: React.FC = () => {
                   danger
                   size="small"
                   icon={<CloseCircleOutlined />}
-                  onClick={() => handleCancelBooking(record.booking.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCancelBooking(record.booking.id);
+                  }}
                 />
               </Tooltip>
             )}
@@ -848,7 +909,15 @@ const HistoryBookingPage: React.FC = () => {
             }}
             rowClassName="hover:bg-gray-50 cursor-pointer transition-colors"
             onRow={(record) => ({
-              onClick: () => viewBookingDetail(record.booking.id)
+              onClick: (e) => {
+                // Ngăn chặn sự kiện click khi người dùng click vào cột thao tác (chứa các button)
+                const target = e.target as HTMLElement;
+                // Kiểm tra xem phần tử được click hoặc cha của nó có phải là button hay không
+                if (target.closest('button') || target.closest('.ant-space')) {
+                  return;
+                }
+                viewBookingDetail(record.booking.id);
+              }
             })}
             locale={{
               emptyText: (

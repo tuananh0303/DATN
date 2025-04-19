@@ -511,9 +511,13 @@ const BookingPage: React.FC = () => {
         return null;
       }
       
-      // Get fieldId one more time directly from form
-      const fieldId = form.getFieldValue('fieldId');
-      if (!fieldId) {
+      // Lấy fieldSelections từ form để hỗ trợ lựa chọn sân độc lập cho từng ngày
+      const fieldSelections = form.getFieldValue('fieldSelections') || {};
+      console.log('Field selections from form:', fieldSelections);
+      
+      // Get fallback fieldId
+      const fallbackFieldId = form.getFieldValue('fieldId');
+      if (!fallbackFieldId) {
         console.error('Missing fieldId in form');
         
         // Try to get fieldId from fieldGroup
@@ -523,15 +527,20 @@ const BookingPage: React.FC = () => {
             const firstActiveField = fieldGroup.bookingSlot[0].fields.find(f => f.status === 'active');
             if (firstActiveField) {
               console.log('Using first active field as fallback:', firstActiveField.id);
-              form.setFieldValue('fieldId', firstActiveField.id);
               
-              // Prepare booking slots with this field
-              const bookingSlots = selectedDates.map(date => ({
-                date: date.format('YYYY-MM-DD'),
-                fieldId: firstActiveField.id
-              }));
+              // Prepare booking slots with per-date field selection or fallback
+              const bookingSlots = selectedDates.map(date => {
+                const dateStr = date.format('YYYY-MM-DD');
+                // Use the field selected for this date, or the fallback
+                const fieldId = fieldSelections[dateStr] ? Number(fieldSelections[dateStr]) : firstActiveField.id;
+                
+                return {
+                  date: dateStr,
+                  fieldId: fieldId
+                };
+              });
               
-              console.log("Booking slots with fallback field:", bookingSlots);
+              console.log("Booking slots with per-date selection:", bookingSlots);
               
               // Create draft booking
               const response = await bookingService.createDraftBooking(
@@ -558,13 +567,19 @@ const BookingPage: React.FC = () => {
         return null;
       }
       
-      // Prepare booking slots
-      const bookingSlots = selectedDates.map(date => ({
-        date: date.format('YYYY-MM-DD'),
-        fieldId: Number(fieldId)
-      }));
+      // Prepare booking slots with per-date field selection
+      const bookingSlots = selectedDates.map(date => {
+        const dateStr = date.format('YYYY-MM-DD');
+        // Use the specific field selected for this date, or fallback to the default
+        const fieldId = fieldSelections[dateStr] ? Number(fieldSelections[dateStr]) : Number(fallbackFieldId);
+        
+        return {
+          date: dateStr,
+          fieldId: fieldId
+        };
+      });
       
-      console.log("Booking slots:", bookingSlots);
+      console.log("Booking slots with per-date selection:", bookingSlots);
       console.log("Request body:", {
         startTime,
         endTime,
@@ -626,11 +641,15 @@ const BookingPage: React.FC = () => {
         return false;
       }
       
-      // Ensure fieldId is a number
-      const fieldId = Number(formData.fieldId);
-      if (!fieldId || isNaN(fieldId)) {
+      // Lấy fieldSelections từ form để hỗ trợ lựa chọn sân độc lập cho từng ngày
+      const fieldSelections = form.getFieldValue('fieldSelections') || {};
+      console.log('Field selections from form:', fieldSelections);
+      
+      // Ensure fallback fieldId is available if needed
+      const fallbackFieldId = Number(formData.fieldId);
+      if (!fallbackFieldId || isNaN(fallbackFieldId)) {
         message.error('ID sân không hợp lệ');
-        console.error('Invalid fieldId:', formData.fieldId);
+        console.error('Invalid fallback fieldId:', formData.fieldId);
         setLoading(false);
         return false;
       }
@@ -642,11 +661,17 @@ const BookingPage: React.FC = () => {
         return false;
       }
       
-      // Prepare booking slots
-      const bookingSlots = selectedDates.map(date => ({
-        date: date.format('YYYY-MM-DD'),
-        fieldId: fieldId
-      }));
+      // Prepare booking slots - now using the specific field for each date
+      const bookingSlots = selectedDates.map(date => {
+        const dateStr = date.format('YYYY-MM-DD');
+        // Use the specific field selected for this date, or fallback to the default
+        const fieldId = fieldSelections[dateStr] ? Number(fieldSelections[dateStr]) : fallbackFieldId;
+        
+        return {
+          date: dateStr,
+          fieldId: fieldId
+        };
+      });
       
       console.log("Updated booking slots:", bookingSlots);
       
