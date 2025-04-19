@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   Card, Typography, Form, Rate, Input, Button, Space,
-  notification, Upload, Divider, Modal
+  notification, Upload, Divider, Modal, Breadcrumb
 } from 'antd';
 import {
-  StarOutlined, PictureOutlined, CheckCircleOutlined
+  StarOutlined, PictureOutlined, CheckCircleOutlined, HomeOutlined, HistoryOutlined, CommentOutlined
 } from '@ant-design/icons';
 import type { UploadFile, UploadProps } from 'antd/es/upload/interface';
 import dayjs from 'dayjs';
-import api from '@/services/api';
+import { bookingService } from '@/services/booking.service';
+import { sportService } from '@/services/review.service';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -21,46 +22,6 @@ const formatCurrency = (amount: number | null) => {
     style: 'currency',
     currency: 'VND'
   }).format(amount);
-};
-
-// Service methods for bookings
-const bookingService = {
-  async getBookingDetail(bookingId: string) {
-    try {
-      const response = await api.get(`/booking/${bookingId}/detail`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching booking detail:', error);
-      throw error;
-    }
-  },
-
-  async submitReview(bookingId: string, reviewData: ReviewFormValues) {
-    try {
-      const formData = new FormData();
-      formData.append('rating', reviewData.rating.toString());
-      formData.append('comment', reviewData.comment);
-      
-      // Append images if any
-      if (reviewData.images && reviewData.images.length > 0) {
-        reviewData.images.forEach((file) => {
-          if (file.originFileObj) {
-            formData.append('images', file.originFileObj);
-          }
-        });
-      }
-
-      const response = await api.post(`/booking/${bookingId}/review`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error submitting review:', error);
-      throw error;
-    }
-  }
 };
 
 interface Facility {
@@ -195,11 +156,35 @@ const BookingReview: React.FC = () => {
 
   // Xử lý gửi đánh giá
   const handleSubmitReview = async (values: ReviewFormValues) => {
-    if (!bookingId) return;
+    if (!bookingId || !bookingDetail) return;
     
     try {
       setSubmitting(true);
-      await bookingService.submitReview(bookingId, values);
+      
+      // Create the data object
+      const reviewData = {
+        bookingId: bookingId,
+        rating: values.rating,
+        comment: values.comment
+      };
+      
+      // Create FormData
+      const formData = new FormData();
+      
+      // Add review data as JSON string (this is crucial)
+      formData.append('data', JSON.stringify(reviewData));
+      
+      // Add image files if any
+      if (values.images && values.images.length > 0) {
+        values.images.forEach((file) => {
+          if (file.originFileObj) {
+            formData.append('imageUrl', file.originFileObj);
+          }
+        });
+      }
+      
+      // Send the request
+      await sportService.createReview(formData);
       
       notification.success({
         message: 'Đánh giá thành công',
@@ -256,7 +241,16 @@ const BookingReview: React.FC = () => {
     return (
       <div className="w-full px-4 py-6">
         <div className="max-w-7xl mx-auto">
-          <Card className="shadow-md">
+          <Breadcrumb
+            className="mb-4"
+            items={[
+              { title: <Link to="/"><HomeOutlined /> Trang chủ</Link> },
+              { title: <Link to="/user/history-booking"><HistoryOutlined /> Lịch sử đặt sân</Link> },
+              { title: <><CommentOutlined /> Đánh giá</> }
+            ]}
+          />
+          
+          <Card className="shadow-md rounded-lg">
             <div className="text-center py-8 md:py-10">
               <CheckCircleOutlined className="text-green-500 text-4xl md:text-5xl mb-4" />
               <Title level={3} className="text-xl md:text-2xl">Cảm ơn bạn đã đánh giá!</Title>
@@ -284,6 +278,15 @@ const BookingReview: React.FC = () => {
   return (
     <div className="w-full px-4 py-6 bg-gray-50">
       <div className="max-w-4xl mx-auto">
+        <Breadcrumb
+          className="mb-4"
+          items={[
+            { title: <Link to="/"><HomeOutlined /> Trang chủ</Link> },
+            { title: <Link to="/user/history-booking"><HistoryOutlined /> Lịch sử đặt sân</Link> },
+            { title: <><CommentOutlined /> Đánh giá</> }
+          ]}
+        />
+
         <div className="mb-6">
           <Title level={3}>Viết đánh giá</Title>
           <Text type="secondary">
@@ -291,7 +294,7 @@ const BookingReview: React.FC = () => {
           </Text>
         </div>
 
-        <Card className="shadow-sm rounded-lg">
+        <Card className="shadow-md rounded-lg hover:shadow-lg transition-shadow duration-300">
           <Form
             form={form}
             layout="vertical"
@@ -302,14 +305,31 @@ const BookingReview: React.FC = () => {
             }}
           >
             <div className="mb-6">
-              <Title level={4}>Đánh giá của bạn về {facility.name}</Title>
-              <Text type="secondary">
+              <Title level={4}>{facility.name}</Title>
+              <Text className="text-green-600 font-medium">
                 Ngày đặt sân: {dayjs(booking.bookingSlots[0]?.date).format('DD/MM/YYYY')}
               </Text>
               <br />
-              <Text type="secondary">
-                {booking.bookingSlots[0]?.field.name} • {booking.startTime.substring(0, 5)} - {booking.endTime.substring(0, 5)} • {formatCurrency(booking.payment.fieldPrice)}
-              </Text>
+              <div className="flex items-center mt-2 bg-gray-50 rounded-md p-3">
+                <div className="mr-2">
+                  {facility.imagesUrl && facility.imagesUrl.length > 0 ? (
+                    <img 
+                      src={facility.imagesUrl[0]} 
+                      alt={facility.name} 
+                      className="w-16 h-16 rounded-md object-cover"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 bg-gray-200 rounded-md flex items-center justify-center">
+                      <span className="text-gray-400">No image</span>
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <Text className="block font-medium">{booking.bookingSlots[0]?.field.name}</Text>
+                  <Text className="block text-gray-600">{booking.startTime.substring(0, 5)} - {booking.endTime.substring(0, 5)}</Text>
+                  <Text className="block text-blue-600 font-medium">{formatCurrency(booking.payment.fieldPrice)}</Text>
+                </div>
+              </div>
             </div>
             
             <Divider />
@@ -318,7 +338,7 @@ const BookingReview: React.FC = () => {
             <div className="mb-6">
               <Form.Item
                 name="rating"
-                label={<span className="font-medium">Đánh giá tổng thể</span>}
+                label={<span className="font-medium text-lg">Đánh giá tổng thể</span>}
                 rules={[{ required: true, message: 'Vui lòng chọn đánh giá của bạn' }]}
               >
                 <Rate
@@ -333,7 +353,7 @@ const BookingReview: React.FC = () => {
             <div className="mb-6">
               <Form.Item
                 name="comment"
-                label={<span className="font-medium">Nhận xét của bạn</span>}
+                label={<span className="font-medium text-lg">Nhận xét của bạn</span>}
                 rules={[
                   { required: true, message: 'Vui lòng nhập nhận xét của bạn' },
                   { min: 20, message: 'Nhận xét phải có ít nhất 20 ký tự' }
@@ -344,6 +364,7 @@ const BookingReview: React.FC = () => {
                   placeholder="Hãy chia sẻ trải nghiệm của bạn về sân này..."
                   showCount
                   maxLength={500}
+                  className="rounded-md"
                 />
               </Form.Item>
             </div>
@@ -352,7 +373,7 @@ const BookingReview: React.FC = () => {
             <div className="mb-6">
               <Form.Item
                 name="images"
-                label={<span className="font-medium">Thêm hình ảnh (tùy chọn)</span>}
+                label={<span className="font-medium text-lg">Thêm hình ảnh (tùy chọn)</span>}
               >
                 <Upload
                   listType="picture-card"
@@ -369,8 +390,8 @@ const BookingReview: React.FC = () => {
                     </div>
                   )}
                 </Upload>
-                <Text type="secondary">Tối đa 5 hình ảnh, mỗi hình không quá 5MB</Text>
               </Form.Item>
+              <Text type="secondary" className="mt-1">Tối đa 5 hình ảnh, mỗi hình không quá 5MB</Text>
             </div>
             
             <Form.Item>
@@ -380,6 +401,7 @@ const BookingReview: React.FC = () => {
                   htmlType="submit" 
                   loading={submitting}
                   size="large"
+                  className="bg-green-600 hover:bg-green-700"
                 >
                   Gửi đánh giá
                 </Button>

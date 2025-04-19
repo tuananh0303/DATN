@@ -320,33 +320,33 @@ const BookingDetail: React.FC = () => {
                 </Space>
               }
             >
-              <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
+              <Descriptions column={2} bordered size="small">
                 <Descriptions.Item label="Cơ sở thể thao" span={2}>
                   <div>{facility.name}</div>
                   <div className="text-sm text-gray-500">{facility.location}</div>
                 </Descriptions.Item>
                 
-                <Descriptions.Item label="Ngày đặt">
+                <Descriptions.Item label="Ngày đặt" span={1}>
                   {dayjs(booking.bookingSlots[0]?.date).format('DD/MM/YYYY')}
                 </Descriptions.Item>
                 
-                <Descriptions.Item label="Khung giờ">
+                <Descriptions.Item label="Khung giờ" span={1}>
                   {`${booking.startTime.substring(0, 5)} - ${booking.endTime.substring(0, 5)}`}
                 </Descriptions.Item>
                 
-                <Descriptions.Item label="Loại sân">
+                <Descriptions.Item label="Loại sân" span={1}>
                   {facility.fieldGroups[0]?.name || ''}
                 </Descriptions.Item>
                 
-                <Descriptions.Item label="Sân">
+                <Descriptions.Item label="Sân" span={1}>
                   {booking.bookingSlots[0]?.field.name || ''}
                 </Descriptions.Item>
                 
-                <Descriptions.Item label="Môn thể thao">
+                <Descriptions.Item label="Môn thể thao" span={1}>
                   {getSportNameInVietnamese(booking.sport.name)}
                 </Descriptions.Item>
                 
-                <Descriptions.Item label="Đặt lặp lại">
+                <Descriptions.Item label="Đặt lặp lại" span={1}>
                   {booking.bookingSlots.length > 1 ? 'Có' : 'Không'}
                 </Descriptions.Item>
 
