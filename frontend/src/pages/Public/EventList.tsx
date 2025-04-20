@@ -2,213 +2,58 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Card, Typography, Row, Col, Tag, Button, Space, Select,
-  Input, Empty, Pagination, Tabs, Badge, Avatar
+  Input, Empty, Pagination, Tabs, Badge, Avatar, Spin
 } from 'antd';
 import { 
   SearchOutlined, CalendarOutlined, EnvironmentOutlined, TeamOutlined,
-  TrophyOutlined, ArrowRightOutlined, ClockCircleOutlined
+  TrophyOutlined, ArrowRightOutlined, ClockCircleOutlined, PercentageOutlined,
+  GiftOutlined
 } from '@ant-design/icons';
+import { Event, EventType, EventStatus } from '@/types/event.type';
+import { mockEvents } from '@/mocks/event/eventData';
+import { mockEventDetails } from '@/mocks/event/eventData';
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
 const { TabPane } = Tabs;
 
-// Định nghĩa kiểu dữ liệu cho sự kiện
-interface Event {
-  id: string;
-  title: string;
-  description: string;
-  location: string;
-  type: 'tournament' | 'friendly' | 'training';
-  sportType: string;
-  startDate: string;
-  endDate: string;
-  status: 'upcoming' | 'ongoing' | 'completed';
-  registrationEndDate: string;
-  maxParticipants: number;
-  currentParticipants: number;
-  entryFee: number;
-  organizer: {
-    id: string;
-    name: string;
-    logo: string;
-  };
-  prizes: {
-    first: number;
-    second: number;
-    third: number;
-  } | null;
-  coverImage: string;
-  tags: string[];
-}
+// Mock facility data - replace with actual data source
+const mockFacilities: Record<string, { name: string; address: string }> = {
+  '1': { name: 'Sân bóng đá Phạm Kha', address: '123 Đường Phạm Văn Đồng, Quận Gò Vấp, TPHCM' },
+  '2': { name: 'Sân Tennis Bình Chánh', address: '456 Đường Nguyễn Văn Linh, Huyện Bình Chánh, TPHCM' },
+  '3': { name: 'Sân bóng rổ Quận 7', address: '789 Đường Nguyễn Thị Thập, Quận 7, TPHCM' },
+  '4': { name: 'Sân cầu lông Phạm Kha', address: '123 Đường Phạm Văn Đồng, Quận Gò Vấp, TPHCM' }
+};
 
-// Dữ liệu mẫu cho sự kiện
-const mockEvents: Event[] = [
-  {
-    id: 'evt-001',
-    title: 'Giải Bóng Đá Mini Mở Rộng 2023',
-    description: 'Giải đấu bóng đá mini dành cho mọi đội bóng nghiệp dư tại khu vực TP.HCM. Đây là cơ hội tuyệt vời để thể hiện tài năng và gặp gỡ những đội bóng mạnh.',
-    location: 'Sân vận động Thống Nhất, Quận 10, TP.HCM',
-    type: 'tournament',
-    sportType: 'Bóng đá',
-    startDate: '2023-12-20T08:00:00Z',
-    endDate: '2023-12-25T18:00:00Z',
-    status: 'upcoming',
-    registrationEndDate: '2023-12-15T23:59:59Z',
-    maxParticipants: 16,
-    currentParticipants: 12,
-    entryFee: 2000000,
-    organizer: {
-      id: 'org-001',
-      name: 'CLB Thể Thao Năng Động',
-      logo: 'https://via.placeholder.com/150?text=Active+Sports+Club'
-    },
-    prizes: {
-      first: 15000000,
-      second: 7000000,
-      third: 3000000
-    },
-    coverImage: 'https://via.placeholder.com/600x300?text=Football+Tournament',
-    tags: ['Giải đấu', 'Bóng đá', 'Phong trào']
-  },
-  {
-    id: 'evt-002',
-    title: 'Giải Cầu Lông Sinh Viên 2023',
-    description: 'Giải cầu lông dành cho sinh viên các trường đại học, cao đẳng trên địa bàn TP.HCM. Nhiều phần quà hấp dẫn và cơ hội giao lưu thể thao.',
-    location: 'Nhà thi đấu Phú Thọ, Quận 11, TP.HCM',
-    type: 'tournament',
-    sportType: 'Cầu lông',
-    startDate: '2023-12-18T09:00:00Z',
-    endDate: '2023-12-20T17:00:00Z',
-    status: 'upcoming',
-    registrationEndDate: '2023-12-10T23:59:59Z',
-    maxParticipants: 64,
-    currentParticipants: 42,
-    entryFee: 100000,
-    organizer: {
-      id: 'org-002',
-      name: 'Hội Sinh viên TP.HCM',
-      logo: 'https://via.placeholder.com/150?text=Student+Union'
-    },
-    prizes: {
-      first: 5000000,
-      second: 3000000,
-      third: 1000000
-    },
-    coverImage: 'https://via.placeholder.com/600x300?text=Badminton+Tournament',
-    tags: ['Giải đấu', 'Cầu lông', 'Sinh viên']
-  },
-  {
-    id: 'evt-003',
-    title: 'Giao lưu Bóng rổ Phong trào',
-    description: 'Sự kiện giao lưu bóng rổ không chuyên, dành cho mọi người yêu thích bóng rổ. Không giới hạn độ tuổi và trình độ.',
-    location: 'Sân bóng rổ Đại học TDTT, Quận 3, TP.HCM',
-    type: 'friendly',
-    sportType: 'Bóng rổ',
-    startDate: '2023-12-16T14:00:00Z',
-    endDate: '2023-12-16T21:00:00Z',
-    status: 'upcoming',
-    registrationEndDate: '2023-12-15T12:00:00Z',
-    maxParticipants: 30,
-    currentParticipants: 18,
-    entryFee: 50000,
-    organizer: {
-      id: 'org-003',
-      name: 'CLB Bóng rổ Phong trào TP.HCM',
-      logo: 'https://via.placeholder.com/150?text=Basketball+Club'
-    },
-    prizes: null,
-    coverImage: 'https://via.placeholder.com/600x300?text=Basketball+Event',
-    tags: ['Giao lưu', 'Bóng rổ', 'Phong trào']
-  },
-  {
-    id: 'evt-004',
-    title: 'Khóa Huấn luyện Tennis Cơ bản',
-    description: 'Khóa học tennis cơ bản dành cho người mới bắt đầu. Được hướng dẫn bởi các HLV chuyên nghiệp với kinh nghiệm lâu năm.',
-    location: 'Sân Tennis Kỳ Hòa, Quận 10, TP.HCM',
-    type: 'training',
-    sportType: 'Tennis',
-    startDate: '2023-12-11T08:00:00Z',
-    endDate: '2023-12-15T11:00:00Z',
-    status: 'upcoming',
-    registrationEndDate: '2023-12-09T23:59:59Z',
-    maxParticipants: 20,
-    currentParticipants: 15,
-    entryFee: 1500000,
-    organizer: {
-      id: 'org-004',
-      name: 'Tennis Pro Academy',
-      logo: 'https://via.placeholder.com/150?text=Tennis+Academy'
-    },
-    prizes: null,
-    coverImage: 'https://via.placeholder.com/600x300?text=Tennis+Training',
-    tags: ['Đào tạo', 'Tennis', 'Cơ bản']
-  },
-  {
-    id: 'evt-005',
-    title: 'Giải Bơi Lội Thiếu Niên TP.HCM',
-    description: 'Giải bơi dành cho các em thiếu niên từ 8-15 tuổi. Nhiều nội dung thi đấu phù hợp với từng độ tuổi và trình độ.',
-    location: 'Hồ bơi Phú Thọ, Quận 11, TP.HCM',
-    type: 'tournament',
-    sportType: 'Bơi lội',
-    startDate: '2023-12-23T08:00:00Z',
-    endDate: '2023-12-24T17:00:00Z',
-    status: 'upcoming',
-    registrationEndDate: '2023-12-18T23:59:59Z',
-    maxParticipants: 100,
-    currentParticipants: 75,
-    entryFee: 200000,
-    organizer: {
-      id: 'org-005',
-      name: 'Sở Văn hóa và Thể thao TP.HCM',
-      logo: 'https://via.placeholder.com/150?text=Sports+Department'
-    },
-    prizes: {
-      first: 3000000,
-      second: 2000000,
-      third: 1000000
-    },
-    coverImage: 'https://via.placeholder.com/600x300?text=Swimming+Competition',
-    tags: ['Giải đấu', 'Bơi lội', 'Thiếu niên']
-  },
-  {
-    id: 'evt-006',
-    title: 'Đại hội Thể dục Thể thao Sinh viên',
-    description: 'Đại hội thể thao với nhiều môn thi đấu dành cho sinh viên các trường đại học, cao đẳng trên địa bàn thành phố.',
-    location: 'Khu Liên hợp Thể thao Rạch Miễu, Quận Phú Nhuận, TP.HCM',
-    type: 'tournament',
-    sportType: 'Đa môn',
-    startDate: '2024-01-05T08:00:00Z',
-    endDate: '2024-01-10T17:00:00Z',
-    status: 'upcoming',
-    registrationEndDate: '2023-12-25T23:59:59Z',
-    maxParticipants: 500,
-    currentParticipants: 350,
-    entryFee: 0,
-    organizer: {
-      id: 'org-006',
-      name: 'Đoàn Thanh niên TP.HCM',
-      logo: 'https://via.placeholder.com/150?text=Youth+Union'
-    },
-    prizes: {
-      first: 10000000,
-      second: 7000000,
-      third: 5000000
-    },
-    coverImage: 'https://via.placeholder.com/600x300?text=Sports+Festival',
-    tags: ['Đại hội', 'Đa môn', 'Sinh viên']
-  }
-];
+// Mock sports data
+const mockSports: Record<number, string> = {
+  1: 'Bóng đá',
+  2: 'Bóng rổ',
+  3: 'Tennis',
+  4: 'Cầu lông'
+};
+
+// Enhanced Event interface for display
+interface DisplayEvent extends Event {
+  facilityName: string;
+  facilityAddress: string;
+  sportName?: string;
+  currentParticipants?: number;
+  maxParticipants?: number;
+  registrationEndDate?: string;
+  discountPercent?: number;
+  activities?: string[];
+}
 
 const EventList: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [events, setEvents] = useState<Event[]>([]);
-  const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
-  const [activeTab, setActiveTab] = useState('all');
-  const [searchText, setSearchText] = useState('');
-  const [sportFilter, setSportFilter] = useState('all');
-  const [typeFilter, setTypeFilter] = useState('all');
+  const [events, setEvents] = useState<DisplayEvent[]>([]);
+  const [filteredEvents, setFilteredEvents] = useState<DisplayEvent[]>([]);
+  const [activeTab, setActiveTab] = useState<EventStatus | 'all'>('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sportFilter, setSportFilter] = useState<number | 'all'>('all');
+  const [typeFilter, setTypeFilter] = useState<EventType | 'all'>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(6);
 
@@ -219,8 +64,27 @@ const EventList: React.FC = () => {
       try {
         // In a real app, this would be an API call
         await new Promise(resolve => setTimeout(resolve, 1500));
-        setEvents(mockEvents);
-        setFilteredEvents(mockEvents);
+        
+        // Enrich events with facility and sport details
+        const enhancedEvents: DisplayEvent[] = mockEvents.map(event => {
+          const eventDetails = mockEventDetails[event.id];
+          const facility = mockFacilities[event.facilityId || '1'];
+          
+          return {
+            ...event,
+            facilityName: facility?.name || 'Không xác định',
+            facilityAddress: facility?.address || 'Không xác định',
+            sportName: eventDetails?.targetSportId ? mockSports[eventDetails.targetSportId] : undefined,
+            currentParticipants: eventDetails?.currentParticipants,
+            maxParticipants: eventDetails?.maxParticipants,
+            registrationEndDate: eventDetails?.registrationEndDate,
+            discountPercent: eventDetails?.discountPercent,
+            activities: eventDetails?.activities,
+          };
+        });
+        
+        setEvents(enhancedEvents);
+        setFilteredEvents(enhancedEvents);
       } catch (error) {
         console.error('Error fetching events:', error);
       } finally {
@@ -241,46 +105,59 @@ const EventList: React.FC = () => {
     }
 
     // Filter by search text
-    if (searchText) {
-      const lowerCaseSearch = searchText.toLowerCase();
+    if (searchTerm) {
+      const lowerCaseSearch = searchTerm.toLowerCase();
       result = result.filter(
         event =>
-          event.title.toLowerCase().includes(lowerCaseSearch) ||
+          event.name.toLowerCase().includes(lowerCaseSearch) ||
           event.description.toLowerCase().includes(lowerCaseSearch) ||
-          event.location.toLowerCase().includes(lowerCaseSearch)
+          event.facilityName.toLowerCase().includes(lowerCaseSearch) ||
+          event.facilityAddress.toLowerCase().includes(lowerCaseSearch) ||
+          (event.sportName && event.sportName.toLowerCase().includes(lowerCaseSearch))
       );
     }
 
     // Filter by sport type
     if (sportFilter !== 'all') {
-      result = result.filter(event => event.sportType === sportFilter);
+      result = result.filter(event => {
+        const eventDetails = mockEventDetails[event.id];
+        return eventDetails?.targetSportId === sportFilter;
+      });
     }
 
     // Filter by event type
     if (typeFilter !== 'all') {
-      result = result.filter(event => event.type === typeFilter);
+      result = result.filter(event => event.eventType === typeFilter);
     }
 
     setFilteredEvents(result);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [events, activeTab, searchText, sportFilter, typeFilter]);
+  }, [events, activeTab, searchTerm, sportFilter, typeFilter]);
 
   // Generate unique sport types for filter
-  const sportTypes = ['all', ...Array.from(new Set(events.map(event => event.sportType)))];
+  const sportOptions = Object.entries(mockSports).map(([id, name]) => ({
+    id: parseInt(id),
+    name
+  }));
 
   // Handle view event details
-  const handleViewEvent = (eventId: string) => {
+  const handleViewEvent = (eventId: number) => {
     navigate(`/event/${eventId}`);
   };
 
   // Handle register for event
-  const handleRegister = (eventId: string) => {
-    // In a real app, this would navigate to a registration form or login prompt
-    alert(`Đăng ký tham gia sự kiện ${eventId}`);
+  const handleRegister = (eventId: number) => {
+    const eventDetails = mockEventDetails[eventId];
+    
+    if (eventDetails?.registrationLink) {
+      window.open(eventDetails.registrationLink, '_blank');
+    } else {
+      navigate(`/event/${eventId}?register=true`);
+    }
   };
 
   // Render event status tag
-  const renderEventStatus = (status: Event['status']) => {
+  const renderEventStatus = (status: EventStatus) => {
     let color;
     let text;
     
@@ -289,11 +166,11 @@ const EventList: React.FC = () => {
         color = 'blue';
         text = 'Sắp diễn ra';
         break;
-      case 'ongoing':
+      case 'active':
         color = 'green';
         text = 'Đang diễn ra';
         break;
-      case 'completed':
+      case 'expired':
         color = 'gray';
         text = 'Đã kết thúc';
         break;
@@ -306,29 +183,38 @@ const EventList: React.FC = () => {
   };
 
   // Render event type tag
-  const renderEventType = (type: Event['type']) => {
+  const renderEventType = (type?: EventType) => {
+    if (!type) return null;
+    
     let color;
     let text;
+    let icon;
     
     switch (type) {
-      case 'tournament':
+      case 'TOURNAMENT':
         color = 'magenta';
         text = 'Giải đấu';
+        icon = <TrophyOutlined />;
         break;
-      case 'friendly':
-        color = 'cyan';
-        text = 'Giao lưu';
-        break;
-      case 'training':
-        color = 'orange';
-        text = 'Đào tạo';
-        break;
+      case 'DISCOUNT':
+        color = 'green';
+        text = 'Khuyến mãi';
+        icon = <PercentageOutlined />;
+        break;      
       default:
         color = 'default';
         text = 'Khác';
+        icon = null;
     }
     
-    return <Tag color={color}>{text}</Tag>;
+    return (
+      <Tag color={color} icon={icon}>{text}</Tag>
+    );
+  };
+
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('vi-VN');
   };
 
   // Calculate pagination
@@ -336,6 +222,27 @@ const EventList: React.FC = () => {
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
+
+  // Check if registration is available
+  const isRegistrationAvailable = (event: DisplayEvent) => {
+    if (event.status === 'expired') return false;
+    
+    if (event.eventType === 'TOURNAMENT') {
+      // Check if current date is before registration end date
+      if (event.registrationEndDate) {
+        const now = new Date();
+        const endDate = new Date(event.registrationEndDate);
+        if (now > endDate) return false;
+      }
+      
+      // Check if max participants reached
+      if (event.currentParticipants !== undefined && 
+          event.maxParticipants !== undefined && 
+          event.currentParticipants >= event.maxParticipants) return false;
+    }
+    
+    return true;
+  };
 
   // Render event cards with skeleton loading
   const renderEventCards = () => {
@@ -361,13 +268,20 @@ const EventList: React.FC = () => {
     return paginatedEvents.map(event => (
       <Col xs={24} md={12} lg={8} key={event.id}>
         <Card
+          hoverable
           className="event-card"
           cover={
             <div className="event-card-cover">
-              <img alt={event.title} src={event.coverImage} />
+              <img 
+                alt={event.name} 
+                src={event.image ? 
+                  `${event.image}` : 
+                  `https://via.placeholder.com/600x300?text=${encodeURIComponent(event.name)}`
+                } 
+              />
               <div className="event-card-badge">
                 {renderEventStatus(event.status)}
-                {renderEventType(event.type)}
+                {renderEventType(event.eventType)}
               </div>
             </div>
           }
@@ -382,21 +296,21 @@ const EventList: React.FC = () => {
             <Button 
               type="primary"
               onClick={() => handleRegister(event.id)}
-              disabled={event.status !== 'upcoming' || event.currentParticipants >= event.maxParticipants}
+              disabled={!isRegistrationAvailable(event)}
             >
               Đăng ký
             </Button>
           ]}
         >
           <div className="event-card-org">
-            <Avatar src={event.organizer.logo} size="small" />
+            <Avatar src={`https://via.placeholder.com/40?text=${event.facilityName?.[0] || 'F'}`} size="small" />
             <Text type="secondary" className="text-sm">
-              {event.organizer.name}
+              {event.facilityName}
             </Text>
           </div>
           
           <Card.Meta
-            title={<span className="event-card-title">{event.title}</span>}
+            title={<span className="event-card-title">{event.name}</span>}
             description={
               <Paragraph ellipsis={{ rows: 2 }} className="event-card-desc">
                 {event.description}
@@ -408,41 +322,53 @@ const EventList: React.FC = () => {
             <div className="event-info-item">
               <CalendarOutlined />
               <Text className="ml-2">
-                {new Date(event.startDate).toLocaleDateString('vi-VN')}
+                {formatDate(event.startDate)}
                 {event.startDate !== event.endDate && 
-                  ` - ${new Date(event.endDate).toLocaleDateString('vi-VN')}`}
+                  ` - ${formatDate(event.endDate)}`}
               </Text>
             </div>
             
             <div className="event-info-item">
               <EnvironmentOutlined />
-              <Text className="ml-2" ellipsis>{event.location}</Text>
+              <Text className="ml-2" ellipsis>{event.facilityName}</Text>
             </div>
             
-            <div className="event-info-item">
-              <TeamOutlined />
-              <Text className="ml-2">
-                {event.currentParticipants}/{event.maxParticipants} người tham gia
-              </Text>
-            </div>
+            {event.eventType === 'TOURNAMENT' && event.currentParticipants !== undefined && event.maxParticipants !== undefined && (
+              <div className="event-info-item">
+                <TeamOutlined />
+                <Text className="ml-2">
+                  {event.currentParticipants}/{event.maxParticipants} người tham gia
+                </Text>
+              </div>
+            )}
+            
+            {event.eventType === 'DISCOUNT' && event.discountPercent !== undefined && (
+              <div className="event-info-item">
+                <PercentageOutlined />
+                <Text className="ml-2">
+                  Giảm giá {event.discountPercent}%
+                </Text>
+              </div>
+            )}
+            
+            
           </div>
           
           <div className="event-card-footer">
             <div>
-              {event.tags.map(tag => (
-                <Tag key={tag} className="event-tag">{tag}</Tag>
-              ))}
+              {event.sportName && (
+                <Tag key={event.sportName} className="event-tag">{event.sportName}</Tag>
+              )}
+              {event.eventType === 'TOURNAMENT' && (
+                <Tag key="tournament" color="blue" className="event-tag">Giải đấu</Tag>
+              )}
             </div>
             
-            {event.prizes && (
-              <div className="event-prize">
-                <TrophyOutlined />
-                <Text className="ml-1">
-                  {new Intl.NumberFormat('vi-VN', {
-                    style: 'currency',
-                    currency: 'VND',
-                    maximumFractionDigits: 0
-                  }).format(event.prizes.first)}
+            {event.eventType === 'TOURNAMENT' && event.registrationEndDate && (
+              <div className="event-deadline">
+                <ClockCircleOutlined />
+                <Text className="ml-1 text-xs">
+                  Hạn đăng ký: {formatDate(event.registrationEndDate)}
                 </Text>
               </div>
             )}
@@ -473,8 +399,8 @@ const EventList: React.FC = () => {
                 style={{ width: 150 }}
               >
                 <Option value="all">Tất cả môn</Option>
-                {sportTypes.filter(sport => sport !== 'all').map(sport => (
-                  <Option key={sport} value={sport}>{sport}</Option>
+                {sportOptions.map(sport => (
+                  <Option key={sport.id} value={sport.id}>{sport.name}</Option>
                 ))}
               </Select>
               
@@ -484,9 +410,9 @@ const EventList: React.FC = () => {
                 style={{ width: 150 }}
               >
                 <Option value="all">Tất cả loại</Option>
-                <Option value="tournament">Giải đấu</Option>
-                <Option value="friendly">Giao lưu</Option>
-                <Option value="training">Đào tạo</Option>
+                <Option value="TOURNAMENT">Giải đấu</Option>
+                <Option value="DISCOUNT">Khuyến mãi</Option>
+                <Option value="SPECIAL_OFFER">Ưu đãi đặc biệt</Option>
               </Select>
             </Space>
           </div>
@@ -496,7 +422,7 @@ const EventList: React.FC = () => {
           <div className="flex flex-col md:flex-row md:justify-between md:items-center">
             <Tabs 
               activeKey={activeTab} 
-              onChange={setActiveTab}
+              onChange={activeTab => setActiveTab(activeTab as EventStatus | 'all')}
               className="event-tabs"
             >
               <TabPane 
@@ -517,62 +443,65 @@ const EventList: React.FC = () => {
               <TabPane 
                 tab={
                   <Badge 
-                    count={events.filter(e => e.status === 'ongoing').length} 
+                    count={events.filter(e => e.status === 'active').length} 
                     offset={[15, 0]}
                   >
                     <span>Đang diễn ra</span>
                   </Badge>
                 } 
-                key="ongoing" 
+                key="active" 
               />
               <TabPane 
                 tab={<span>Đã kết thúc</span>} 
-                key="completed" 
+                key="expired" 
               />
             </Tabs>
             
             <div className="mt-4 md:mt-0 w-full md:w-auto">
               <Input 
                 placeholder="Tìm kiếm sự kiện..." 
-                value={searchText}
-                onChange={e => setSearchText(e.target.value)}
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
                 prefix={<SearchOutlined />}
                 allowClear
-                style={{ width: '100%', maxWidth: '300px' }}
+                style={{ maxWidth: 300, width: '100%' }}
               />
             </div>
           </div>
         </Card>
         
         {/* Event Highlight Section */}
-        {!loading && activeTab === 'all' && currentPage === 1 && (
+        {!loading && filteredEvents.length > 0 && activeTab === 'all' && currentPage === 1 && (
           <Card 
             className="mb-4 md:mb-6 highlight-event"
             cover={
               <div className="highlight-event-cover">
                 <img 
-                  alt={filteredEvents[0]?.title} 
-                  src={filteredEvents[0]?.coverImage} 
+                  alt={filteredEvents[0]?.name} 
+                  src={filteredEvents[0]?.image ? 
+                    `${filteredEvents[0].image}` : 
+                    `https://via.placeholder.com/1200x400?text=${encodeURIComponent(filteredEvents[0].name)}`
+                  }
                   className="highlight-event-image"
                 />
                 <div className="highlight-event-overlay">
                   <div className="highlight-event-content">
                     <Space>
                       {renderEventStatus(filteredEvents[0]?.status)}
-                      {renderEventType(filteredEvents[0]?.type)}
+                      {renderEventType(filteredEvents[0]?.eventType)}
                     </Space>
                     <Title level={3} className="highlight-event-title">
-                      {filteredEvents[0]?.title}
+                      {filteredEvents[0]?.name}
                     </Title>
                     <Space className="highlight-event-details">
                       <span>
-                        <CalendarOutlined /> {new Date(filteredEvents[0]?.startDate).toLocaleDateString('vi-VN')}
+                        <CalendarOutlined /> {formatDate(filteredEvents[0]?.startDate)}
                       </span>
                       <span>
                         <ClockCircleOutlined /> {new Date(filteredEvents[0]?.startDate).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                       </span>
                       <span>
-                        <EnvironmentOutlined /> {filteredEvents[0]?.location.split(',')[0]}
+                        <EnvironmentOutlined /> {filteredEvents[0]?.facilityName}
                       </span>
                     </Space>
                     <div className="highlight-event-actions">
@@ -586,10 +515,7 @@ const EventList: React.FC = () => {
                       <Button 
                         size="large"
                         onClick={() => handleRegister(filteredEvents[0]?.id)}
-                        disabled={
-                          filteredEvents[0]?.status !== 'upcoming' || 
-                          filteredEvents[0]?.currentParticipants >= filteredEvents[0]?.maxParticipants
-                        }
+                        disabled={!isRegistrationAvailable(filteredEvents[0])}
                       >
                         Đăng Ký Tham Gia
                       </Button>
@@ -601,6 +527,12 @@ const EventList: React.FC = () => {
           >
             {/* Card content can be empty as we're using the cover for content */}
           </Card>
+        )}
+        
+        {loading && (
+          <div className="text-center py-8">
+            <Spin size="large" tip="Đang tải danh sách sự kiện..." />
+          </div>
         )}
         
         <Row gutter={[16, 16]}>
@@ -704,11 +636,12 @@ const EventList: React.FC = () => {
             margin-bottom: 5px;
           }
           
-          .event-prize {
+          .event-deadline {
             display: flex;
             align-items: center;
-            color: #faad14;
+            color: #ff4d4f;
             font-weight: 500;
+            font-size: 12px;
           }
           
           .pagination-container {

@@ -15,7 +15,7 @@ import HelpCenter from '@/pages/Public/HelpCenter';
 import FAQ from '@/pages/Public/FAQ';
 import ContactSupport from '@/pages/Public/ContactSupport';
 import EventList from '@/pages/Public/EventList';
-
+import EventDetail from '@/pages/Public/EventDetail';
 // Player pages
 import BookingPage from '@/pages/Player/Booking/Booking';
 import HistoryBooking from '@/pages/Player/HistoryBooking/HistoryBooking';
@@ -66,6 +66,7 @@ const AppRouter: React.FC = () => {
         <Route path='/faq' element={<FAQ />} />
         <Route path='/contact-support' element={<ContactSupport />} />
         <Route path='/events' element={<EventList />} />
+        <Route path='/event/:eventId' element={<EventDetail />} />
         <Route path='/error' element={<ErrorPage />} />
       </Route> 
 

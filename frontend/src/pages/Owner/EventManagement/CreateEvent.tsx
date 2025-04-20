@@ -227,8 +227,7 @@ const CreateEvent: React.FC<CreateEventProps> = ({ onCancel, onSubmit }) => {
   const getEventTypeTag = (type: EventType) => {
     const config: Record<EventType, { color: string, text: string }> = {
       TOURNAMENT: { color: 'blue', text: 'Giải đấu' },
-      DISCOUNT: { color: 'green', text: 'Khuyến mãi' },
-      SPECIAL_OFFER: { color: 'purple', text: 'Ưu đãi đặc biệt' },
+      DISCOUNT: { color: 'green', text: 'Khuyến mãi' },      
     };
     return <Tag color={config[type].color}>{config[type].text}</Tag>;
   };
@@ -297,6 +296,21 @@ const CreateEvent: React.FC<CreateEventProps> = ({ onCancel, onSubmit }) => {
               </Form.Item>
 
               <Form.Item
+                name="minParticipants"
+                label="Số lượng tham gia tối thiểu"
+                tooltip="Số lượng người tham gia tối thiểu để giải đấu có hiệu lực"
+              >
+                <InputNumber
+                  min={1}
+                  placeholder="Nhập số lượng"
+                  style={{ width: '100%' }}
+                  disabled={submitting}
+                />
+              </Form.Item>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Form.Item
                 name="registrationEndDate"
                 label="Hạn đăng ký"
                 rules={[{ required: true, message: 'Vui lòng chọn hạn đăng ký' }]}
@@ -306,7 +320,59 @@ const CreateEvent: React.FC<CreateEventProps> = ({ onCancel, onSubmit }) => {
                   disabled={submitting}
                 />
               </Form.Item>
+
+              <Form.Item
+                name="registrationFee"
+                label="Phí đăng ký tham gia"
+                tooltip="Phí tham gia giải đấu (nếu có)"
+              >
+                <InputNumber
+                  min={0}
+                  placeholder="Nhập phí đăng ký"
+                  style={{ width: '100%' }}
+                  formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+                  parser={(value: string | undefined) => {
+                    if (!value) return 0;
+                    return Number(value.replace(/\./g, ''));
+                  }}
+                  disabled={submitting}
+                />
+              </Form.Item>
             </div>
+
+            <Form.Item
+              name="tournamentFormat"
+              label="Thể thức thi đấu"
+              tooltip="Mô tả thể thức thi đấu của giải"
+            >
+              <Input
+                placeholder="Ví dụ: Đấu loại trực tiếp, vòng tròn..."
+                disabled={submitting}
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="registrationLink"
+              label="Link đăng ký"
+              tooltip="Link đến form đăng ký tham gia giải đấu"
+            >
+              <Input
+                placeholder="Nhập link đăng ký (nếu có)"
+                disabled={submitting}
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="rules"
+              label="Luật thi đấu"
+              tooltip="Mô tả luật thi đấu của giải"
+            >
+              <TextArea
+                rows={3}
+                placeholder="Mô tả luật thi đấu"
+                disabled={submitting}
+              />
+            </Form.Item>
 
             <Form.List name="prizes">
               {(fields, { add, remove }) => (
@@ -369,6 +435,17 @@ const CreateEvent: React.FC<CreateEventProps> = ({ onCancel, onSubmit }) => {
             </Form.Item>
 
             <Form.Item
+              name="discountCode"
+              label="Mã giảm giá"
+              tooltip="Mã để khách hàng sử dụng khi đặt sân"
+            >
+              <Input
+                placeholder="Nhập mã giảm giá (nếu có)"
+                disabled={submitting}
+              />
+            </Form.Item>
+
+            <Form.Item
               name="conditions"
               label="Điều kiện áp dụng"
               rules={[{ required: true, message: 'Vui lòng nhập điều kiện áp dụng' }]}
@@ -400,43 +477,80 @@ const CreateEvent: React.FC<CreateEventProps> = ({ onCancel, onSubmit }) => {
           </>
         );
 
-      case 'SPECIAL_OFFER':
-        return (
-          <>
-            <Form.Item
-              name="activities"
-              label="Các hoạt động"
-              rules={[{ required: true, message: 'Vui lòng chọn các hoạt động' }]}
-            >
-              <Select
-                mode="multiple"
-                placeholder="Chọn các hoạt động"
-                disabled={submitting}
-              >
-                <Option value="Tennis">Tennis</Option>
-                <Option value="Bóng đá">Bóng đá</Option>
-                <Option value="Bóng rổ">Bóng rổ</Option>
-                <Option value="Cầu lông">Cầu lông</Option>
-              </Select>
-            </Form.Item>
+      // case 'SPECIAL_OFFER':
+      //   return (
+      //     <>
+      //       <Form.Item
+      //         name="activities"
+      //         label="Các hoạt động"
+      //         rules={[{ required: true, message: 'Vui lòng chọn các hoạt động' }]}
+      //       >
+      //         <Select
+      //           mode="multiple"
+      //           placeholder="Chọn các hoạt động"
+      //           disabled={submitting}
+      //         >
+      //           <Option value="Tennis">Tennis</Option>
+      //           <Option value="Bóng đá">Bóng đá</Option>
+      //           <Option value="Bóng rổ">Bóng rổ</Option>
+      //           <Option value="Cầu lông">Cầu lông</Option>
+      //         </Select>
+      //       </Form.Item>
 
-            <Form.Item
-              name="specialServices"
-              label="Dịch vụ đặc biệt"
-              rules={[{ required: true, message: 'Vui lòng chọn các dịch vụ đặc biệt' }]}
-            >
-              <Select
-                mode="multiple"
-                placeholder="Chọn các dịch vụ đặc biệt"
-                disabled={submitting}
-              >
-                <Option value="Đồ ăn miễn phí">Đồ ăn miễn phí</Option>
-                <Option value="Huấn luyện viên hướng dẫn">Huấn luyện viên hướng dẫn</Option>
-                <Option value="Trò chơi cho trẻ em">Trò chơi cho trẻ em</Option>
-              </Select>
-            </Form.Item>
-          </>
-        );
+      //       <Form.Item
+      //         name="specialServices"
+      //         label="Dịch vụ đặc biệt"
+      //         rules={[{ required: true, message: 'Vui lòng chọn các dịch vụ đặc biệt' }]}
+      //       >
+      //         <Select
+      //           mode="multiple"
+      //           placeholder="Chọn các dịch vụ đặc biệt"
+      //           disabled={submitting}
+      //         >
+      //           <Option value="Đồ ăn miễn phí">Đồ ăn miễn phí</Option>
+      //           <Option value="Huấn luyện viên hướng dẫn">Huấn luyện viên hướng dẫn</Option>
+      //           <Option value="Trò chơi cho trẻ em">Trò chơi cho trẻ em</Option>
+      //         </Select>
+      //       </Form.Item>
+
+      //       <Form.Item
+      //         name="location"
+      //         label="Địa điểm cụ thể"
+      //         tooltip="Địa điểm cụ thể trong cơ sở thể thao"
+      //       >
+      //         <Input
+      //           placeholder="Nhập địa điểm cụ thể (nếu có)"
+      //           disabled={submitting}
+      //         />
+      //       </Form.Item>
+
+      //       <Form.Item label="Thông tin liên hệ" className="mb-0">
+      //         <div className="grid grid-cols-2 gap-4">
+      //           <Form.Item
+      //             name={['contact', 'name']}
+      //             label="Tên người liên hệ"
+      //             className="mb-0"
+      //           >
+      //             <Input
+      //               placeholder="Nhập tên người liên hệ"
+      //               disabled={submitting}
+      //             />
+      //           </Form.Item>
+
+      //           <Form.Item
+      //             name={['contact', 'phone']}
+      //             label="Số điện thoại liên hệ"
+      //             className="mb-0"
+      //           >
+      //             <Input
+      //               placeholder="Nhập số điện thoại liên hệ"
+      //               disabled={submitting}
+      //             />
+      //           </Form.Item>
+      //         </div>
+      //       </Form.Item>
+      //     </>
+      //   );
 
       default:
         return null;
@@ -538,23 +652,11 @@ const CreateEvent: React.FC<CreateEventProps> = ({ onCancel, onSubmit }) => {
                   label="Mô tả sự kiện"
                 >
                   <TextArea 
-                    placeholder="Nhập mô tả chi tiết về sự kiện" 
+                    placeholder="Nhập mô tả chi tiết về sự kiện. Bạn có thể nhập chi tiết thể lệ giải đấu, giải thưởng và các luật liên quan đến giải đấu,..." 
                     rows={3} 
                     disabled={submitting}
                   />
-                </Form.Item>
-
-                <Form.Item
-                  name="status"
-                  label="Trạng thái"
-                  initialValue="upcoming"
-                >
-                  <Select placeholder="Chọn trạng thái" disabled={submitting}>
-                    <Option value="upcoming">Sắp diễn ra</Option>
-                    <Option value="active">Đang diễn ra</Option>
-                    <Option value="expired">Đã kết thúc</Option>
-                  </Select>
-                </Form.Item>
+                </Form.Item>               
 
                 {/* Render event type specific fields */}
                 {renderEventTypeFields()}
@@ -621,12 +723,6 @@ const CreateEvent: React.FC<CreateEventProps> = ({ onCancel, onSubmit }) => {
                             <>
                               <Text type="secondary">Giảm giá: {event.discountPercent}%</Text>
                               <Text type="secondary">Điều kiện: {event.conditions}</Text>
-                            </>
-                          )}
-                          {event.eventType === 'SPECIAL_OFFER' && (
-                            <>
-                              <Text type="secondary">Hoạt động: {event.activities?.join(', ')}</Text>
-                              <Text type="secondary">Dịch vụ đặc biệt: {event.specialServices?.join(', ')}</Text>
                             </>
                           )}
                         </Space>
