@@ -92,6 +92,34 @@ export const mockEvents: Event[] = [
     image: 'https://via.placeholder.com/600x400?text=Badminton+Tournament',
     bannerImage: 'https://via.placeholder.com/1200x400?text=Badminton+Tournament+Banner',
     location: 'Nhà thi đấu cầu lông Phạm Kha'
+  },
+  {
+    id: 7,
+    name: 'Flash Sale Trưa Nóng',
+    description: 'Giảm ngay 50.000đ cho mỗi đơn đặt sân trong khung giờ 11h-14h. Áp dụng cho tất cả các loại sân.',
+    startDate: '2024-06-15T00:00:00Z',
+    endDate: '2024-07-15T23:59:59Z',
+    status: 'active',
+    createdAt: '2024-06-10T09:30:00Z',
+    updatedAt: '2024-06-10T09:30:00Z',
+    facilityId: '2',
+    eventType: 'DISCOUNT',
+    image: 'https://via.placeholder.com/600x400?text=Flash+Sale+Noon',
+    bannerImage: 'https://via.placeholder.com/1200x400?text=Flash+Sale+Noon+Banner'
+  },
+  {
+    id: 8,
+    name: 'Ưu đãi VIP - Tặng lượt đặt',
+    description: 'Tặng 2 lượt đặt sân miễn phí cho khách hàng VIP khi đặt sân 5 lần trong tháng.',
+    startDate: '2024-06-01T00:00:00Z',
+    endDate: '2024-07-31T23:59:59Z',
+    status: 'active',
+    createdAt: '2024-05-20T11:15:00Z',
+    updatedAt: '2024-05-20T11:15:00Z',
+    facilityId: '1',
+    eventType: 'DISCOUNT',
+    image: 'https://via.placeholder.com/600x400?text=VIP+Free+Slots',
+    bannerImage: 'https://via.placeholder.com/1200x400?text=VIP+Free+Slots+Banner'
   }
 ];
 
@@ -102,27 +130,44 @@ export const mockEventTypes = [
 ];
 
 // Mock additional event data for expanded event model
-export const mockEventDetails: Record<number, EventDetail> = {
-  1: {
+export const mockEventDetails: EventDetail[] = [
+   {
+    id: 1,
     eventType: 'TOURNAMENT',
-    targetSportId: 3, // Tennis
     facilityId: '2',
+    tournamentName: 'Giải Cầu Lông Mở Rộng Hè 2025',
+    sportTypes: [3], // Tennis
+    targetSportId: 3, // For backward compatibility
     image: 'https://via.placeholder.com/600x400?text=Tennis+Tournament',
     bannerImage: 'https://via.placeholder.com/1200x400?text=Tennis+Tournament+Banner',
     fields: ['Sân 1', 'Sân 2', 'Sân 3'],
+    venueDetails: 'Khu Tennis Bình Chánh',
     maxParticipants: 32,
     minParticipants: 16,
     currentParticipants: 24,
+    registrationType: 'individual',
     registrationEndDate: '2024-07-10T23:59:59Z',
     registrationLink: 'https://forms.example.com/tennis-tournament',
     registrationFee: 500000,
-    tournamentFormat: 'Đấu loại trực tiếp',
+    isFreeRegistration: false,
+    paymentInstructions: 'Thanh toán phí tham gia trước ngày 10/07/2024. Gửi bằng chứng thanh toán qua Zalo/Email của BTC.',
+    paymentMethod: ['bank', 'momo'],
+    paymentDeadline: '2024-07-10T23:59:59Z',
+    paymentAccountInfo: 'Ngân hàng Vietcombank | STK: 1234567890 | Chủ TK: Nguyễn Văn A | Nội dung CK: Tennis2025-TenNguoiChoi',
+    paymentQrImage: 'https://via.placeholder.com/300x300?text=QR+Payment',
+    registrationProcess: '1. Đăng ký và nhận email xác nhận\n2. Thanh toán phí tham gia\n3. Gửi bằng chứng thanh toán cho BTC\n4. BTC xác nhận và phê duyệt đăng ký',
+    ageLimit: 'U18, hoặc chỉ cho người chơi có > 10 lượt đặt sân',
+    tournamentFormat: ['knockout', 'roundRobin'],
+    tournamentFormatDescription: 'Chia làm 4 bảng đấu, mỗi bảng 8 người. Vòng bảng thi đấu vòng tròn, chọn 2 người đứng đầu mỗi bảng vào vòng loại trực tiếp.',
+    totalPrize: '10.000.000 VNĐ + Cup vô địch',
+    prizeDescription: 'Tổng giải thưởng 10 triệu đồng tiền mặt, cup vô địch và các phần quà từ nhà tài trợ. Lễ trao giải sẽ diễn ra ngay sau trận chung kết.',
     prizes: [
       { position: 1, prize: 'Cup + 5.000.000 VNĐ' },
       { position: 2, prize: '3.000.000 VNĐ' },
       { position: 3, prize: '1.000.000 VNĐ' }
     ],
-    rules: 'Luật thi đấu áp dụng theo tiêu chuẩn quốc tế. Mỗi trận đấu gồm 3 set, mỗi set 6 game. Người chơi tự mang vợt, ban tổ chức cung cấp bóng thi đấu.',
+    rulesAndRegulations: 'Luật thi đấu áp dụng theo tiêu chuẩn quốc tế. Mỗi trận đấu gồm 3 set, mỗi set 6 game. Người chơi tự mang vợt, ban tổ chức cung cấp bóng thi đấu.',
+    currentStatus: 'registration',
     location: 'Sân chính - Khu Tennis Bình Chánh',
     contact: {
       name: 'Nguyễn Văn A',
@@ -130,35 +175,56 @@ export const mockEventDetails: Record<number, EventDetail> = {
       phone: '0901234567'
     }
   },
-  2: {
+  {
+    id: 2,
     eventType: 'DISCOUNT',
     facilityId: '1',
+    discountType: 'PERCENT',
     discountPercent: 20,
     image: 'https://via.placeholder.com/600x400?text=Early+Booking+Discount',
     bannerImage: 'https://via.placeholder.com/1200x400?text=Early+Booking+Discount+Banner',
     conditions: 'Áp dụng cho đặt sân trước 7 ngày. Không áp dụng đồng thời với các chương trình khuyến mãi khác.',
     minBookingValue: 0,
-    discountCode: 'EARLY20'
+    discountCode: 'EARLY20',
+    targetUserType: 'ALL',
+    targetProducts: ['ALL'],
+    maxUsageCount: 0 // Không giới hạn
   },
-  3: {
+  {
+    id: 3,
     eventType: 'TOURNAMENT',
-    targetSportId: 1, // Bóng đá
     facilityId: '1',
+    tournamentName: 'Cúp Bóng đá Phạm Kha',
+    sportTypes: [1], // Bóng đá
+    targetSportId: 1, // For backward compatibility
     image: 'https://via.placeholder.com/600x400?text=Football+Cup',
     bannerImage: 'https://via.placeholder.com/1200x400?text=Football+Cup+Banner',
     fields: ['Sân A1', 'Sân A2'],
+    venueDetails: 'Sân bóng đá Phạm Kha - Khu A',
     maxParticipants: 16,
     minParticipants: 8,
     currentParticipants: 16,
+    registrationType: 'team',
     registrationEndDate: '2024-05-05T23:59:59Z',
     registrationFee: 1000000,
-    tournamentFormat: 'Vòng tròn + Đấu loại trực tiếp',
+    isFreeRegistration: false,
+    paymentInstructions: 'Mỗi đội đóng 1.000.000đ phí tham gia. Thanh toán trước khi bốc thăm chia bảng.',
+    paymentMethod: ['bank', 'cash'],
+    paymentDeadline: '2024-05-01T23:59:59Z',
+    paymentAccountInfo: 'Ngân hàng Techcombank | STK: 9876543210 | Chủ TK: Trần Văn B | Nội dung CK: CupPK-TenDoi',
+    registrationProcess: '1. Đội trưởng đăng ký thông tin đội\n2. Nộp danh sách cầu thủ và thanh toán phí tham gia\n3. BTC xác nhận và phê duyệt đăng ký\n4. Tham gia lễ bốc thăm chia bảng',
+    ageLimit: '18+',
+    tournamentFormat: ['hybrid'],
+    tournamentFormatDescription: '4 bảng, mỗi bảng 4 đội. Mỗi đội đấu với tất cả các đội trong bảng. Chọn đội đứng đầu mỗi bảng vào bán kết.',
+    totalPrize: '6.000.000 VNĐ + Cup vô địch + Huy chương',
+    prizeDescription: 'Đội vô địch nhận cup, huy chương vàng và 3 triệu đồng. Đội á quân nhận huy chương bạc và 2 triệu đồng. Đội hạng 3 nhận huy chương đồng và 1 triệu đồng.',
     prizes: [
       { position: 1, prize: 'Cup + 3.000.000 VNĐ' },
       { position: 2, prize: '2.000.000 VNĐ' },
       { position: 3, prize: '1.000.000 VNĐ' }
     ],
-    rules: 'Mỗi đội tối đa 8 người, mỗi trận đấu 5v5. Thời gian mỗi trận là 30 phút, chia làm 2 hiệp. Luật bóng đá 5 người được áp dụng.',
+    rulesAndRegulations: 'Mỗi đội tối đa 8 người, mỗi trận đấu 5v5. Thời gian mỗi trận là 30 phút, chia làm 2 hiệp. Luật bóng đá 5 người được áp dụng.',
+    currentStatus: 'completed',
     location: 'Sân bóng đá Phạm Kha - Khu A',
     contact: {
       name: 'Trần Văn B',
@@ -166,7 +232,8 @@ export const mockEventDetails: Record<number, EventDetail> = {
       phone: '0912345678'
     }
   },
-  4: {
+  {
+    id: 4,
     eventType: 'TOURNAMENT',
     facilityId: '2',
     image: 'https://via.placeholder.com/600x400?text=Family+Sports+Day',
@@ -181,40 +248,91 @@ export const mockEventDetails: Record<number, EventDetail> = {
       phone: '0987654321'
     }
   },
-  5: {
+  {
+    id: 5,
     eventType: 'DISCOUNT',
     facilityId: '3',
+    discountType: 'PERCENT',
     discountPercent: 30,
     image: 'https://via.placeholder.com/600x400?text=New+Customer+Discount',
     bannerImage: 'https://via.placeholder.com/1200x400?text=New+Customer+Discount+Banner',
     conditions: 'Chỉ áp dụng cho khách hàng mới (chưa từng đặt sân tại cơ sở). Mỗi khách hàng chỉ được sử dụng ưu đãi 1 lần.',
     minBookingValue: 200000,
-    discountCode: 'NEWCUSTOMER30'
+    discountCode: 'NEWCUSTOMER30',
+    targetUserType: 'NEW',
+    targetProducts: ['ALL'],
+    maxUsageCount: 100
   },
-  6: {
+  {
+    id: 6,
     eventType: 'TOURNAMENT',
-    targetSportId: 4, // Cầu lông
     facilityId: '4',
+    tournamentName: 'Giải đấu Cầu lông Phạm Kha',
+    sportTypes: [4], // Cầu lông
+    targetSportId: 4, // For backward compatibility
     image: 'https://via.placeholder.com/600x400?text=Badminton+Tournament',
     bannerImage: 'https://via.placeholder.com/1200x400?text=Badminton+Tournament+Banner',
     fields: ['Sân 1', 'Sân 2', 'Sân 3', 'Sân 4'],
+    venueDetails: 'Nhà thi đấu cầu lông Phạm Kha',
     maxParticipants: 48,
     minParticipants: 24,
     currentParticipants: 42,
+    registrationType: 'both',
     registrationEndDate: '2024-06-01T23:59:59Z',
     registrationFee: 300000,
-    tournamentFormat: 'Đấu loại kép',
+    isFreeRegistration: false,
+    paymentInstructions: 'Phí tham gia: 300.000đ/người hoặc 500.000đ/đôi. Thanh toán qua MoMo hoặc ZaloPay.',
+    paymentMethod: ['momo', 'zalopay'],
+    paymentDeadline: '2024-05-25T23:59:59Z',
+    paymentQrImage: 'https://via.placeholder.com/300x300?text=QR+Momo+Zalo',
+    registrationProcess: '1. Đăng ký online\n2. Thanh toán qua ví điện tử\n3. Nhận xác nhận qua email\n4. Check-in trước giờ thi đấu 30 phút',
+    ageLimit: 'Không giới hạn độ tuổi',
+    tournamentFormat: ['knockout'],
+    tournamentFormatDescription: 'Chia theo trình độ: nghiệp dư và chuyên nghiệp. Đấu loại trực tiếp từ vòng 1.',
+    totalPrize: '7.000.000 VNĐ + Cup + Vợt cầu lông cao cấp',
+    prizeDescription: 'Giải nhất: Cup, 4 triệu đồng và 1 vợt cầu lông cao cấp. Giải nhì: 2 triệu đồng. Giải ba: 1 triệu đồng.',
     prizes: [
-      { position: 1, prize: 'Cup + 4.000.000 VNĐ' },
+      { position: 1, prize: 'Cup + 4.000.000 VNĐ + Vợt cầu lông' },
       { position: 2, prize: '2.000.000 VNĐ' },
       { position: 3, prize: '1.000.000 VNĐ' }
     ],
-    rules: 'Thi đấu theo luật cầu lông quốc tế. Các trận đấu thi đấu 3 set, mỗi set 21 điểm. Ban tổ chức cung cấp cầu thi đấu, người chơi tự mang vợt.',
+    rulesAndRegulations: 'Thi đấu theo luật cầu lông quốc tế. Các trận đấu thi đấu 3 set, mỗi set 21 điểm. Ban tổ chức cung cấp cầu thi đấu, người chơi tự mang vợt.',
+    currentStatus: 'inProgress',
     location: 'Nhà thi đấu cầu lông Phạm Kha',
     contact: {
       name: 'Phạm Văn D',
       email: 'phamvand@example.com',
       phone: '0923456789'
     }
+  },
+  {
+    id: 7,
+    eventType: 'DISCOUNT',
+    facilityId: '2',
+    discountType: 'AMOUNT',
+    discountAmount: 50000,
+    image: 'https://via.placeholder.com/600x400?text=Flash+Sale+Noon',
+    bannerImage: 'https://via.placeholder.com/1200x400?text=Flash+Sale+Noon+Banner',
+    conditions: 'Áp dụng cho đơn đặt sân trong khung giờ 11h-14h. Mỗi khách hàng được sử dụng tối đa 1 lần/ngày.',
+    minBookingValue: 100000,
+    discountCode: 'NOON50K',
+    targetUserType: 'ALL',
+    targetProducts: ['FIELD_FOOTBALL', 'FIELD_BADMINTON'],
+    maxUsageCount: 30
+  },
+  {
+    id: 8,
+    eventType: 'DISCOUNT',
+    facilityId: '1',
+    discountType: 'FREE_SLOT',
+    freeSlots: 2,
+    image: 'https://via.placeholder.com/600x400?text=VIP+Free+Slots',
+    bannerImage: 'https://via.placeholder.com/1200x400?text=VIP+Free+Slots+Banner',
+    conditions: 'Tặng 2 lượt đặt sân miễn phí cho khách hàng VIP khi đặt sân 5 lần trong tháng.',
+    minBookingValue: 0,
+    discountCode: 'VIPFREE2',
+    targetUserType: 'VIP',
+    targetProducts: ['ALL'],
+    maxUsageCount: 50
   }
-};
+];

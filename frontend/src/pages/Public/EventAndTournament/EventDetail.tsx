@@ -18,14 +18,6 @@ const { TabPane } = Tabs;
 import { mockEvents } from '@/mocks/event/eventData';
 import { mockEventDetails } from '@/mocks/event/eventData';
 
-// Mock facility data - replace with actual data source
-const mockFacilities: Record<string, { name: string; address: string; phone: string }> = {
-  '1': { name: 'Sân bóng đá Phạm Kha', address: '123 Đường Phạm Văn Đồng, Quận Gò Vấp, TPHCM', phone: '0987654321' },
-  '2': { name: 'Sân Tennis Bình Chánh', address: '456 Đường Nguyễn Văn Linh, Huyện Bình Chánh, TPHCM', phone: '0123456789' },
-  '3': { name: 'Sân bóng rổ Quận 7', address: '789 Đường Nguyễn Thị Thập, Quận 7, TPHCM', phone: '0909090909' },
-  '4': { name: 'Sân cầu lông Phạm Kha', address: '123 Đường Phạm Văn Đồng, Quận Gò Vấp, TPHCM', phone: '0987654321' }
-};
-
 // Mock sports data
 const mockSports: Record<number, string> = {
   1: 'Bóng đá',
@@ -46,12 +38,12 @@ const EventDetail: React.FC = () => {
       setLoading(true);
       try {
         // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 100));
         
         // Find event in mock data
         const eventId = Number(id);
         const foundEvent = mockEvents.find(e => e.id === eventId);
-        const eventDetails = mockEventDetails[eventId];
+        const eventDetails = mockEventDetails.find(e => e.id === eventId);
         
         if (foundEvent && eventDetails) {
           // Combine event and event details
@@ -60,24 +52,25 @@ const EventDetail: React.FC = () => {
             ...eventDetails,
             // Add additional data for display
             sportName: eventDetails.targetSportId ? mockSports[eventDetails.targetSportId] : undefined,
-            location: foundEvent.facilityId ? 
-              `${mockFacilities[foundEvent.facilityId]?.name}, ${mockFacilities[foundEvent.facilityId]?.address}` : 
-              "Không xác định",
+            // Sử dụng location từ event hoặc eventDetails
+            location: foundEvent.location || eventDetails.location || "Không xác định",
             // Create a mock organizer if not available
             organizer: {
               id: foundEvent.facilityId || '1',
-              name: foundEvent.facilityId ? mockFacilities[foundEvent.facilityId]?.name : 'Không xác định',
-              logo: `https://via.placeholder.com/150?text=${foundEvent.facilityId}`,
-              contact: foundEvent.facilityId ? mockFacilities[foundEvent.facilityId]?.phone : undefined
+              name: eventDetails.contact?.name || "Không xác định",
+              logo: `https://via.placeholder.com/150?text=${foundEvent.facilityId || 'Unknown'}`,
+              contact: eventDetails.contact?.phone || undefined
             }
           };
           
           setEvent(fullEvent);
         } else {
           console.error('Event not found');
+          setEvent(null);
         }
       } catch (error) {
         console.error('Error fetching event details:', error);
+        setEvent(null);
       } finally {
         setLoading(false);
       }
@@ -85,6 +78,8 @@ const EventDetail: React.FC = () => {
 
     if (id) {
       fetchEventDetails();
+    } else {
+      setLoading(false);
     }
   }, [id]);
 

@@ -4,6 +4,15 @@ export type EventStatus = 'active' | 'upcoming' | 'expired';
 // Các loại sự kiện
 export type EventType = 'TOURNAMENT' | 'DISCOUNT';
 
+// Các loại khuyến mãi
+export type DiscountType = 'PERCENT' | 'AMOUNT' | 'FREE_SLOT';
+
+// Các đối tượng áp dụng khuyến mãi
+export type TargetUserType = 'ALL' | 'NEW' | 'VIP';
+
+// Các sản phẩm áp dụng khuyến mãi
+export type TargetProductType = 'ALL' | 'FIELD_FOOTBALL' | 'FIELD_BADMINTON' | 'FIELD_TENNIS' | 'FIELD_BASKETBALL';
+
 // Interface chính cho sự kiện
 export interface Event {
   id: number;
@@ -38,28 +47,45 @@ export interface EventPrize {
 
 // Interface cho chi tiết sự kiện dựa trên loại
 export interface EventDetail {
+  id: number;
   eventType: EventType;
   facilityId: string;
   image: string;
   bannerImage?: string;
   // Tournament specific fields
-  targetSportId?: number;
+  tournamentName?: string;
+  sportTypes?: number[];
+  targetSportId?: number; // For backward compatibility
   sportName?: string; // Name of the sport (derived from targetSportId)
   fields?: string[];
+  venueDetails?: string;
   maxParticipants?: number;
   minParticipants?: number; // Minimum participants required
   currentParticipants?: number;
+  registrationType?: 'individual' | 'team' | 'both';
   registrationEndDate?: string;
   registrationLink?: string; // Link to registration form
   registrationFee?: number; // Fee to participate in the tournament
-  tournamentFormat?: string; // Format of the tournament (knockout, league, etc.)
+  ageLimit?: string;
+  tournamentFormat?: string[] | string;
+  tournamentFormatDescription?: string;
+  totalPrize?: string;
+  prizeDescription?: string;
   prizes?: EventPrize[];
-  rules?: string; // Tournament rules
+  currentStatus?: 'registration' | 'inProgress' | 'completed';
+  rulesAndRegulations?: string;
+  rules?: string; // For backward compatibility
   // Discount specific fields
+  discountType?: DiscountType;
   discountPercent?: number;
+  discountAmount?: number;
+  freeSlots?: number;
   conditions?: string;
   minBookingValue?: number;
   discountCode?: string; // Discount code to apply
+  targetUserType?: TargetUserType;
+  targetProducts?: TargetProductType[];
+  maxUsageCount?: number;
   // Special offer specific fields
   activities?: string[];
   specialServices?: string[];
@@ -69,6 +95,13 @@ export interface EventDetail {
     email: string;
     phone: string;
   };
+  isFreeRegistration?: boolean;
+  paymentInstructions?: string;
+  paymentMethod?: string[] | string;
+  paymentDeadline?: string;
+  paymentAccountInfo?: string;
+  paymentQrImage?: string;
+  registrationProcess?: string;
 }
 
 // Interface cho form tạo/chỉnh sửa sự kiện
@@ -86,21 +119,37 @@ export interface EventFormData {
   location?: string;
   
   // Tournament specific fields
-  targetSportId?: number;
+  tournamentName?: string;
+  sportTypes?: number[];
+  targetSportId?: number; // For backward compatibility
   fields?: string[];
+  venueDetails?: string;
   maxParticipants?: number;
   minParticipants?: number;
+  registrationType?: 'individual' | 'team' | 'both';
   registrationEndDate?: string;
   registrationFee?: number;
-  tournamentFormat?: string;
+  ageLimit?: string;
+  tournamentFormat?: string[] | string;
+  tournamentFormatDescription?: string;
+  totalPrize?: string;
+  prizeDescription?: string;
   prizes?: EventPrize[];
-  rules?: string;
+  currentStatus?: 'registration' | 'inProgress' | 'completed';
+  rulesAndRegulations?: string;
+  rules?: string; // For backward compatibility
   
   // Discount specific fields
+  discountType?: DiscountType;
   discountPercent?: number;
+  discountAmount?: number;
+  freeSlots?: number;
   conditions?: string;
   minBookingValue?: number;
   discountCode?: string;
+  targetUserType?: TargetUserType;
+  targetProducts?: TargetProductType[];
+  maxUsageCount?: number;
   
   // Special offer specific fields
   activities?: string[];
@@ -110,6 +159,13 @@ export interface EventFormData {
     email: string;
     phone: string;
   };
+  isFreeRegistration?: boolean;
+  paymentInstructions?: string;
+  paymentMethod?: string[] | string;
+  paymentDeadline?: string;
+  paymentAccountInfo?: string;
+  paymentQrImage?: string;
+  registrationProcess?: string;
 }
 
 // Interface cho bộ lọc sự kiện
@@ -169,22 +225,37 @@ export interface FullEvent {
   registrationLink?: string;
   location?: string;
   // Tournament specific fields
+  tournamentName?: string;
+  sportTypes?: number[];
   targetSportId?: number;
   sportName?: string;
   fields?: string[];
+  venueDetails?: string;
   maxParticipants?: number;
   minParticipants?: number;
-  currentParticipants?: number;
+  registrationType?: 'individual' | 'team' | 'both';
   registrationEndDate?: string;
   registrationFee?: number;
-  tournamentFormat?: string;
+  ageLimit?: string;
+  tournamentFormat?: string[] | string;
+  tournamentFormatDescription?: string;
+  totalPrize?: string;
+  prizeDescription?: string;
   prizes?: EventPrize[];
+  currentStatus?: 'registration' | 'inProgress' | 'completed';
+  rulesAndRegulations?: string;
   rules?: string;
   // Discount specific fields
+  discountType?: DiscountType;
   discountPercent?: number;
+  discountAmount?: number;
+  freeSlots?: number;
   conditions?: string;
   minBookingValue?: number;
   discountCode?: string;
+  targetUserType?: TargetUserType;
+  targetProducts?: TargetProductType[];
+  maxUsageCount?: number;
   // Special offer specific fields
   activities?: string[];
   specialServices?: string[];
@@ -199,4 +270,11 @@ export interface FullEvent {
     logo: string;
     contact?: string;
   };
+  isFreeRegistration?: boolean;
+  paymentInstructions?: string;
+  paymentMethod?: string[] | string;
+  paymentDeadline?: string;
+  paymentAccountInfo?: string;
+  paymentQrImage?: string;
+  registrationProcess?: string;
 }
