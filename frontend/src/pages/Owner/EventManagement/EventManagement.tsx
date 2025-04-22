@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Select, Card, Typography, Modal, Input, Tabs, Tag, Empty, Row, Col, Badge } from 'antd';
 import { PlusOutlined, SearchOutlined, CalendarOutlined, TeamOutlined } from '@ant-design/icons';
-import { Event } from '@/types/event.type';
+import { Event, EventType } from '@/types/event.type';
 import { mockEvents } from '@/mocks/event/eventData';
 import { mockFacilitiesDropdown } from '@/mocks/facility/mockFacilities';
 import { getRegistrationCountsByStatus } from '@/mocks/event/registrationData';
@@ -27,6 +27,7 @@ const EventManagement: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedFacility, setSelectedFacility] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>('all');
+  const [eventTypeFilter, setEventTypeFilter] = useState<EventType | 'all'>('all');
   const [search, setSearch] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +37,7 @@ const EventManagement: React.FC = () => {
   const [editModalVisible, setEditModalVisible] = useState<boolean>(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   
-  // New state for registration management
+  // Registration management
   const [activeTab, setActiveTab] = useState<string>('events');
   const [registrationManagementVisible, setRegistrationManagementVisible] = useState<boolean>(false);
   const [selectedEventForRegistration, setSelectedEventForRegistration] = useState<Event | null>(null);
@@ -47,6 +48,13 @@ const EventManagement: React.FC = () => {
     { value: 'active', label: 'Đang diễn ra' },
     { value: 'upcoming', label: 'Sắp diễn ra' },
     { value: 'expired', label: 'Đã kết thúc' }
+  ];
+
+  // Event type filter options
+  const eventTypeOptions = [
+    { value: 'all', label: 'Tất cả loại' },
+    { value: 'TOURNAMENT', label: 'Giải đấu' },
+    { value: 'DISCOUNT', label: 'Khuyến mãi' }
   ];
 
   // Load initial facility from localStorage
@@ -87,6 +95,11 @@ const EventManagement: React.FC = () => {
         filteredEvents = filteredEvents.filter(event => event.status === filter);
       }
       
+      // Apply event type filter
+      if (eventTypeFilter !== 'all') {
+        filteredEvents = filteredEvents.filter(event => event.eventType === eventTypeFilter);
+      }
+      
       // Apply search filter
       if (search) {
         const lowerCaseSearch = search.toLowerCase();
@@ -100,7 +113,7 @@ const EventManagement: React.FC = () => {
       setEvents(filteredEvents);
       setLoading(false);
     }, 500);
-  }, [selectedFacility, filter, search]);
+  }, [selectedFacility, filter, eventTypeFilter, search]);
   
   useEffect(() => {
     fetchEvents();
@@ -114,6 +127,11 @@ const EventManagement: React.FC = () => {
   // Handle filter change
   const handleFilterChange = (value: string) => {
     setFilter(value);
+  };
+
+  // Handle event type filter change
+  const handleEventTypeFilterChange = (value: EventType | 'all') => {
+    setEventTypeFilter(value);
   };
 
   // Handle search change
@@ -260,41 +278,66 @@ const EventManagement: React.FC = () => {
               <Col xs={24} sm={12} md={6} lg={5}>
                 <Text strong>Trạng thái:</Text>
                 <Select
-                  defaultValue="all"
+                  placeholder="Chọn trạng thái"
                   style={{ width: '100%', marginTop: 8 }}
                   onChange={handleFilterChange}
+                  value={filter}
                 >
-                  <Option value="all">Tất cả</Option>
-                  <Option value="draft">Nháp</Option>
-                  <Option value="published">Đã đăng</Option>
-                  <Option value="closed">Đã đóng</Option>
-                  <Option value="cancelled">Đã hủy</Option>
+                  {filterOptions.map(option => (
+                    <Option key={option.value} value={option.value}>
+                      {option.label}
+                    </Option>
+                  ))}
                 </Select>
               </Col>
               
-              <Col xs={24} sm={24} md={12} lg={14}>
+              <Col xs={24} sm={12} md={6} lg={5}>
+                <Text strong>Loại sự kiện:</Text>
+                <Select
+                  placeholder="Chọn loại sự kiện"
+                  style={{ width: '100%', marginTop: 8 }}
+                  onChange={handleEventTypeFilterChange}
+                  value={eventTypeFilter}
+                >
+                  {eventTypeOptions.map(option => (
+                    <Option key={option.value} value={option.value}>
+                      {option.label}
+                    </Option>
+                  ))}
+                </Select>
+              </Col>
+              
+              <Col xs={24} sm={12} md={6} lg={9}>
                 <Text strong>Tìm kiếm:</Text>
-                <Input
-                  placeholder="Tìm kiếm theo tên hoặc mô tả"
-                  prefix={<SearchOutlined className="text-gray-400" />}
+                <Input 
+                  placeholder="Tìm kiếm theo tên sự kiện" 
                   onChange={handleSearchChange}
-                  className="w-full mt-2"
-                  allowClear
+                  value={search}
+                  prefix={<SearchOutlined />}
+                  style={{ marginTop: 8 }}
                 />
               </Col>
             </Row>
           </div>
           
-          {/* Events table */}
-          <EventTable 
-            events={events} 
-            loading={loading}
-            onView={handleViewEvent}
-            onEdit={handleEditEvent}
-            onDelete={handleDeleteEvent}
-            onManageRegistrations={handleManageRegistrations}
-            getRegistrationBadge={getRegistrationBadge}
-          />
+          {/* Events Table */}
+          {events.length > 0 ? (
+            <EventTable 
+              events={events}
+              loading={loading}
+              onView={handleViewEvent}
+              onEdit={handleEditEvent}
+              onDelete={handleDeleteEvent}
+              onManageRegistrations={handleManageRegistrations}
+              getRegistrationBadge={getRegistrationBadge}
+            />
+          ) : (
+            <Empty 
+              description="Không tìm thấy sự kiện nào" 
+              className="bg-white p-8 rounded-lg shadow-sm"
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+            />
+          )}
         </TabPane>
         
         <TabPane
@@ -305,38 +348,45 @@ const EventManagement: React.FC = () => {
             </span>
           }
           key="registrations"
-          disabled={!selectedEventForRegistration}
         >
           {selectedEventForRegistration ? (
             <RegistrationManagement 
               visible={registrationManagementVisible}
               event={selectedEventForRegistration}
-              onClose={() => setRegistrationManagementVisible(false)}
+              onClose={() => {
+                setRegistrationManagementVisible(false);
+                setActiveTab('events');
+                setSelectedEventForRegistration(null);
+              }}
             />
           ) : (
-            <Card>
+            <Card className="text-center p-6">
               <Empty 
                 description="Vui lòng chọn một sự kiện để quản lý đăng ký" 
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
               />
+              <Button 
+                type="primary" 
+                onClick={() => setActiveTab('events')}
+                className="mt-4"
+              >
+                Quay lại danh sách sự kiện
+              </Button>
             </Card>
           )}
         </TabPane>
       </Tabs>
       
-      {/* Detail Modal */}
-      <EventDetailModal
+      {/* Event Detail Modal */}
+      <EventDetailModal 
         visible={detailModalVisible}
         event={selectedEvent}
         onClose={() => setDetailModalVisible(false)}
-        onEdit={() => {
-          setDetailModalVisible(false);
-          setEditModalVisible(true);
-        }}
+        onEdit={handleEditEvent}
       />
       
-      {/* Edit Modal */}
-      <EventEditModal
+      {/* Event Edit Modal */}
+      <EventEditModal 
         visible={editModalVisible}
         event={selectedEvent}
         onClose={() => setEditModalVisible(false)}
