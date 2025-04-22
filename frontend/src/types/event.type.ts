@@ -110,7 +110,6 @@ export interface EventFormData {
   description: string;
   startDate: string;
   endDate: string;
-  status: EventStatus;
   facilityId?: string;
   eventType?: EventType;
   image?: string;
@@ -168,14 +167,6 @@ export interface EventFormData {
   registrationProcess?: string;
 }
 
-// Interface cho bộ lọc sự kiện
-export interface EventFilter {
-  facilityId?: string;
-  status?: EventStatus;
-  eventType?: EventType;
-  sportId?: number;
-  searchTerm?: string;
-}
 
 // Interface cho trạng thái sự kiện trong store
 export interface EventState {
@@ -186,95 +177,3 @@ export interface EventState {
   selectedFacilityId: string | null;
 }
 
-// Interface cho response từ API lấy danh sách sự kiện
-export interface EventsResponse {
-  success: boolean;
-  data: {
-    events: Event[];
-    pagination: {
-      total: number;
-      page: number;
-      limit: number;
-      pages: number;
-    }
-  }
-}
-
-// Interface cho response từ API lấy chi tiết sự kiện
-export interface EventDetailResponse {
-  success: boolean;
-  data: Event & EventDetail;
-}
-
-// Full Event interface representing combined event and details for display
-export interface FullEvent {
-  // Event base fields
-  id: number;
-  name: string;
-  description: string;
-  startDate: string;
-  endDate: string;
-  status: EventStatus;
-  createdAt: string;
-  updatedAt: string;
-  // Shared fields (from EventDetail)
-  eventType: EventType;
-  facilityId: string;
-  image: string;
-  bannerImage?: string;
-  registrationLink?: string;
-  location?: string;
-  // Tournament specific fields
-  tournamentName?: string;
-  sportTypes?: number[];
-  targetSportId?: number;
-  sportName?: string;
-  fields?: string[];
-  venueDetails?: string;
-  maxParticipants?: number;
-  minParticipants?: number;
-  registrationType?: 'individual' | 'team' | 'both';
-  registrationEndDate?: string;
-  registrationFee?: number;
-  ageLimit?: string;
-  tournamentFormat?: string[] | string;
-  tournamentFormatDescription?: string;
-  totalPrize?: string;
-  prizeDescription?: string;
-  prizes?: EventPrize[];
-  currentStatus?: 'registration' | 'inProgress' | 'completed';
-  rulesAndRegulations?: string;
-  rules?: string;
-  // Discount specific fields
-  discountType?: DiscountType;
-  discountPercent?: number;
-  discountAmount?: number;
-  freeSlots?: number;
-  conditions?: string;
-  minBookingValue?: number;
-  discountCode?: string;
-  targetUserType?: TargetUserType;
-  targetProducts?: TargetProductType[];
-  maxUsageCount?: number;
-  // Special offer specific fields
-  activities?: string[];
-  specialServices?: string[];
-  contact?: {
-    name: string;
-    email: string;
-    phone: string;
-  };
-  organizer?: {
-    id: string;
-    name: string;
-    logo: string;
-    contact?: string;
-  };
-  isFreeRegistration?: boolean;
-  paymentInstructions?: string;
-  paymentMethod?: string[] | string;
-  paymentDeadline?: string;
-  paymentAccountInfo?: string;
-  paymentQrImage?: string;
-  registrationProcess?: string;
-}

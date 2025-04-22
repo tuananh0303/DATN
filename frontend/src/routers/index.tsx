@@ -28,7 +28,7 @@ import FavoriteList from '@/pages/Player/FavoriteList/FavoriteList';
 import ResultBookingVNPay from '@/pages/Player/Booking/ResultBookingVNPay';
 import PlaymateCreate from '@/pages/Player/Playmate/PlaymateCreate';
 import PlaymateManage from '@/pages/Player/Playmate/PlaymateManage';
-
+import EventParticipate from '@/pages/Player/EventParticipate/EventParticipate';
 
 // Owner pages
 import PlaySchedule from '@/pages/Owner/PlaySchedule/PlaySchedule';
@@ -93,6 +93,7 @@ const AppRouter: React.FC = () => {
         <Route path='/user/playmate/create' element={<PlaymateCreate />} />   
         <Route path='/user/playmate/manage' element={<PlaymateManage />} />         
         <Route path='/user/profile' element={<UserProfile />} />
+        <Route path='/user/events/manage' element={<EventParticipate />} />
       </Route>
 
       {/* owner routes */}

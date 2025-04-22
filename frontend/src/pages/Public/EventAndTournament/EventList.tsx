@@ -2,20 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Card, Typography, Row, Col, Tag, Button, Space, Select,
-  Input, Empty, Pagination, Tabs, Badge, Avatar, Spin
+  Input, Empty, Pagination, Tabs, Badge, Avatar, Spin, Breadcrumb, Carousel
 } from 'antd';
+import type { CarouselRef } from 'antd/es/carousel';
 import { 
   SearchOutlined, CalendarOutlined, EnvironmentOutlined, TeamOutlined,
   TrophyOutlined, ArrowRightOutlined, ClockCircleOutlined, PercentageOutlined,
-  GiftOutlined
+  GiftOutlined,
+  LeftOutlined, RightOutlined
 } from '@ant-design/icons';
 import { Event, EventType, EventStatus } from '@/types/event.type';
 import { mockEvents } from '@/mocks/event/eventData';
 import { mockEventDetails } from '@/mocks/event/eventData';
-
+import { Sport } from '@/types/sport.type';
+import { sportService } from '@/services/sport.service';
+import { getSportNameInVietnamese } from '@/utils/translateSport';
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
-const { TabPane } = Tabs;
 
 // Mock facility data - replace with actual data source
 const mockFacilities: Record<string, { name: string; address: string }> = {
@@ -23,14 +26,6 @@ const mockFacilities: Record<string, { name: string; address: string }> = {
   '2': { name: 'Sân Tennis Bình Chánh', address: '456 Đường Nguyễn Văn Linh, Huyện Bình Chánh, TPHCM' },
   '3': { name: 'Sân bóng rổ Quận 7', address: '789 Đường Nguyễn Thị Thập, Quận 7, TPHCM' },
   '4': { name: 'Sân cầu lông Phạm Kha', address: '123 Đường Phạm Văn Đồng, Quận Gò Vấp, TPHCM' }
-};
-
-// Mock sports data
-const mockSports: Record<number, string> = {
-  1: 'Bóng đá',
-  2: 'Bóng rổ',
-  3: 'Tennis',
-  4: 'Cầu lông'
 };
 
 // Enhanced Event interface for display
@@ -42,7 +37,18 @@ interface DisplayEvent extends Event {
   maxParticipants?: number;
   registrationEndDate?: string;
   discountPercent?: number;
+  discountAmount?: number;
+  freeSlots?: number;
+  discountType?: string;
   activities?: string[];
+  targetUserType?: string;
+  minBookingValue?: number;
+  maxUsageCount?: number;
+  registrationFee?: number;
+  isFreeRegistration?: boolean;
+  tournamentFormat?: string[] | string;
+  totalPrize?: string;
+  fields?: string[];
 }
 
 const EventList: React.FC = () => {
@@ -56,6 +62,23 @@ const EventList: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<EventType | 'all'>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(6);
+  const [sportsList, setSportsList] = useState<Sport[]>([]);
+  const [upcomingEvents, setUpcomingEvents] = useState<DisplayEvent[]>([]);
+  const carouselRef = React.useRef<CarouselRef>(null);
+
+  // Fetch sports data
+  useEffect(() => {
+    const fetchSports = async () => {
+      try {
+        const sports = await sportService.getSport();
+        setSportsList(sports);
+      } catch (error) {
+        console.error('Error fetching sports:', error);
+      }
+    };
+
+    fetchSports();
+  }, []);
 
   // Simulating API call to fetch events
   useEffect(() => {
@@ -63,23 +86,44 @@ const EventList: React.FC = () => {
       setLoading(true);
       try {
         // In a real app, this would be an API call
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        await new Promise(resolve => setTimeout(resolve, 150));
         
         // Enrich events with facility and sport details
         const enhancedEvents: DisplayEvent[] = mockEvents.map(event => {
-          const eventDetails = mockEventDetails[event.id];
+          const eventDetails = mockEventDetails.find(detail => detail.id === event.id);
           const facility = mockFacilities[event.facilityId || '1'];
+          const sportId = eventDetails?.targetSportId || eventDetails?.sportTypes?.[0];
+          
+          // Find sport name from sports list
+          let sportName = 'Không xác định';
+          if (sportId && sportsList.length > 0) {
+            const sport = sportsList.find(s => s.id === sportId);
+            if (sport) {
+              sportName = getSportNameInVietnamese(sport.name);
+            }
+          }
           
           return {
             ...event,
             facilityName: facility?.name || 'Không xác định',
             facilityAddress: facility?.address || 'Không xác định',
-            sportName: eventDetails?.targetSportId ? mockSports[eventDetails.targetSportId] : undefined,
+            sportName: sportName,
             currentParticipants: eventDetails?.currentParticipants,
             maxParticipants: eventDetails?.maxParticipants,
             registrationEndDate: eventDetails?.registrationEndDate,
+            discountType: eventDetails?.discountType,
             discountPercent: eventDetails?.discountPercent,
+            discountAmount: eventDetails?.discountAmount,
+            freeSlots: eventDetails?.freeSlots,
             activities: eventDetails?.activities,
+            targetUserType: eventDetails?.targetUserType,
+            minBookingValue: eventDetails?.minBookingValue,
+            maxUsageCount: eventDetails?.maxUsageCount,
+            registrationFee: eventDetails?.registrationFee,
+            isFreeRegistration: eventDetails?.isFreeRegistration,
+            tournamentFormat: eventDetails?.tournamentFormat,
+            totalPrize: eventDetails?.totalPrize,
+            fields: eventDetails?.fields,
           };
         });
         
@@ -92,52 +136,108 @@ const EventList: React.FC = () => {
       }
     };
 
-    fetchEvents();
-  }, []);
+    if (sportsList.length > 0) {
+      fetchEvents();
+    }
+  }, [sportsList]);
 
-  // Handle filter changes
+  // Filter by sport type
   useEffect(() => {
-    let result = [...events];
-
-    // Filter by status
-    if (activeTab !== 'all') {
-      result = result.filter(event => event.status === activeTab);
-    }
-
-    // Filter by search text
-    if (searchTerm) {
-      const lowerCaseSearch = searchTerm.toLowerCase();
-      result = result.filter(
-        event =>
-          event.name.toLowerCase().includes(lowerCaseSearch) ||
-          event.description.toLowerCase().includes(lowerCaseSearch) ||
-          event.facilityName.toLowerCase().includes(lowerCaseSearch) ||
-          event.facilityAddress.toLowerCase().includes(lowerCaseSearch) ||
-          (event.sportName && event.sportName.toLowerCase().includes(lowerCaseSearch))
-      );
-    }
-
-    // Filter by sport type
-    if (sportFilter !== 'all') {
-      result = result.filter(event => {
-        const eventDetails = mockEventDetails[event.id];
+    if (sportFilter !== 'all' && events.length > 0) {
+      // Lọc lại từ tất cả sự kiện events, không phải từ filteredEvents
+      const result = events.filter(event => {
+        const eventDetails = mockEventDetails.find(detail => detail.id === event.id);
         return eventDetails?.targetSportId === sportFilter;
       });
+      
+      setFilteredEvents(result);
+      setCurrentPage(1);
+    } else if (sportFilter === 'all' && events.length > 0) {
+      // Khi reset lại filter về 'all', áp dụng lại các filter khác
+      let result = [...events];
+      
+      // Áp dụng lại filter theo status
+      if (activeTab !== 'all') {
+        result = result.filter(event => event.status === activeTab);
+      }
+      
+      // Áp dụng lại filter theo search
+      if (searchTerm) {
+        const lowerCaseSearch = searchTerm.toLowerCase();
+        result = result.filter(
+          event =>
+            event.name.toLowerCase().includes(lowerCaseSearch) ||
+            event.description.toLowerCase().includes(lowerCaseSearch) ||
+            event.facilityName.toLowerCase().includes(lowerCaseSearch) ||
+            event.facilityAddress.toLowerCase().includes(lowerCaseSearch) ||
+            (event.sportName && event.sportName.toLowerCase().includes(lowerCaseSearch)) ||
+            (event.discountType === 'PERCENT' && 'giảm giá phần trăm'.includes(lowerCaseSearch)) ||
+            (event.discountType === 'AMOUNT' && 'giảm giá tiền'.includes(lowerCaseSearch)) ||
+            (event.discountType === 'FREE_SLOT' && 'tặng lượt đặt miễn phí'.includes(lowerCaseSearch)) ||
+            (event.targetUserType === 'NEW' && 'người mới'.includes(lowerCaseSearch)) ||
+            (event.targetUserType === 'VIP' && 'khách hàng vip'.includes(lowerCaseSearch))
+        );
+      }
+      
+      // Áp dụng lại filter theo event type
+      if (typeFilter !== 'all') {
+        result = result.filter(event => event.eventType === typeFilter);
+      }
+      
+      setFilteredEvents(result);
+      setCurrentPage(1);
     }
+  }, [sportFilter, events, activeTab, searchTerm, typeFilter]);
 
-    // Filter by event type
-    if (typeFilter !== 'all') {
-      result = result.filter(event => event.eventType === typeFilter);
+  // Filter 3 nearest upcoming events
+  useEffect(() => {
+    if (events.length > 0) {
+      // Lấy ngày hiện tại
+      const today = new Date();
+      
+      // Lọc tất cả sự kiện upcoming (thời gian bắt đầu sau hôm nay)
+      const upcomingEvents = events.filter(event => 
+        event.status === 'upcoming' && new Date(event.startDate) >= today
+      );
+      
+      // Nếu có đủ 3 sự kiện upcoming trở lên
+      if (upcomingEvents.length >= 3) {
+        // Sắp xếp theo ngày bắt đầu gần nhất
+        const sorted = [...upcomingEvents].sort((a, b) => 
+          new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
+        );
+        
+        console.log('Sorted upcoming events:', 
+          sorted.map(e => ({id: e.id, name: e.name, date: e.startDate}))
+        );
+        
+        setUpcomingEvents(sorted.slice(0, 3));
+      } 
+      // Nếu không đủ 3 sự kiện upcoming
+      else {
+        // Lấy tất cả sự kiện đang diễn ra (active)
+        const activeEvents = events.filter(event => 
+          event.status === 'active' && new Date(event.endDate) >= today
+        );
+        
+        // Kết hợp sự kiện upcoming và active, ưu tiên upcoming trước
+        const combined = [...upcomingEvents, ...activeEvents];
+        
+        // Sắp xếp theo ngày bắt đầu gần nhất
+        const sorted = combined.sort((a, b) => 
+          new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
+        );
+        
+        // Lấy 3 sự kiện đầu tiên, nếu không đủ thì lấy tất cả
+        setUpcomingEvents(sorted.slice(0, 3));
+      }
     }
+  }, [events]);
 
-    setFilteredEvents(result);
-    setCurrentPage(1); // Reset to first page when filters change
-  }, [events, activeTab, searchTerm, sportFilter, typeFilter]);
-
-  // Generate unique sport types for filter
-  const sportOptions = Object.entries(mockSports).map(([id, name]) => ({
-    id: parseInt(id),
-    name
+  // Generate options for sport filter from API data
+  const sportOptions = sportsList.map(sport => ({
+    id: sport.id,
+    name: sport.name
   }));
 
   // Handle view event details
@@ -147,12 +247,22 @@ const EventList: React.FC = () => {
 
   // Handle register for event
   const handleRegister = (eventId: number) => {
-    const eventDetails = mockEventDetails[eventId];
+    const event = events.find(e => e.id === eventId);
+    const eventDetails = mockEventDetails.find(detail => detail.id === eventId);
     
-    if (eventDetails?.registrationLink) {
-      window.open(eventDetails.registrationLink, '_blank');
+    if (event?.eventType === 'TOURNAMENT') {
+      // Đối với giải đấu, chuyển đến trang chi tiết sự kiện hoặc link đăng ký nếu có
+      if (eventDetails?.registrationLink) {
+        window.open(eventDetails.registrationLink, '_blank');
+      } else {
+        navigate(`/event/${eventId}?register=true`);
+      }
+    } else if (event?.eventType === 'DISCOUNT' && event.facilityId) {
+      // Đối với khuyến mãi, chuyển đến trang booking của cơ sở
+      navigate(`/booking/${event.facilityId}`);
     } else {
-      navigate(`/event/${eventId}?register=true`);
+      // Fallback nếu không xác định được loại sự kiện
+      navigate(`/event/${eventId}`);
     }
   };
 
@@ -246,14 +356,6 @@ const EventList: React.FC = () => {
 
   // Render event cards with skeleton loading
   const renderEventCards = () => {
-    if (loading) {
-      return Array(3).fill(null).map((_, index) => (
-        <Col xs={24} md={12} lg={8} key={`skeleton-${index}`}>
-          <Card className="event-card" loading={true} />
-        </Col>
-      ));
-    }
-
     if (filteredEvents.length === 0) {
       return (
         <Col span={24}>
@@ -298,89 +400,312 @@ const EventList: React.FC = () => {
               onClick={() => handleRegister(event.id)}
               disabled={!isRegistrationAvailable(event)}
             >
-              Đăng ký
+              {event.eventType === 'TOURNAMENT' ? 'Đăng ký' : 'Đặt sân'}
             </Button>
           ]}
         >
-          <div className="event-card-org">
-            <Avatar src={`https://via.placeholder.com/40?text=${event.facilityName?.[0] || 'F'}`} size="small" />
-            <Text type="secondary" className="text-sm">
-              {event.facilityName}
-            </Text>
-          </div>
-          
-          <Card.Meta
-            title={<span className="event-card-title">{event.name}</span>}
-            description={
-              <Paragraph ellipsis={{ rows: 2 }} className="event-card-desc">
-                {event.description}
-              </Paragraph>
-            }
-          />
-          
-          <div className="event-card-info">
-            <div className="event-info-item">
-              <CalendarOutlined />
-              <Text className="ml-2">
-                {formatDate(event.startDate)}
-                {event.startDate !== event.endDate && 
-                  ` - ${formatDate(event.endDate)}`}
+          <div className="event-card-content">
+            <div className="event-card-org">
+              <Avatar src={`https://via.placeholder.com/40?text=${event.facilityName?.[0] || 'F'}`} size="small" />
+              <Text type="secondary" className="text-sm truncate">
+                {event.facilityName}
               </Text>
             </div>
             
-            <div className="event-info-item">
-              <EnvironmentOutlined />
-              <Text className="ml-2" ellipsis>{event.facilityName}</Text>
+            <div className="event-card-title-container">
+              <Card.Meta
+                title={<span className="event-card-title">{event.name}</span>}
+                description={
+                  <Paragraph ellipsis={{ rows: 2 }} className="event-card-desc">
+                    {event.description}
+                  </Paragraph>
+                }
+              />
             </div>
             
-            {event.eventType === 'TOURNAMENT' && event.currentParticipants !== undefined && event.maxParticipants !== undefined && (
+            <div className="event-card-info">
               <div className="event-info-item">
-                <TeamOutlined />
+                <CalendarOutlined />
                 <Text className="ml-2">
-                  {event.currentParticipants}/{event.maxParticipants} người tham gia
+                  {formatDate(event.startDate)}
+                  {event.startDate !== event.endDate && 
+                    ` - ${formatDate(event.endDate)}`}
                 </Text>
               </div>
-            )}
-            
-            {event.eventType === 'DISCOUNT' && event.discountPercent !== undefined && (
+              
               <div className="event-info-item">
-                <PercentageOutlined />
-                <Text className="ml-2">
-                  Giảm giá {event.discountPercent}%
-                </Text>
+                <EnvironmentOutlined />
+                <Text className="ml-2" ellipsis>{event.facilityName}</Text>
               </div>
-            )}
-            
-            
-          </div>
-          
-          <div className="event-card-footer">
-            <div>
-              {event.sportName && (
-                <Tag key={event.sportName} className="event-tag">{event.sportName}</Tag>
-              )}
+              
               {event.eventType === 'TOURNAMENT' && (
-                <Tag key="tournament" color="blue" className="event-tag">Giải đấu</Tag>
+                <div className="tournament-info">
+                  {event.currentParticipants !== undefined && event.maxParticipants !== undefined && (
+                    <div className="event-info-item">
+                      <TeamOutlined />
+                      <Text className="ml-2">
+                        {event.currentParticipants}/{event.maxParticipants} người tham gia
+                      </Text>
+                    </div>
+                  )}
+                  
+                  {event.totalPrize && (
+                    <div className="event-info-item">
+                      <TrophyOutlined />
+                      <Text className="ml-2">
+                        Giải thưởng: {event.totalPrize}
+                      </Text>
+                    </div>
+                  )}
+                  
+                  {event.registrationFee !== undefined && (
+                    <div className="event-info-item">
+                      <span style={{ fontSize: '14px', marginRight: '5px' }}>💰</span>
+                      <Text className="ml-1">
+                        {event.isFreeRegistration === true 
+                          ? 'Miễn phí tham gia' 
+                          : `Phí tham gia: ${event.registrationFee?.toLocaleString('vi-VN')}đ`}
+                      </Text>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {event.eventType === 'DISCOUNT' && (
+                <div className="discount-info">
+                  {event.discountType === 'PERCENT' && event.discountPercent !== undefined && (
+                    <div className="event-info-item">
+                      <PercentageOutlined />
+                      <Text className="ml-2">
+                        Giảm giá {event.discountPercent}%
+                      </Text>
+                    </div>
+                  )}
+                  
+                  {event.discountType === 'AMOUNT' && event.discountAmount !== undefined && (
+                    <div className="event-info-item">
+                      <span style={{ fontSize: '14px', marginRight: '5px' }}>💵</span>
+                      <Text className="ml-1">
+                        Giảm giá {event.discountAmount?.toLocaleString('vi-VN')}đ
+                      </Text>
+                    </div>
+                  )}
+                  
+                  {event.discountType === 'FREE_SLOT' && event.freeSlots !== undefined && (
+                    <div className="event-info-item">
+                      <GiftOutlined />
+                      <Text className="ml-2">
+                        Tặng {event.freeSlots} lượt đặt miễn phí
+                      </Text>
+                    </div>
+                  )}
+                  
+                  {event.minBookingValue !== undefined && event.minBookingValue > 0 && (
+                    <div className="event-info-item">
+                      <span style={{ fontSize: '14px', marginRight: '5px' }}>💲</span>
+                      <Text className="ml-1">
+                        Đơn tối thiểu: {event.minBookingValue?.toLocaleString('vi-VN')}đ
+                      </Text>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
             
-            {event.eventType === 'TOURNAMENT' && event.registrationEndDate && (
-              <div className="event-deadline">
-                <ClockCircleOutlined />
-                <Text className="ml-1 text-xs">
-                  Hạn đăng ký: {formatDate(event.registrationEndDate)}
-                </Text>
+            <div className="event-card-footer">
+              <div className="event-tags">
+                {event.sportName && (
+                  <Tag key={event.sportName} className="event-tag">{event.sportName}</Tag>
+                )}
+                
+                {event.fields && event.fields.length > 0 && (
+                  <Tag key="fields" color="cyan" className="event-tag">
+                    {event.fields.length} sân
+                  </Tag>
+                )}
+                
+                {event.eventType === 'TOURNAMENT' && event.tournamentFormat && (
+                  <Tag key="format" color="purple" className="event-tag">
+                    {Array.isArray(event.tournamentFormat) 
+                      ? (event.tournamentFormat.includes('knockout') ? 'Đấu loại' : 
+                         event.tournamentFormat.includes('roundRobin') ? 'Vòng tròn' : 
+                         event.tournamentFormat.includes('hybrid') ? 'Kết hợp' : 'Khác')
+                      : event.tournamentFormat}
+                  </Tag>
+                )}
               </div>
-            )}
+              
+              <div className="event-meta">
+                {event.eventType === 'TOURNAMENT' && event.registrationEndDate && (
+                  <div className="event-deadline">
+                    <ClockCircleOutlined />
+                    <Text className="ml-1 text-xs">
+                      Hạn đăng ký: {formatDate(event.registrationEndDate)}
+                    </Text>
+                  </div>
+                )}
+                
+                {event.eventType === 'DISCOUNT' && (
+                  <div className="event-badge">
+                    <Tag color="red" className="mb-0">
+                      {event.maxUsageCount ? `${event.maxUsageCount} lượt` : 'Không giới hạn'}
+                    </Tag>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </Card>
       </Col>
     ));
   };
 
+  // Custom arrow components for the carousel
+  interface ArrowProps {
+    onClick?: React.MouseEventHandler<HTMLDivElement>;
+  }
+
+  const NextArrow: React.FC<ArrowProps> = (props) => {
+    const { onClick } = props;
+    return (
+      <div 
+        className="custom-carousel-arrow custom-carousel-next" 
+        onClick={onClick}
+      >
+        <RightOutlined />
+      </div>
+    );
+  };
+
+  const PrevArrow: React.FC<ArrowProps> = (props) => {
+    const { onClick } = props;
+    return (
+      <div 
+        className="custom-carousel-arrow custom-carousel-prev" 
+        onClick={onClick}
+      >
+        <LeftOutlined />
+      </div>
+    );
+  };
+
+  // Carousel slide render function
+  const renderCarouselSlide = (event: DisplayEvent) => {
+    if (!event) return null;
+    
+    return (
+      <div key={event.id} className="highlight-event-slide">
+        <div className="highlight-event-cover">
+          <img 
+            alt={event.name} 
+            src={event.image ? 
+              `${event.image}` : 
+              `https://via.placeholder.com/1200x400?text=${encodeURIComponent(event.name)}`
+            }
+            className="highlight-event-image"
+          />
+          <div className="highlight-event-overlay">
+            <div className="highlight-event-content">
+              <Space>
+                {renderEventStatus(event.status)}
+                {renderEventType(event.eventType)}
+              </Space>
+              <Title level={3} className="highlight-event-title">
+                {event.name}
+              </Title>
+              <Space className="highlight-event-details" wrap>
+                <span>
+                  <CalendarOutlined /> {formatDate(event.startDate)}
+                  {event.startDate !== event.endDate && 
+                    ` - ${formatDate(event.endDate)}`}
+                </span>
+                <span>
+                  <EnvironmentOutlined /> {event.facilityName}
+                </span>
+                
+                {event.eventType === 'TOURNAMENT' && (
+                  <>
+                    {event.sportName && (
+                      <span>
+                        <span style={{ marginRight: '5px' }}>🏆</span> {event.sportName}
+                      </span>
+                    )}
+                    
+                    {event.totalPrize && (
+                      <span className="highlight-prize">
+                        <TrophyOutlined /> Giải thưởng: {event.totalPrize}
+                      </span>
+                    )}
+                  </>
+                )}
+                
+                {event.eventType === 'DISCOUNT' && (
+                  <>
+                    {event.discountType === 'PERCENT' && event.discountPercent && (
+                      <span className="highlight-discount">
+                        <PercentageOutlined /> Giảm {event.discountPercent}%
+                      </span>
+                    )}
+                    
+                    {event.discountType === 'AMOUNT' && event.discountAmount && (
+                      <span className="highlight-discount">
+                        <span style={{ marginRight: '5px' }}>💵</span> Giảm {event.discountAmount?.toLocaleString('vi-VN')}đ
+                      </span>
+                    )}
+                    
+                    {event.discountType === 'FREE_SLOT' && event.freeSlots && (
+                      <span className="highlight-discount">
+                        <GiftOutlined /> Tặng {event.freeSlots} lượt đặt miễn phí
+                      </span>
+                    )}
+                  </>
+                )}
+              </Space>
+              
+              <Paragraph className="highlight-event-description" ellipsis={{ rows: 2 }}>
+                {event.description}
+              </Paragraph>
+              
+              <div className="highlight-event-actions">
+                <Button 
+                  type="primary" 
+                  size="large"
+                  onClick={() => handleViewEvent(event.id)}
+                >
+                  Xem chi tiết
+                </Button>
+                <Button 
+                  type="default" 
+                  size="large"
+                  onClick={() => handleRegister(event.id)}
+                  disabled={!isRegistrationAvailable(event)}
+                >
+                  {event.eventType === 'TOURNAMENT' ? 'Đăng ký ngay' : 'Đặt sân ngay'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="w-full px-4 py-6">
       <div className="max-w-7xl mx-auto">
+        {/* Breadcrumb */}
+        <Breadcrumb
+          className="mb-4"
+          items={[
+            {
+              title: <a href="/">Trang chủ</a>,
+            },
+            {
+              title: 'Sự kiện & Giải đấu',
+            },
+          ]}
+        />
+        
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 md:mb-6">
           <div>
             <Title level={2} className="m-0 text-xl md:text-2xl lg:text-3xl">
@@ -400,7 +725,7 @@ const EventList: React.FC = () => {
               >
                 <Option value="all">Tất cả môn</Option>
                 {sportOptions.map(sport => (
-                  <Option key={sport.id} value={sport.id}>{sport.name}</Option>
+                  <Option key={sport.id} value={sport.id}>{getSportNameInVietnamese(sport.name)}</Option>
                 ))}
               </Select>
               
@@ -412,50 +737,76 @@ const EventList: React.FC = () => {
                 <Option value="all">Tất cả loại</Option>
                 <Option value="TOURNAMENT">Giải đấu</Option>
                 <Option value="DISCOUNT">Khuyến mãi</Option>
-                <Option value="SPECIAL_OFFER">Ưu đãi đặc biệt</Option>
               </Select>
             </Space>
           </div>
         </div>
         
+        {/* Event Highlight Carousel Section - Di chuyển lên trên activeTab */}
+        {loading ? (
+          <div className="text-center py-8 mb-6 spin-container">
+            <Spin />
+            <div className="mt-3">Đang tải danh sách sự kiện...</div>
+          </div>
+        ) : upcomingEvents.length > 0 ? (
+          <div className="mb-6 highlight-event-carousel">
+            {/* <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-4">
+              Sự kiện sắp diễn ra gần nhất
+            </h2> */}
+            <Carousel
+              ref={carouselRef}
+              autoplay
+              autoplaySpeed={5000}
+              dots={true}
+              arrows
+              nextArrow={<NextArrow />}
+              prevArrow={<PrevArrow />}
+              className="custom-carousel"
+            >
+              {upcomingEvents.map(event => renderCarouselSlide(event))}
+            </Carousel>
+          </div>
+        ) : null}
+        
         <Card className="mb-4 md:mb-6">
           <div className="flex flex-col md:flex-row md:justify-between md:items-center">
             <Tabs 
               activeKey={activeTab} 
-              onChange={activeTab => setActiveTab(activeTab as EventStatus | 'all')}
+              onChange={activeKey => setActiveTab(activeKey as EventStatus | 'all')}
               className="event-tabs"
-            >
-              <TabPane 
-                tab={<span>Tất cả sự kiện</span>} 
-                key="all" 
-              />
-              <TabPane 
-                tab={
-                  <Badge 
-                    count={events.filter(e => e.status === 'upcoming').length} 
-                    offset={[15, 0]}
-                  >
-                    <span>Sắp diễn ra</span>
-                  </Badge>
-                } 
-                key="upcoming" 
-              />
-              <TabPane 
-                tab={
-                  <Badge 
-                    count={events.filter(e => e.status === 'active').length} 
-                    offset={[15, 0]}
-                  >
-                    <span>Đang diễn ra</span>
-                  </Badge>
-                } 
-                key="active" 
-              />
-              <TabPane 
-                tab={<span>Đã kết thúc</span>} 
-                key="expired" 
-              />
-            </Tabs>
+              items={[
+                {
+                  key: 'all',
+                  label: <span>Tất cả sự kiện</span>,
+                },
+                {
+                  key: 'upcoming',
+                  label: (
+                    <Badge 
+                      count={events.filter(e => e.status === 'upcoming').length} 
+                      offset={[15, 0]}
+                    >
+                      <span>Sắp diễn ra</span>
+                    </Badge>
+                  ),
+                },
+                {
+                  key: 'active',
+                  label: (
+                    <Badge 
+                      count={events.filter(e => e.status === 'active').length} 
+                      offset={[15, 0]}
+                    >
+                      <span>Đang diễn ra</span>
+                    </Badge>
+                  ),
+                },
+                {
+                  key: 'expired',
+                  label: <span>Đã kết thúc</span>,
+                },
+              ]}
+            />
             
             <div className="mt-4 md:mt-0 w-full md:w-auto">
               <Input 
@@ -470,74 +821,16 @@ const EventList: React.FC = () => {
           </div>
         </Card>
         
-        {/* Event Highlight Section */}
-        {!loading && filteredEvents.length > 0 && activeTab === 'all' && currentPage === 1 && (
-          <Card 
-            className="mb-4 md:mb-6 highlight-event"
-            cover={
-              <div className="highlight-event-cover">
-                <img 
-                  alt={filteredEvents[0]?.name} 
-                  src={filteredEvents[0]?.image ? 
-                    `${filteredEvents[0].image}` : 
-                    `https://via.placeholder.com/1200x400?text=${encodeURIComponent(filteredEvents[0].name)}`
-                  }
-                  className="highlight-event-image"
-                />
-                <div className="highlight-event-overlay">
-                  <div className="highlight-event-content">
-                    <Space>
-                      {renderEventStatus(filteredEvents[0]?.status)}
-                      {renderEventType(filteredEvents[0]?.eventType)}
-                    </Space>
-                    <Title level={3} className="highlight-event-title">
-                      {filteredEvents[0]?.name}
-                    </Title>
-                    <Space className="highlight-event-details">
-                      <span>
-                        <CalendarOutlined /> {formatDate(filteredEvents[0]?.startDate)}
-                      </span>
-                      <span>
-                        <ClockCircleOutlined /> {new Date(filteredEvents[0]?.startDate).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                      <span>
-                        <EnvironmentOutlined /> {filteredEvents[0]?.facilityName}
-                      </span>
-                    </Space>
-                    <div className="highlight-event-actions">
-                      <Button 
-                        type="primary" 
-                        size="large"
-                        onClick={() => handleViewEvent(filteredEvents[0]?.id)}
-                      >
-                        Xem Chi Tiết
-                      </Button>
-                      <Button 
-                        size="large"
-                        onClick={() => handleRegister(filteredEvents[0]?.id)}
-                        disabled={!isRegistrationAvailable(filteredEvents[0])}
-                      >
-                        Đăng Ký Tham Gia
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            }
-          >
-            {/* Card content can be empty as we're using the cover for content */}
-          </Card>
-        )}
-        
-        {loading && (
-          <div className="text-center py-8">
-            <Spin size="large" tip="Đang tải danh sách sự kiện..." />
+        {loading ? (
+          <div className="text-center py-8 spin-container">
+            <Spin />
+            <div className="mt-3">Đang tải danh sách sự kiện...</div>
           </div>
+        ) : (
+          <Row gutter={[16, 16]}>
+            {renderEventCards()}
+          </Row>
         )}
-        
-        <Row gutter={[16, 16]}>
-          {renderEventCards()}
-        </Row>
         
         {filteredEvents.length > pageSize && (
           <div className="pagination-container">
@@ -558,10 +851,21 @@ const EventList: React.FC = () => {
       
       <style>
         {`
+          .spin-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+          }
+          
           .event-card {
             height: 100%;
             transition: all 0.3s;
             overflow: hidden;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+            display: flex;
+            flex-direction: column;
           }
           
           .event-card:hover {
@@ -590,10 +894,23 @@ const EventList: React.FC = () => {
             gap: 5px;
           }
           
+          .event-card-content {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+          }
+          
           .event-card-org {
             display: flex;
             align-items: center;
             gap: 8px;
+            margin-bottom: 12px;
+            height: 24px;
+            overflow: hidden;
+          }
+          
+          .event-card-title-container {
+            min-height: 88px;
             margin-bottom: 12px;
           }
           
@@ -608,7 +925,8 @@ const EventList: React.FC = () => {
           
           .event-card-desc {
             color: rgba(0, 0, 0, 0.65);
-            margin-bottom: 12px;
+            height: 40px;
+            overflow: hidden;
           }
           
           .event-card-info {
@@ -616,6 +934,8 @@ const EventList: React.FC = () => {
             flex-direction: column;
             gap: 8px;
             margin: 12px 0;
+            flex-grow: 1;
+            min-height: 110px;
           }
           
           .event-info-item {
@@ -625,15 +945,30 @@ const EventList: React.FC = () => {
             font-size: 13px;
           }
           
+          .tournament-info, .discount-info {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-height: 60px;
+          }
+          
           .event-card-footer {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 12px;
+            margin-top: auto;
+            flex-wrap: wrap;
+            min-height: 36px;
+          }
+          
+          .event-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
           }
           
           .event-tag {
-            margin-bottom: 5px;
+            margin: 0;
           }
           
           .event-deadline {
@@ -642,6 +977,18 @@ const EventList: React.FC = () => {
             color: #ff4d4f;
             font-weight: 500;
             font-size: 12px;
+          }
+          
+          .event-badge {
+            display: flex;
+            align-items: center;
+          }
+          
+          .truncate {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 80%;
           }
           
           .pagination-container {
@@ -654,8 +1001,16 @@ const EventList: React.FC = () => {
             margin-bottom: 0 !important;
           }
           
-          .highlight-event {
+          /* Carousel Styles */
+          .highlight-event-carousel {
             margin-bottom: 24px;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+          }
+          
+          .highlight-event-slide {
+            height: 400px;
           }
           
           .highlight-event-cover {
@@ -692,7 +1047,15 @@ const EventList: React.FC = () => {
           }
           
           .highlight-event-details {
+            margin-bottom: 16px;
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 14px;
+          }
+          
+          .highlight-event-description {
+            color: rgba(255, 255, 255, 0.85) !important;
             margin-bottom: 24px;
+            font-size: 16px;
           }
           
           .highlight-event-actions {
@@ -700,7 +1063,70 @@ const EventList: React.FC = () => {
             gap: 12px;
           }
           
+          .highlight-discount {
+            color: #fff;
+            background: rgba(245, 34, 45, 0.7);
+            padding: 2px 8px;
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+          }
+          
+          .highlight-prize {
+            color: #fff;
+            background: rgba(250, 173, 20, 0.7);
+            padding: 2px 8px;
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+          }
+          
+          /* Custom Carousel Arrows */
+          .custom-carousel-arrow {
+            position: absolute;
+            z-index: 10;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: rgba(0, 0, 0, 0.65);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+          }
+          
+          .custom-carousel-arrow:hover {
+            background: rgba(255, 255, 255, 0.9);
+            color: rgba(0, 0, 0, 0.85);
+          }
+          
+          .custom-carousel-prev {
+            left: 16px;
+          }
+          
+          .custom-carousel-next {
+            right: 16px;
+          }
+          
+          /* Make carousel dots white */
+          .custom-carousel .slick-dots li button {
+            background: rgba(255, 255, 255, 0.7) !important;
+          }
+          
+          .custom-carousel .slick-dots li.slick-active button {
+            background: white !important;
+          }
+          
           @media (max-width: 768px) {
+            .highlight-event-slide {
+              height: 300px;
+            }
+            
             .highlight-event-cover {
               height: 300px;
             }
@@ -713,6 +1139,19 @@ const EventList: React.FC = () => {
             
             .highlight-event-actions button {
               width: 100%;
+            }
+            
+            .custom-carousel-arrow {
+              width: 30px;
+              height: 30px;
+            }
+            
+            .custom-carousel-prev {
+              left: 8px;
+            }
+            
+            .custom-carousel-next {
+              right: 8px;
             }
           }
         `}

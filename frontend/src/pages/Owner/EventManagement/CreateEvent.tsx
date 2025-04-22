@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Form, Input, Button, Select, InputNumber, Card, Typography, Space, Divider, List, Tag, Modal, DatePicker, Spin } from 'antd';
 import { PlusOutlined, DeleteOutlined, ArrowLeftOutlined } from '@ant-design/icons';
-import { EventFormData, EventType, EventStatus } from '@/types/event.type';
+import { EventFormData, EventType } from '@/types/event.type';
 import { mockFacilitiesDropdown } from '@/mocks/facility/mockFacilities';
 import { mockEventTypes } from '@/mocks/event/eventData';
 import dayjs from 'dayjs';
@@ -95,8 +95,7 @@ const CreateEvent: React.FC<CreateEventProps> = ({ onCancel, onSubmit }) => {
         name: values.name,
         description: values.description,
         startDate: values.dateRange[0].toISOString(),
-        endDate: values.dateRange[1].toISOString(),
-        status: 'upcoming' as EventStatus,
+        endDate: values.dateRange[1].toISOString(),       
         facilityId: selectedFacilityId,
         eventType: values.eventType,
       };
@@ -696,9 +695,11 @@ const CreateEvent: React.FC<CreateEventProps> = ({ onCancel, onSubmit }) => {
       case 'DISCOUNT':
         return (
           <>
+            <Divider orientation="left">Thông tin khuyến mãi</Divider>
+            
             <Form.Item
               name="discountType"
-              label={renderLabel('Loại khuyến mãi')}
+              label={renderLabel('Loại khuyến mãi', true)}
               rules={[{ required: true, message: 'Vui lòng chọn loại khuyến mãi' }]}
             >
               <Select
@@ -722,7 +723,7 @@ const CreateEvent: React.FC<CreateEventProps> = ({ onCancel, onSubmit }) => {
                     {discountType === 'PERCENT' && (
                       <Form.Item
                         name="discountPercent"
-                        label={renderLabel('Phần trăm giảm giá')}
+                        label={renderLabel('Phần trăm giảm giá', true)}
                         rules={[{ required: true, message: 'Vui lòng nhập phần trăm giảm giá' }]}
                       >
                         <InputNumber
@@ -739,7 +740,7 @@ const CreateEvent: React.FC<CreateEventProps> = ({ onCancel, onSubmit }) => {
                     {discountType === 'AMOUNT' && (
                       <Form.Item
                         name="discountAmount"
-                        label={renderLabel('Số tiền giảm')}
+                        label={renderLabel('Số tiền giảm', true)}
                         rules={[{ required: true, message: 'Vui lòng nhập số tiền giảm' }]}
                       >
                         <InputNumber
@@ -761,7 +762,7 @@ const CreateEvent: React.FC<CreateEventProps> = ({ onCancel, onSubmit }) => {
                     {discountType === 'FREE_SLOT' && (
                       <Form.Item
                         name="freeSlots"
-                        label={renderLabel('Số lượt đặt miễn phí')}
+                        label={renderLabel('Số lượt đặt miễn phí', true)}
                         rules={[{ required: true, message: 'Vui lòng nhập số lượt đặt miễn phí' }]}
                       >
                         <InputNumber
@@ -778,20 +779,11 @@ const CreateEvent: React.FC<CreateEventProps> = ({ onCancel, onSubmit }) => {
               }}
             </Form.Item>
 
-            <Form.Item
-              name="discountCode"
-              label={renderLabel('Mã giảm giá')}
-              tooltip="Mã để khách hàng sử dụng khi đặt sân"
-            >
-              <Input
-                placeholder="Nhập mã giảm giá (nếu có)"
-                disabled={submitting}
-              />
-            </Form.Item>
+            <Divider orientation="left">Điều kiện áp dụng</Divider>
 
             <Form.Item
               name="minBookingValue"
-              label={renderLabel('Giá trị đơn hàng tối thiểu')}
+              label={renderLabel('Giá trị đơn hàng tối thiểu', true)}
               rules={[{ required: true, message: 'Vui lòng nhập giá trị đơn hàng tối thiểu' }]}
             >
               <InputNumber
@@ -811,7 +803,7 @@ const CreateEvent: React.FC<CreateEventProps> = ({ onCancel, onSubmit }) => {
 
             <Form.Item
               name="targetUserType"
-              label={renderLabel('Áp dụng cho đối tượng nào')}
+              label={renderLabel('Áp dụng cho đối tượng nào', true)}
               rules={[{ required: true, message: 'Vui lòng chọn đối tượng được áp dụng' }]}
             >
               <Select
@@ -825,31 +817,13 @@ const CreateEvent: React.FC<CreateEventProps> = ({ onCancel, onSubmit }) => {
             </Form.Item>
 
             <Form.Item
-              name="targetProducts"
-              label={renderLabel('Áp dụng cho sản phẩm/dịch vụ')}
-              rules={[{ required: true, message: 'Vui lòng chọn sản phẩm/dịch vụ được áp dụng' }]}
-            >
-              <Select
-                placeholder="Chọn sản phẩm/dịch vụ áp dụng"
-                disabled={submitting}
-                mode="multiple"
-              >
-                <Option value="ALL">Tất cả sân</Option>
-                <Option value="FIELD_FOOTBALL">Sân bóng đá</Option>
-                <Option value="FIELD_BADMINTON">Sân cầu lông</Option>
-                <Option value="FIELD_TENNIS">Sân tennis</Option>
-                <Option value="FIELD_BASKETBALL">Sân bóng rổ</Option>
-              </Select>
-            </Form.Item>
-
-            <Form.Item
               name="maxUsageCount"
               label={renderLabel('Số lượng người dùng tối đa')}
-              tooltip="Giới hạn số lượng người dùng có thể sử dụng khuyến mãi này"
+              tooltip="Giới hạn số lượng người dùng có thể sử dụng khuyến mãi này (để trống nếu không giới hạn)"
             >
               <InputNumber
                 min={0}
-                placeholder="Nhập số lượng tối đa (để trống nếu không giới hạn)"
+                placeholder="Nhập số lượng tối đa"
                 style={{ width: '100%' }}
                 disabled={submitting}
                 addonAfter="người"
@@ -857,13 +831,13 @@ const CreateEvent: React.FC<CreateEventProps> = ({ onCancel, onSubmit }) => {
             </Form.Item>
 
             <Form.Item
-              name="conditions"
-              label={renderLabel('Điều kiện áp dụng')}
-              rules={[{ required: true, message: 'Vui lòng nhập điều kiện áp dụng' }]}
+              name="description"
+              label={renderLabel('Mô tả chi tiết')}
+              tooltip="Mô tả chi tiết về khuyến mãi và điều kiện áp dụng (không bắt buộc)"
             >
               <TextArea
-                placeholder="Mô tả chi tiết điều kiện áp dụng khuyến mãi. VD: Đơn hàng tối thiểu, chỉ áp dụng cho người mới, v.v."
-                rows={3}
+                placeholder="Mô tả chi tiết khuyến mãi và các quy định liên quan. VD: Cách thức áp dụng, thời gian áp dụng trong ngày, điều kiện đặc biệt, v.v."
+                rows={4}
                 disabled={submitting}
               />
             </Form.Item>
@@ -1004,74 +978,122 @@ const CreateEvent: React.FC<CreateEventProps> = ({ onCancel, onSubmit }) => {
             
             <div className="overflow-x-auto">
               <List
-                itemLayout="horizontal"
+                itemLayout="vertical"
                 dataSource={eventsList}
                 renderItem={(event, index) => (
                   <List.Item
+                    key={index}
+                    className="mb-4 rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
+                    style={{ background: '#fff', padding: '16px 24px' }}
                     actions={[
                       <Button 
                         key="delete" 
-                        type="text" 
-                        danger 
+                        danger
                         icon={<DeleteOutlined />}
                         onClick={() => handleRemoveEvent(index)}
                         disabled={submitting}
                       >
-                        Xóa
+                        Xóa sự kiện
                       </Button>
                     ]}
+                    extra={
+                      <div className="flex justify-center items-center h-full">
+                        <div className="text-center p-4 rounded-lg border border-gray-100" style={{ minWidth: '120px' }}>
+                          <div className="text-lg font-bold mb-1">#{index + 1}</div>
+                          <div>{dayjs(event.startDate).format('DD/MM')}</div>
+                          <div>{event.eventType === 'TOURNAMENT' ? '🏆' : '🎁'}</div>
+                        </div>
+                      </div>
+                    }
                   >
                     <List.Item.Meta
-                      title={event.name}
+                      title={
+                        <div className="flex items-center gap-3">
+                          <span className="text-lg font-bold">{event.name}</span>
+                          {event.eventType && (
+                            <span>{getEventTypeTag(event.eventType)}</span>
+                          )}
+                        </div>
+                      }
                       description={
-                        <Space direction="vertical" size={1}>
-                          <div className="flex gap-1 mt-1">
-                            {event.eventType && getEventTypeTag(event.eventType)}
-                          </div>
-                          <Text type="secondary">
-                            Thời gian: {dayjs(event.startDate).format('DD/MM/YYYY')} - {dayjs(event.endDate).format('DD/MM/YYYY')}
-                          </Text>
-                          {event.description && <Text type="secondary">Mô tả: {event.description}</Text>}
-                          {event.eventType === 'TOURNAMENT' && (
-                            <>
-                              <Text type="secondary">
-                                Thể thao: {event.sportTypes?.map(id => getSportName(id)).join(', ') || 'Không xác định'}
-                              </Text>
-                              <Text type="secondary">
-                                Số người tham gia: tối đa {event.maxParticipants || '?'}{event.minParticipants ? `, tối thiểu ${event.minParticipants}` : ''}
-                              </Text>
-                              <Text type="secondary">
-                                Hạn đăng ký: {event.registrationEndDate ? dayjs(event.registrationEndDate).format('DD/MM/YYYY') : 'Không quy định'}
-                              </Text>
-                              <Text type="secondary">
-                                Thể thức: {formatTournamentType(event.tournamentFormat) || 'Không quy định'}
-                                {event.tournamentFormatDescription && ` (${event.tournamentFormatDescription})`}
-                              </Text>
-                              <Text type="secondary">
-                                Giải thưởng: {event.totalPrize || 'Không quy định'}
-                              </Text>
-                              {event.isFreeRegistration === false ? (
-                                <Text type="secondary">Phí tham gia: {event.registrationFee?.toLocaleString('vi-VN')}đ | Phương thức: {Array.isArray(event.paymentMethod) ? event.paymentMethod.join(', ') : event.paymentMethod || 'Không quy định'}</Text>
-                              ) : (
-                                <Text type="secondary">Phí tham gia: Miễn phí</Text>
-                              )}
-                            </>
-                          )}
-                          {event.eventType === 'DISCOUNT' && (
-                            <>
-                              <Text type="secondary">
-                                {event.discountType === 'PERCENT' && `Giảm giá: ${event.discountPercent}%`}
-                                {event.discountType === 'AMOUNT' && `Giảm giá: ${event.discountAmount?.toLocaleString('vi-VN')}đ`}
-                                {event.discountType === 'FREE_SLOT' && `Tặng: ${event.freeSlots} lượt đặt miễn phí`}
-                              </Text>
-                              <Text type="secondary">Điều kiện: {event.conditions}</Text>
-                              <Text type="secondary">Áp dụng cho: {event.targetUserType === 'ALL' ? 'Tất cả người chơi' : 
-                                event.targetUserType === 'NEW' ? 'Chỉ người mới' : 'Người dùng VIP'}</Text>
-                            </>
-                          )}
-                        </Space>
+                        <div className="my-2 flex items-center text-gray-500">
+                          <span>
+                            ⏱️ {dayjs(event.startDate).format('DD/MM/YYYY')} - {dayjs(event.endDate).format('DD/MM/YYYY')}
+                          </span>
+                          <span className="mx-2">|</span>
+                          <span>
+                            📍 {mockFacilitiesDropdown.find(f => f.id === event.facilityId)?.name || 'Cơ sở không xác định'}
+                          </span>
+                        </div>
                       }
                     />
+                    
+                    {event.description && (
+                      <div className="mb-3 italic text-gray-500">{event.description}</div>
+                    )}
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3">
+                      {event.eventType === 'TOURNAMENT' && (
+                        <>
+                          <div className="flex items-center">
+                            <span className="font-medium mr-2">🎮 Thể thao:</span>
+                            <span>{event.sportTypes?.map(id => getSportName(id)).join(', ') || 'Không xác định'}</span>
+                          </div>
+                          <div className="flex items-center">
+                            <span className="font-medium mr-2">👥 Số người tham gia:</span>
+                            <span>Tối đa {event.maxParticipants || '?'}{event.minParticipants ? `, tối thiểu ${event.minParticipants}` : ''}</span>
+                          </div>
+                          <div className="flex items-center">
+                            <span className="font-medium mr-2">📝 Hạn đăng ký:</span>
+                            <span>{event.registrationEndDate ? dayjs(event.registrationEndDate).format('DD/MM/YYYY') : 'Không quy định'}</span>
+                          </div>
+                          <div className="flex items-center">
+                            <span className="font-medium mr-2">🏆 Giải thưởng:</span>
+                            <span>{event.totalPrize || 'Không quy định'}</span>
+                          </div>
+                          <div className="flex items-center">
+                            <span className="font-medium mr-2">🎮 Thể thức:</span>
+                            <span>{formatTournamentType(event.tournamentFormat) || 'Không quy định'}</span>
+                          </div>
+                          <div className="flex items-center">
+                            <span className="font-medium mr-2">💰 Phí tham gia:</span>
+                            <span>
+                              {event.isFreeRegistration === false 
+                                ? `${event.registrationFee?.toLocaleString('vi-VN')}đ` 
+                                : 'Miễn phí'}
+                            </span>
+                          </div>
+                        </>
+                      )}
+                      
+                      {event.eventType === 'DISCOUNT' && (
+                        <>
+                          <div className="flex items-center">
+                            <span className="font-medium mr-2">🏷️ Ưu đãi:</span>
+                            <span>
+                              {event.discountType === 'PERCENT' && `Giảm ${event.discountPercent}%`}
+                              {event.discountType === 'AMOUNT' && `Giảm ${event.discountAmount?.toLocaleString('vi-VN')}đ`}
+                              {event.discountType === 'FREE_SLOT' && `Tặng ${event.freeSlots} lượt đặt miễn phí`}
+                            </span>
+                          </div>
+                          <div className="flex items-center">
+                            <span className="font-medium mr-2">💲 Giá trị tối thiểu:</span>
+                            <span>{event.minBookingValue?.toLocaleString('vi-VN')}đ</span>
+                          </div>
+                          <div className="flex items-center">
+                            <span className="font-medium mr-2">👥 Đối tượng:</span>
+                            <span>
+                              {event.targetUserType === 'ALL' ? 'Tất cả người chơi' : 
+                               event.targetUserType === 'NEW' ? 'Chỉ người mới' : 'Người dùng VIP'}
+                            </span>
+                          </div>
+                          <div className="flex items-center">
+                            <span className="font-medium mr-2">🔢 Số lượng tối đa:</span>
+                            <span>{event.maxUsageCount ? `${event.maxUsageCount} người` : 'Không giới hạn'}</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </List.Item>
                 )}
                 style={{ minWidth: '600px' }}
