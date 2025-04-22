@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Form, Input, Button, Select, InputNumber, Card, Typography, Space, Divider, List, Tag, Modal, DatePicker, Spin } from 'antd';
-import { PlusOutlined, DeleteOutlined, ArrowLeftOutlined } from '@ant-design/icons';
+import { Form, Input, Button, Select, InputNumber, Card, Typography, Space, Divider, List, Tag, Modal, DatePicker, Spin, Upload, message } from 'antd';
+import { PlusOutlined, DeleteOutlined, ArrowLeftOutlined, UploadOutlined } from '@ant-design/icons';
 import { EventFormData, EventType } from '@/types/event.type';
 import { mockFacilitiesDropdown } from '@/mocks/facility/mockFacilities';
 import { mockEventTypes } from '@/mocks/event/eventData';
@@ -37,6 +37,8 @@ const CreateEvent: React.FC<CreateEventProps> = ({ onCancel, onSubmit }) => {
   const [selectedEventType, setSelectedEventType] = useState<EventType | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
   const [eventsList, setEventsList] = useState<EventFormData[]>([]);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   
   // Fetch initial facility from localStorage
   useEffect(() => {
@@ -69,22 +71,82 @@ const CreateEvent: React.FC<CreateEventProps> = ({ onCancel, onSubmit }) => {
     setSelectedEventType(value);
     // Reset specific fields when event type changes
     form.setFieldsValue({
-      targetSportId: undefined,
-      fields: undefined,
+      sportIds: undefined,
+      fieldIds: undefined,
       maxParticipants: undefined,
       registrationEndDate: undefined,
       prizes: undefined,
       discountPercent: undefined,
-      conditions: undefined,
       minBookingValue: undefined,
-      activities: undefined,
-      specialServices: undefined
+      descriptionOfDiscount: undefined
     });
   };
+
+  // Handle image upload
+  const handleImageUpload = (file: File) => {
+    // Check if file is an image
+    if (!file.type.startsWith('image/')) {
+      message.error('Vui lòng tải lên file hình ảnh');
+      return false;
+    }
+
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      message.error('Kích thước file không được vượt quá 5MB');
+      return false;
+    }
+
+    // Check if maximum number of images is reached
+    if (imageFiles.length >= 5) {
+      message.warning('Không thể tải lên thêm ảnh, tối đa 5 ảnh');
+      return false;
+    }
+
+    // Add file to state
+    setImageFiles(prev => [...prev, file]);
+    
+    // Create a preview URL and add to state
+    const previewUrl = URL.createObjectURL(file);
+    setPreviewUrls(prev => [...prev, previewUrl]);
+    
+    return false; // Prevent default upload behavior
+  };
+
+  // Remove uploaded image
+  const removeImage = (index: number) => {
+    // Create new arrays without the removed image
+    const newImageFiles = [...imageFiles];
+    const newPreviewUrls = [...previewUrls];
+    
+    // Revoke object URL to prevent memory leaks
+    URL.revokeObjectURL(newPreviewUrls[index]);
+    
+    // Remove the item at specified index
+    newImageFiles.splice(index, 1);
+    newPreviewUrls.splice(index, 1);
+    
+    // Update state
+    setImageFiles(newImageFiles);
+    setPreviewUrls(newPreviewUrls);
+  };
+
+  // Clean up preview URLs when component unmounts
+  useEffect(() => {
+    return () => {
+      // Revoke all preview URLs to avoid memory leaks
+      previewUrls.forEach(url => URL.revokeObjectURL(url));
+    };
+  }, [previewUrls]);
 
   // Update the handleAddEvent function to better handle fields
   const handleAddEvent = () => {
     form.validateFields().then(values => {
+      // Check if at least one image is uploaded
+      if (imageFiles.length === 0) {
+        message.error('Vui lòng tải lên ít nhất một ảnh sự kiện');
+        return;
+      }
+
       // Process values for tournament type
       if (values.eventType === 'TOURNAMENT' && values.isFreeRegistration === true) {
         // Set registration fee to 0 for free registration
@@ -98,6 +160,7 @@ const CreateEvent: React.FC<CreateEventProps> = ({ onCancel, onSubmit }) => {
         endDate: values.dateRange[1].toISOString(),       
         facilityId: selectedFacilityId,
         eventType: values.eventType,
+        imageFiles: [...imageFiles], // Thêm files ảnh vào form data
       };
 
       let eventData: EventFormData;
@@ -105,8 +168,8 @@ const CreateEvent: React.FC<CreateEventProps> = ({ onCancel, onSubmit }) => {
       if (values.eventType === 'TOURNAMENT') {
         eventData = {
           ...baseEventData,
-          sportTypes: values.sportTypes,
-          fields: values.fields,
+          sportIds: values.sportIds,
+          fieldIds: values.fieldIds,
           maxParticipants: values.maxParticipants,
           minParticipants: values.minParticipants,
           registrationType: values.registrationType,
@@ -137,12 +200,10 @@ const CreateEvent: React.FC<CreateEventProps> = ({ onCancel, onSubmit }) => {
           discountPercent: values.discountType === 'PERCENT' ? values.discountPercent : undefined,
           discountAmount: values.discountType === 'AMOUNT' ? values.discountAmount : undefined,
           freeSlots: values.discountType === 'FREE_SLOT' ? values.freeSlots : undefined,
-          discountCode: values.discountCode,
-          conditions: values.conditions,
           minBookingValue: values.minBookingValue,
           targetUserType: values.targetUserType,
-          targetProducts: values.targetProducts,
-          maxUsageCount: values.maxUsageCount
+          maxUsageCount: values.maxUsageCount,
+          descriptionOfDiscount: values.descriptionOfDiscount || ''
         };
       } else {
         // For future event types
@@ -158,8 +219,8 @@ const CreateEvent: React.FC<CreateEventProps> = ({ onCancel, onSubmit }) => {
         dateRange: undefined,
         eventType: undefined,
         // Reset type-specific fields
-        sportTypes: undefined,
-        fields: undefined,
+        sportIds: undefined,
+        fieldIds: undefined,
         maxParticipants: undefined,
         minParticipants: undefined,
         registrationType: undefined,
@@ -184,16 +245,19 @@ const CreateEvent: React.FC<CreateEventProps> = ({ onCancel, onSubmit }) => {
         discountPercent: undefined,
         discountAmount: undefined,
         freeSlots: undefined,
-        discountCode: undefined,
-        conditions: undefined,
         minBookingValue: undefined,
         targetUserType: undefined,
-        targetProducts: undefined,
-        maxUsageCount: undefined
+        maxUsageCount: undefined,
+        descriptionOfDiscount: undefined
       });
       
-      // Reset selected event type
+      // Reset selected event type and images
       setSelectedEventType(undefined);
+      
+      // Clean up all preview URLs
+      previewUrls.forEach(url => URL.revokeObjectURL(url));
+      setImageFiles([]);
+      setPreviewUrls([]);
     });
   };
 
@@ -231,8 +295,38 @@ const CreateEvent: React.FC<CreateEventProps> = ({ onCancel, onSubmit }) => {
 
     setSubmitting(true);
     
+    // Định nghĩa hàm prepareFormData nhưng không dùng trong demo
+    // Sẽ được sử dụng khi tích hợp API thực tế
+    /* 
+    const prepareFormData = () => {
+      const formData = new FormData();
+      
+      // Add each event as JSON and its images
+      eventsList.forEach((event, index) => {
+        // Extract imageFiles before stringifying
+        const { imageFiles, ...eventData } = event;
+        
+        // Add event data as JSON
+        formData.append(`events[${index}]`, JSON.stringify(eventData));
+        
+        // Add image files
+        if (imageFiles && imageFiles.length > 0) {
+          imageFiles.forEach((file, fileIndex) => {
+            formData.append(`images[${index}][${fileIndex}]`, file);
+          });
+        }
+      });
+      
+      return formData;
+    };
+    */
+    
     // Simulate API call with setTimeout
     setTimeout(() => {
+      // Here you would call your API with the prepared form data
+      // const formData = prepareFormData();
+      // await eventService.createEvents(formData);
+      
       // Success message
       Modal.success({
         title: 'Tạo sự kiện thành công',
@@ -281,6 +375,24 @@ const CreateEvent: React.FC<CreateEventProps> = ({ onCancel, onSubmit }) => {
     return sport ? sport.name : 'Không xác định';
   };
 
+  // Hàm lấy ảnh preview cho sự kiện trong danh sách
+  const getEventImage = (event: EventFormData) => {
+    // Tạo preview URL từ file đầu tiên
+    if (event.imageFiles && event.imageFiles.length > 0) {
+      // Trường hợp đã có URL preview
+      if (previewUrls.length > 0) {
+        return previewUrls[0];
+      }
+      
+      // Nếu không có preview URL, tạo URL từ file
+      const url = URL.createObjectURL(event.imageFiles[0]);
+      return url;
+    }
+    
+    // Fallback image khi không có ảnh
+    return 'https://via.placeholder.com/800x400?text=No+Image';
+  };
+
   // Display tournament format in a readable way
   const formatTournamentType = (format: string[] | string | undefined): string => {
     if (!format) return 'Không xác định';
@@ -326,7 +438,7 @@ const CreateEvent: React.FC<CreateEventProps> = ({ onCancel, onSubmit }) => {
         return (
           <>
             <Form.Item
-              name="sportTypes"
+              name="sportIds"
               label={renderLabel('Loại hình thể thao', true)}
               rules={[{ required: true, message: 'Vui lòng chọn loại hình thể thao' }]}
             >
@@ -351,7 +463,7 @@ const CreateEvent: React.FC<CreateEventProps> = ({ onCancel, onSubmit }) => {
             </Form.Item>
 
             <Form.Item
-              name="fields"
+              name="fieldIds"
               label={renderLabel('Danh sách sân sử dụng', true)}
               rules={[{ required: true, message: 'Vui lòng chọn các sân tổ chức' }]}
               tooltip="Các sân được sử dụng để tổ chức giải đấu"
@@ -841,6 +953,18 @@ const CreateEvent: React.FC<CreateEventProps> = ({ onCancel, onSubmit }) => {
                 disabled={submitting}
               />
             </Form.Item>
+            
+            <Form.Item
+              name="descriptionOfDiscount"
+              label={renderLabel('Mô tả khuyến mãi', true)}
+              rules={[{ required: true, message: 'Vui lòng nhập mô tả khuyến mãi' }]}
+              tooltip="Mô tả ngắn gọn về khuyến mãi để hiển thị"
+            >
+              <Input
+                placeholder="Mô tả ngắn gọn về khuyến mãi. VD: Giảm 20% cho đặt sân buổi sáng"
+                disabled={submitting}
+              />
+            </Form.Item>
           </>
         );
      
@@ -852,6 +976,14 @@ const CreateEvent: React.FC<CreateEventProps> = ({ onCancel, onSubmit }) => {
 
   return (
     <div className="p-6 md:p-8">
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          .shadow-text {
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
+          }
+        `
+      }} />
+      
       <Card className="mb-8">
         <div className="flex justify-between items-center mb-6">
           <Space size="middle">  
@@ -930,6 +1062,68 @@ const CreateEvent: React.FC<CreateEventProps> = ({ onCancel, onSubmit }) => {
                 </Form.Item>
 
                 <Form.Item
+                  name="images"
+                  label={renderLabel('Ảnh sự kiện', true)}
+                  rules={[{ required: imageFiles.length > 0, message: 'Vui lòng tải lên ít nhất một ảnh sự kiện' }]}
+                  tooltip="Ảnh đại diện cho sự kiện (tối đa 5 ảnh)"
+                >
+                  <div className="space-y-4">
+                    {/* Image preview area */}
+                    {previewUrls.length > 0 && (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+                        {previewUrls.map((url, index) => (
+                          <div key={index} className="relative">
+                            <div className="w-full h-24 overflow-hidden rounded-md">
+                              <img 
+                                src={url} 
+                                alt={`Preview ${index + 1}`} 
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <Button 
+                              type="text" 
+                              danger 
+                              icon={<DeleteOutlined />} 
+                              onClick={() => removeImage(index)}
+                              className="absolute top-1 right-1 bg-white bg-opacity-75 rounded-full"
+                              size="small"
+                            />
+                            {index === 0 && (
+                              <div className="absolute bottom-1 left-1 bg-blue-500 text-white px-2 py-0.5 rounded text-xs">
+                                Ảnh chính
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Upload button/area */}
+                    {previewUrls.length < 5 && (
+                      <Upload.Dragger
+                        accept="image/*"
+                        showUploadList={false}
+                        beforeUpload={handleImageUpload}
+                        className="bg-gray-50 hover:bg-gray-100 transition-colors"
+                      >
+                        <p className="ant-upload-drag-icon">
+                          <UploadOutlined className="text-3xl text-blue-500" />
+                        </p>
+                        <p className="ant-upload-text font-medium">
+                          Nhấp hoặc kéo thả file vào đây để tải lên
+                        </p>
+                        <p className="ant-upload-hint text-gray-500">
+                          Chỉ chấp nhận file hình ảnh (jpg, jpeg, png), kích thước tối đa 5MB
+                        </p>
+                        <p className="text-blue-500 font-medium mt-2">
+                          Đã tải lên {previewUrls.length}/5 ảnh
+                        </p>
+                      </Upload.Dragger>
+                    )}
+                  </div>
+                </Form.Item>
+
+                <Form.Item
                   name="dateRange"
                   label={renderLabel('Thời gian diễn ra', true)}
                   rules={[{ required: true, message: 'Vui lòng chọn thời gian diễn ra' }]}
@@ -998,10 +1192,20 @@ const CreateEvent: React.FC<CreateEventProps> = ({ onCancel, onSubmit }) => {
                     ]}
                     extra={
                       <div className="flex justify-center items-center h-full">
-                        <div className="text-center p-4 rounded-lg border border-gray-100" style={{ minWidth: '120px' }}>
-                          <div className="text-lg font-bold mb-1">#{index + 1}</div>
-                          <div>{dayjs(event.startDate).format('DD/MM')}</div>
-                          <div>{event.eventType === 'TOURNAMENT' ? '🏆' : '🎁'}</div>
+                        <div className="relative">
+                          <img 
+                            src={getEventImage(event)}
+                            alt={event.name}
+                            className="object-cover rounded-lg"
+                            style={{ width: '120px', height: '80px' }}
+                          />
+                          <div className="absolute inset-0 flex justify-center items-center">
+                            <div className="text-center">
+                              <div className="text-lg font-bold mb-1 text-white shadow-text">#{index + 1}</div>
+                              <div className="text-white shadow-text">{dayjs(event.startDate).format('DD/MM')}</div>
+                              <div className="text-white shadow-text">{event.eventType === 'TOURNAMENT' ? '🏆' : '🎁'}</div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     }
@@ -1037,7 +1241,7 @@ const CreateEvent: React.FC<CreateEventProps> = ({ onCancel, onSubmit }) => {
                         <>
                           <div className="flex items-center">
                             <span className="font-medium mr-2">🎮 Thể thao:</span>
-                            <span>{event.sportTypes?.map(id => getSportName(id)).join(', ') || 'Không xác định'}</span>
+                            <span>{event.sportIds?.map(id => getSportName(Number(id))).join(', ') || 'Không xác định'}</span>
                           </div>
                           <div className="flex items-center">
                             <span className="font-medium mr-2">👥 Số người tham gia:</span>

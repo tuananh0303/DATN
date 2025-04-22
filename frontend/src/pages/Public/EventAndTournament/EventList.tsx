@@ -11,9 +11,8 @@ import {
   GiftOutlined,
   LeftOutlined, RightOutlined
 } from '@ant-design/icons';
-import { Event, EventType, EventStatus } from '@/types/event.type';
+import { Event, EventType, EventStatus, DiscountType, TargetUserType } from '@/types/event.type';
 import { mockEvents } from '@/mocks/event/eventData';
-import { mockEventDetails } from '@/mocks/event/eventData';
 import { Sport } from '@/types/sport.type';
 import { sportService } from '@/services/sport.service';
 import { getSportNameInVietnamese } from '@/utils/translateSport';
@@ -28,27 +27,13 @@ const mockFacilities: Record<string, { name: string; address: string }> = {
   '4': { name: 'Sân cầu lông Phạm Kha', address: '123 Đường Phạm Văn Đồng, Quận Gò Vấp, TPHCM' }
 };
 
-// Enhanced Event interface for display
-interface DisplayEvent extends Event {
+// Display Event interface cho hiển thị
+interface DisplayEvent extends Omit<Event, 'discountType' | 'targetUserType'> {
   facilityName: string;
   facilityAddress: string;
   sportName?: string;
-  currentParticipants?: number;
-  maxParticipants?: number;
-  registrationEndDate?: string;
-  discountPercent?: number;
-  discountAmount?: number;
-  freeSlots?: number;
-  discountType?: string;
-  activities?: string[];
-  targetUserType?: string;
-  minBookingValue?: number;
-  maxUsageCount?: number;
-  registrationFee?: number;
-  isFreeRegistration?: boolean;
-  tournamentFormat?: string[] | string;
-  totalPrize?: string;
-  fields?: string[];
+  discountType?: DiscountType | string;
+  targetUserType?: TargetUserType | string;
 }
 
 const EventList: React.FC = () => {
@@ -90,14 +75,12 @@ const EventList: React.FC = () => {
         
         // Enrich events with facility and sport details
         const enhancedEvents: DisplayEvent[] = mockEvents.map(event => {
-          const eventDetails = mockEventDetails.find(detail => detail.id === event.id);
           const facility = mockFacilities[event.facilityId || '1'];
-          const sportId = eventDetails?.targetSportId || eventDetails?.sportTypes?.[0];
           
-          // Find sport name from sports list
-          let sportName = 'Không xác định';
-          if (sportId && sportsList.length > 0) {
-            const sport = sportsList.find(s => s.id === sportId);
+          // Find sport name from sports list if sportIds exists
+          let sportName = '';
+          if (event.sportIds && event.sportIds.length > 0 && sportsList.length > 0) {
+            const sport = sportsList.find(s => s.id === event.sportIds?.[0]);
             if (sport) {
               sportName = getSportNameInVietnamese(sport.name);
             }
@@ -108,22 +91,7 @@ const EventList: React.FC = () => {
             facilityName: facility?.name || 'Không xác định',
             facilityAddress: facility?.address || 'Không xác định',
             sportName: sportName,
-            currentParticipants: eventDetails?.currentParticipants,
-            maxParticipants: eventDetails?.maxParticipants,
-            registrationEndDate: eventDetails?.registrationEndDate,
-            discountType: eventDetails?.discountType,
-            discountPercent: eventDetails?.discountPercent,
-            discountAmount: eventDetails?.discountAmount,
-            freeSlots: eventDetails?.freeSlots,
-            activities: eventDetails?.activities,
-            targetUserType: eventDetails?.targetUserType,
-            minBookingValue: eventDetails?.minBookingValue,
-            maxUsageCount: eventDetails?.maxUsageCount,
-            registrationFee: eventDetails?.registrationFee,
-            isFreeRegistration: eventDetails?.isFreeRegistration,
-            tournamentFormat: eventDetails?.tournamentFormat,
-            totalPrize: eventDetails?.totalPrize,
-            fields: eventDetails?.fields,
+            // Các trường khác đã có sẵn trong event
           };
         });
         
@@ -144,11 +112,10 @@ const EventList: React.FC = () => {
   // Filter by sport type
   useEffect(() => {
     if (sportFilter !== 'all' && events.length > 0) {
-      // Lọc lại từ tất cả sự kiện events, không phải từ filteredEvents
-      const result = events.filter(event => {
-        const eventDetails = mockEventDetails.find(detail => detail.id === event.id);
-        return eventDetails?.targetSportId === sportFilter;
-      });
+      // Lọc lại từ tất cả sự kiện theo sportIds
+      const result = events.filter(event => 
+        event.sportIds?.includes(sportFilter as number)
+      );
       
       setFilteredEvents(result);
       setCurrentPage(1);
@@ -175,7 +142,7 @@ const EventList: React.FC = () => {
             (event.discountType === 'AMOUNT' && 'giảm giá tiền'.includes(lowerCaseSearch)) ||
             (event.discountType === 'FREE_SLOT' && 'tặng lượt đặt miễn phí'.includes(lowerCaseSearch)) ||
             (event.targetUserType === 'NEW' && 'người mới'.includes(lowerCaseSearch)) ||
-            (event.targetUserType === 'VIP' && 'khách hàng vip'.includes(lowerCaseSearch))
+            (event.targetUserType === 'LOYALTY' && 'khách hàng vip'.includes(lowerCaseSearch))
         );
       }
       
@@ -205,10 +172,6 @@ const EventList: React.FC = () => {
         // Sắp xếp theo ngày bắt đầu gần nhất
         const sorted = [...upcomingEvents].sort((a, b) => 
           new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
-        );
-        
-        console.log('Sorted upcoming events:', 
-          sorted.map(e => ({id: e.id, name: e.name, date: e.startDate}))
         );
         
         setUpcomingEvents(sorted.slice(0, 3));
@@ -248,15 +211,9 @@ const EventList: React.FC = () => {
   // Handle register for event
   const handleRegister = (eventId: number) => {
     const event = events.find(e => e.id === eventId);
-    const eventDetails = mockEventDetails.find(detail => detail.id === eventId);
     
     if (event?.eventType === 'TOURNAMENT') {
-      // Đối với giải đấu, chuyển đến trang chi tiết sự kiện hoặc link đăng ký nếu có
-      if (eventDetails?.registrationLink) {
-        window.open(eventDetails.registrationLink, '_blank');
-      } else {
-        navigate(`/event/${eventId}?register=true`);
-      }
+      navigate(`/event/${eventId}?register=true`);
     } else if (event?.eventType === 'DISCOUNT' && event.facilityId) {
       // Đối với khuyến mãi, chuyển đến trang booking của cơ sở
       navigate(`/booking/${event.facilityId}`);
@@ -376,13 +333,13 @@ const EventList: React.FC = () => {
             <div className="event-card-cover">
               <img 
                 alt={event.name} 
-                src={event.image ? 
-                  `${event.image}` : 
+                src={event.image && event.image.length > 0 ? 
+                  event.image[0] : 
                   `https://via.placeholder.com/600x300?text=${encodeURIComponent(event.name)}`
                 } 
               />
               <div className="event-card-badge">
-                {renderEventStatus(event.status)}
+                {event.status && renderEventStatus(event.status)}
                 {renderEventType(event.eventType)}
               </div>
             </div>
@@ -390,14 +347,14 @@ const EventList: React.FC = () => {
           actions={[
             <Button 
               type="link" 
-              onClick={() => handleViewEvent(event.id)}
+              onClick={() => event.id && handleViewEvent(event.id)}
               icon={<ArrowRightOutlined />}
             >
               Chi tiết
             </Button>,
             <Button 
               type="primary"
-              onClick={() => handleRegister(event.id)}
+              onClick={() => event.id && handleRegister(event.id)}
               disabled={!isRegistrationAvailable(event)}
             >
               {event.eventType === 'TOURNAMENT' ? 'Đăng ký' : 'Đặt sân'}
@@ -518,9 +475,9 @@ const EventList: React.FC = () => {
                   <Tag key={event.sportName} className="event-tag">{event.sportName}</Tag>
                 )}
                 
-                {event.fields && event.fields.length > 0 && (
+                {event.fieldIds && event.fieldIds.length > 0 && (
                   <Tag key="fields" color="cyan" className="event-tag">
-                    {event.fields.length} sân
+                    {event.fieldIds.length} sân
                   </Tag>
                 )}
                 
@@ -598,8 +555,8 @@ const EventList: React.FC = () => {
         <div className="highlight-event-cover">
           <img 
             alt={event.name} 
-            src={event.image ? 
-              `${event.image}` : 
+            src={event.image && event.image.length > 0 ? 
+              event.image[0] : 
               `https://via.placeholder.com/1200x400?text=${encodeURIComponent(event.name)}`
             }
             className="highlight-event-image"
@@ -607,7 +564,7 @@ const EventList: React.FC = () => {
           <div className="highlight-event-overlay">
             <div className="highlight-event-content">
               <Space>
-                {renderEventStatus(event.status)}
+                {event.status && renderEventStatus(event.status)}
                 {renderEventType(event.eventType)}
               </Space>
               <Title level={3} className="highlight-event-title">
@@ -670,14 +627,14 @@ const EventList: React.FC = () => {
                 <Button 
                   type="primary" 
                   size="large"
-                  onClick={() => handleViewEvent(event.id)}
+                  onClick={() => event.id && handleViewEvent(event.id)}
                 >
                   Xem chi tiết
                 </Button>
                 <Button 
                   type="default" 
                   size="large"
-                  onClick={() => handleRegister(event.id)}
+                  onClick={() => event.id && handleRegister(event.id)}
                   disabled={!isRegistrationAvailable(event)}
                 >
                   {event.eventType === 'TOURNAMENT' ? 'Đăng ký ngay' : 'Đặt sân ngay'}

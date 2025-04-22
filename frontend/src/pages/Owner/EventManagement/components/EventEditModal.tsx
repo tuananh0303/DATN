@@ -1,13 +1,31 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Form, Input, DatePicker, Select, Button, Spin, InputNumber } from 'antd';
 import { Event, EventType } from '@/types/event.type';
-import { mockEventTypes, mockEventDetails } from '@/mocks/event/eventData';
+import { mockEventTypes } from '@/mocks/event/eventData';
 import { mockFacilitiesDropdown } from '@/mocks/facility/mockFacilities';
 import dayjs from 'dayjs';
 
 const { TextArea } = Input;
 const { Option } = Select;
 const { RangePicker } = DatePicker;
+
+// Mock event details for editing
+const mockEventDetails: Record<string, Record<string, unknown>> = {
+  '1': {
+    discountPercent: 15,
+    conditions: 'Áp dụng cho đặt sân trên 2 giờ',
+    minBookingValue: 200000
+  },
+  '2': {
+    maxParticipants: 16,
+    registrationEndDate: '2023-12-10T00:00:00Z',
+    fields: ['Field 1', 'Field 2']
+  },
+  '3': {
+    activities: ['Bóng đá', 'Tennis'],
+    specialServices: ['Đồ ăn miễn phí', 'Huấn luyện viên hướng dẫn']
+  }
+};
 
 interface EventEditModalProps {
   visible: boolean;
@@ -30,7 +48,8 @@ const EventEditModal: React.FC<EventEditModalProps> = ({
   // Reset form when event changes
   useEffect(() => {
     if (event) {
-      const eventDetail = mockEventDetails[event.id];
+      const eventId = event.id?.toString() || '';
+      const eventDetail = eventId ? mockEventDetails[eventId] || {} : {};
       setSelectedEventType(event.eventType);
       
       form.setFieldsValue({
@@ -50,7 +69,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({
         
         ...(event.eventType === 'TOURNAMENT' && {
           maxParticipants: eventDetail?.maxParticipants,
-          registrationEndDate: eventDetail?.registrationEndDate ? dayjs(eventDetail.registrationEndDate) : undefined,
+          registrationEndDate: eventDetail?.registrationEndDate ? dayjs(eventDetail.registrationEndDate as string) : undefined,
           fields: eventDetail?.fields
         }),
         
@@ -83,7 +102,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({
         endDate: endDate.toISOString(),
         status: values.status,
         facilityId: values.facilityId,
-        eventType: values.eventType as EventType,
+        eventType: values.eventType,
         updatedAt: new Date().toISOString()
       };
 

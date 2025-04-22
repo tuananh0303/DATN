@@ -10,18 +10,14 @@ import {
   Spin, 
   Empty, 
   Card, 
-  Row, 
-  Col, 
   Divider, 
   List, 
   Avatar, 
   Modal, 
-  Space, 
   Descriptions,
   message
 } from 'antd';
 import { 
-  ArrowLeftOutlined, 
   EnvironmentOutlined, 
   CalendarOutlined, 
   ClockCircleOutlined, 
@@ -31,88 +27,48 @@ import {
   GiftOutlined, 
   DollarOutlined, 
   InfoCircleOutlined,
-  UserOutlined,
-  HomeOutlined
 } from '@ant-design/icons';
-import { mockEvents, mockEventDetails, mockSports } from '@/mocks/event/eventData';
+import { mockEvents, mockSports } from '@/mocks/event/eventData';
 import { mockFacilitiesDropdown } from '@/mocks/facility/mockFacilities';
-import { Event, EventType, EventStatus, EventDetail as IEventDetail } from '@/types/event.type';
+import { Event, EventType, EventStatus, DiscountType, TargetUserType } from '@/types/event.type';
 import { useAppSelector, useAppDispatch } from '@/hooks/reduxHooks';
 import { showLoginModal } from '@/store/slices/userSlice';
 import dayjs from 'dayjs';
 
 const { Title, Text, Paragraph } = Typography;
-const { TabPane } = Tabs;
 
 // Enhanced Event interface for display
-interface DisplayEvent extends Event {
-  facilityName?: string;
-  facilityAddress?: string;
+interface DisplayEvent extends Omit<Event, 'discountType' | 'targetUserType'> {
+  facilityName: string;
+  facilityAddress: string;
   sportName?: string;
-  currentParticipants?: number;
-  maxParticipants?: number;
-  registrationEndDate?: string;
-  discountPercent?: number;
-  discountAmount?: number;
-  freeSlots?: number;
-  discountType?: string;
-  activities?: string[];
-  targetUserType?: string;
-  minBookingValue?: number;
-  maxUsageCount?: number;
-  registrationFee?: number;
-  isFreeRegistration?: boolean;
-  tournamentFormat?: string[] | string;
-  totalPrize?: string;
-  fields?: string[];
-  prizes?: { position: number; prize: string }[];
-  // Tournament specific fields
-  tournamentName?: string;
-  sportTypes?: number[];
-  targetSportId?: number;
-  venueDetails?: string;
-  registrationType?: 'individual' | 'team' | 'both';
-  ageLimit?: string;
-  tournamentFormatDescription?: string;
-  prizeDescription?: string;
-  rulesAndRegulations?: string;
-  currentStatus?: 'registration' | 'inProgress' | 'completed';
-  paymentInstructions?: string;
-  paymentMethod?: string[] | string;
-  paymentDeadline?: string;
-  paymentAccountInfo?: string;
-  paymentQrImage?: string;
-  registrationProcess?: string;
-  // Discount specific fields
-  conditions?: string;
-  discountCode?: string;
-  targetProducts?: string[];
-  // Special offer fields
-  specialServices?: string[];
-  // Contact info
-  contact?: {
-    name: string;
-    email: string;
-    phone: string;
-  };
+  discountType?: DiscountType | string;
+  targetUserType?: TargetUserType | string;
 }
+
+// Mock facility data for display
+const mockFacilityDetails: Record<string, { name: string; address: string }> = {
+  '1': { name: 'Sân bóng đá Phạm Kha', address: '123 Đường Phạm Văn Đồng, Quận Gò Vấp, TPHCM' },
+  '2': { name: 'Sân Tennis Bình Chánh', address: '456 Đường Nguyễn Văn Linh, Huyện Bình Chánh, TPHCM' },
+  '3': { name: 'Sân bóng rổ Quận 7', address: '789 Đường Nguyễn Thị Thập, Quận 7, TPHCM' },
+  '4': { name: 'Sân cầu lông Phạm Kha', address: '123 Đường Phạm Văn Đồng, Quận Gò Vấp, TPHCM' }
+};
 
 const EventDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { eventId } = useParams<{ eventId: string }>();
-  const [activeTab, setActiveTab] = useState('info');
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const shouldOpenRegister = queryParams.get('register') === 'true';
   
   // Auth state
-  const { isAuthenticated, user } = useAppSelector(state => state.user);
+  const { isAuthenticated } = useAppSelector(state => state.user);
   
   // Local state
   const [event, setEvent] = useState<DisplayEvent | null>(null);
   const [loading, setLoading] = useState(true);
-  const [facility, setFacility] = useState<any>(null);
+  const [facility, setFacility] = useState<{id: string; name: string; image?: string}|null>(null);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   
   // Mock fetch event data
@@ -126,7 +82,6 @@ const EventDetailPage: React.FC = () => {
         await new Promise(resolve => setTimeout(resolve, 500));
         
         const eventData = mockEvents.find(e => e.id === Number(eventId));
-        const eventDetailData = mockEventDetails.find(e => e.id === Number(eventId));
         
         if (!eventData) {
           setLoading(false);
@@ -135,18 +90,21 @@ const EventDetailPage: React.FC = () => {
         
         // Find facility
         const facilityData = mockFacilitiesDropdown.find(f => f.id === eventData.facilityId);
-        setFacility(facilityData);
+        setFacility(facilityData || null);
         
-        // Merge event data with details
+        // Get facility details from our mock data
+        const facilityDetails = mockFacilityDetails[eventData.facilityId];
+        
+        // Create enhanced event with facility info
         const enhancedEvent: DisplayEvent = {
           ...eventData,
-          facilityName: facilityData?.name || 'Không xác định',
-          ...(eventDetailData || {})
+          facilityName: facilityDetails?.name || facilityData?.name || 'Không xác định',
+          facilityAddress: facilityDetails?.address || 'Địa chỉ không xác định'
         };
         
         // Add sport name if applicable
-        if (eventDetailData?.sportTypes?.length) {
-          const sportId = eventDetailData.sportTypes[0];
+        if (eventData.sportIds && eventData.sportIds.length > 0) {
+          const sportId = eventData.sportIds[0];
           const sport = mockSports.find(s => s.id === sportId);
           if (sport) {
             enhancedEvent.sportName = sport.name;
@@ -181,10 +139,10 @@ const EventDetailPage: React.FC = () => {
     return dayjs(dateString).format('DD/MM/YYYY');
   };
   
-  // Format time
-  const formatTime = (dateString: string) => {
-    return dayjs(dateString).format('HH:mm');
-  };
+//   // Format time
+//   const formatTime = (dateString: string) => {
+//     return dayjs(dateString).format('HH:mm');
+//   };
   
   // Helper function to render event status
   const renderEventStatus = (status?: EventStatus) => {
@@ -263,11 +221,7 @@ const EventDetailPage: React.FC = () => {
     }
     
     if (event?.eventType === 'TOURNAMENT') {
-      if (event.registrationLink) {
-        window.open(event.registrationLink, '_blank');
-      } else {
-        setShowRegisterModal(true);
-      }
+      setShowRegisterModal(true);
     } else if (event?.eventType === 'DISCOUNT' && event.facilityId) {
       navigate(`/booking/${event.facilityId}`);
     }
@@ -345,7 +299,7 @@ const EventDetailPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Image
-                  src={event.image || 'https://via.placeholder.com/800x400'}
+                  src={event.image && event.image.length > 0 ? event.image[0] : 'https://via.placeholder.com/800x400'}
                   alt={event.name}
                   className="w-full rounded-lg"
                   style={{ height: 'auto', maxHeight: '400px', objectFit: 'cover' }}
@@ -446,7 +400,7 @@ const EventDetailPage: React.FC = () => {
         {/* Section 2: Event Details */}
         <section className="mb-6">
           <Card>
-            <Tabs defaultActiveKey="info" onChange={setActiveTab}>
+            <Tabs defaultActiveKey="info">
               <Tabs.TabPane tab="Thông tin chi tiết" key="info">
                 <div className="py-4">
                   {event.description && (
@@ -555,12 +509,10 @@ const EventDetailPage: React.FC = () => {
                   
                   {event.eventType === 'DISCOUNT' && (
                     <>
-                      {event.conditions && (
-                        <div className="mb-6">
-                          <Title level={4}>Điều kiện áp dụng</Title>
-                          <Paragraph>{event.conditions}</Paragraph>
-                        </div>
-                      )}
+                      <div className="mb-6">
+                        <Title level={4}>Điều kiện áp dụng</Title>
+                        <Paragraph>{event.descriptionOfDiscount || 'Không có thông tin chi tiết'}</Paragraph>
+                      </div>
                       
                       {event.targetUserType && (
                         <div className="mb-6">
@@ -568,15 +520,8 @@ const EventDetailPage: React.FC = () => {
                           <Paragraph>
                             {event.targetUserType === 'ALL' && 'Tất cả người chơi'}
                             {event.targetUserType === 'NEW' && 'Chỉ người mới'}
-                            {event.targetUserType === 'VIP' && 'Người dùng VIP'}
+                            {event.targetUserType === 'LOYALTY' && 'Người dùng VIP'}
                           </Paragraph>
-                        </div>
-                      )}
-                      
-                      {event.discountCode && (
-                        <div className="mb-6">
-                          <Title level={4}>Mã khuyến mãi</Title>
-                          <Tag color="blue" style={{ fontSize: '16px', padding: '4px 8px' }}>{event.discountCode}</Tag>
                         </div>
                       )}
                     </>
@@ -603,7 +548,7 @@ const EventDetailPage: React.FC = () => {
                         <Avatar size={64} src={facility.image || "https://via.placeholder.com/64"} />
                         <div className="ml-4">
                           <Title level={4} className="mb-0">{facility.name}</Title>
-                          <Text type="secondary">{facility.address}</Text>
+                          <Text type="secondary">{event.facilityAddress}</Text>
                         </div>
                       </div>
                       

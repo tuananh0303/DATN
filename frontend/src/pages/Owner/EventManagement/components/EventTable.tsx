@@ -1,11 +1,8 @@
 import React from 'react';
-import { Table, Space, Button, Tag, Tooltip, Modal } from 'antd';
-import { EditOutlined, EyeOutlined, DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { Table, Tag, Button, Space, Tooltip, Dropdown, Menu } from 'antd';
+import { EditOutlined, DeleteOutlined, EyeOutlined, MoreOutlined, TeamOutlined } from '@ant-design/icons';
 import { Event } from '@/types/event.type';
-import { formatDate } from '@/utils/dateUtils';
-import type { ColumnsType } from 'antd/es/table';
-
-const { confirm } = Modal;
+import dayjs from 'dayjs';
 
 interface EventTableProps {
   events: Event[];
@@ -13,109 +10,123 @@ interface EventTableProps {
   onView: (event: Event) => void;
   onEdit: (event: Event) => void;
   onDelete: (eventId: number) => void;
+  onManageRegistrations: (event: Event) => void;
+  getRegistrationBadge?: (eventId: number) => React.ReactNode;
 }
 
-const EventTable: React.FC<EventTableProps> = ({
-  events,
-  loading,
-  onView,
-  onEdit,
-  onDelete
+const EventTable: React.FC<EventTableProps> = ({ 
+  events, 
+  loading, 
+  onView, 
+  onEdit, 
+  onDelete, 
+  onManageRegistrations,
+  getRegistrationBadge
 }) => {
-  // Helper function để hiển thị trạng thái sự kiện
   const getStatusTag = (status: string) => {
-    const config: Record<string, { color: string, text: string }> = {
-      active: { color: 'success', text: 'Đang diễn ra' },
-      upcoming: { color: 'warning', text: 'Sắp diễn ra' },
-      expired: { color: 'error', text: 'Đã kết thúc' }
-    };
-    
-    const statusConfig = config[status] || { color: 'default', text: status };
-    return <Tag color={statusConfig.color}>{statusConfig.text}</Tag>;
+    switch (status) {
+      case 'draft':
+        return <Tag color="gray">Nháp</Tag>;
+      case 'published':
+        return <Tag color="green">Đã đăng</Tag>;
+      case 'closed':
+        return <Tag color="orange">Đã đóng</Tag>;
+      case 'cancelled':
+        return <Tag color="red">Đã hủy</Tag>;
+      default:
+        return <Tag color="default">{status}</Tag>;
+    }
   };
 
-  // Confirm delete
-  const showDeleteConfirm = (event: Event) => {
-    confirm({
-      title: 'Bạn có chắc chắn muốn xóa sự kiện này?',
-      icon: <ExclamationCircleOutlined />,
-      content: `Sự kiện: ${event.name}`,
-      okText: 'Xóa',
-      okType: 'danger',
-      cancelText: 'Hủy',
-      onOk() {
-        onDelete(event.id);
-      }
-    });
+  const formatDate = (date: string) => {
+    return dayjs(date).format('DD/MM/YYYY HH:mm');
   };
 
-  // Table columns
-  const columns: ColumnsType<Event> = [
+  const columns = [
     {
       title: 'Tên sự kiện',
       dataIndex: 'name',
       key: 'name',
-      render: (text, event) => (
-        <div>
-          <div className="font-medium">{text}</div>
-          <div className="text-gray-500 text-xs">ID: {event.id}</div>
-        </div>
+      render: (text: string, record: Event) => (
+        <Space>
+          <span className="font-medium">{text}</span>
+          {getRegistrationBadge && getRegistrationBadge(record.id)}
+        </Space>
       ),
     },
     {
-      title: 'Mô tả',
-      dataIndex: 'description',
-      key: 'description',
-      ellipsis: {
-        showTitle: false,
-      },
-      render: (description) => (
-        <Tooltip placement="topLeft" title={description}>
-          <div className="max-w-[300px] truncate">{description}</div>
-        </Tooltip>
-      ),
+      title: 'Ngày bắt đầu',
+      dataIndex: 'startDate',
+      key: 'startDate',
+      render: (date: string) => formatDate(date),
     },
     {
-      title: 'Thời gian diễn ra',
-      key: 'timeRange',
-      render: (_, event) => (
-        <div>
-          <div>{formatDate(event.startDate)} - </div>
-          <div>{formatDate(event.endDate)}</div>
-        </div>
-      ),
+      title: 'Ngày kết thúc',
+      dataIndex: 'endDate',
+      key: 'endDate',
+      render: (date: string) => formatDate(date),
+    },
+    {
+      title: 'Phí tham gia',
+      dataIndex: 'fee',
+      key: 'fee',
+      render: (fee: number) => fee > 0 ? `${fee.toLocaleString('vi-VN')} đ` : 'Miễn phí',
+    },
+    {
+      title: 'Đã đăng ký/Tối đa',
+      key: 'capacity',
+      render: (_, record: Event) => `${record.registeredCount || 0}/${record.maxParticipants}`,
     },
     {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
-      render: (status) => getStatusTag(status)
+      render: (status: string) => getStatusTag(status),
     },
     {
       title: 'Thao tác',
       key: 'action',
-      render: (_, event) => (
+      render: (_, record: Event) => (
         <Space size="middle">
-          <Button 
-            icon={<EyeOutlined />} 
-            onClick={() => onView(event)}
-            type="text"
-            style={{ color: '#1890ff' }}
-            className="hover:bg-blue-50"
-          />
-          <Button 
-            icon={<EditOutlined />} 
-            onClick={() => onEdit(event)}
-            type="text"
-            style={{ color: '#52c41a' }}
-            className="hover:bg-green-50"
-          />
-          <Button 
-            icon={<DeleteOutlined />} 
-            onClick={() => showDeleteConfirm(event)}
-            type="text"
-            danger
-          />
+          <Tooltip title="Xem chi tiết">
+            <Button 
+              type="text" 
+              icon={<EyeOutlined />} 
+              onClick={() => onView(record)}
+            />
+          </Tooltip>
+          <Tooltip title="Chỉnh sửa">
+            <Button 
+              type="text" 
+              icon={<EditOutlined />} 
+              onClick={() => onEdit(record)}
+              disabled={record.status === 'cancelled'}
+            />
+          </Tooltip>
+          <Dropdown
+            overlay={
+              <Menu>
+                <Menu.Item 
+                  key="registrations" 
+                  icon={<TeamOutlined />}
+                  onClick={() => onManageRegistrations(record)}
+                >
+                  Quản lý đăng ký
+                </Menu.Item>
+                <Menu.Item 
+                  key="delete" 
+                  icon={<DeleteOutlined />} 
+                  danger
+                  onClick={() => onDelete(record.id)}
+                >
+                  Xóa
+                </Menu.Item>
+              </Menu>
+            }
+            trigger={['click']}
+          >
+            <Button type="text" icon={<MoreOutlined />} />
+          </Dropdown>
         </Space>
       ),
     },
@@ -124,14 +135,11 @@ const EventTable: React.FC<EventTableProps> = ({
   return (
     <Table
       columns={columns}
-      dataSource={events}
-      rowKey="id"
+      dataSource={events.map(event => ({ ...event, key: event.id }))}
       loading={loading}
-      pagination={{
-        pageSize: 10,
-        showSizeChanger: false,
-        showTotal: (total) => `Tổng cộng ${total} sự kiện`
-      }}
+      pagination={{ pageSize: 10 }}
+      rowClassName="py-3"
+      className="bg-white rounded-lg shadow-sm"
     />
   );
 };

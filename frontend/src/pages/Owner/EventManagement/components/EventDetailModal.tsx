@@ -3,7 +3,6 @@ import { Modal, Descriptions, Badge, Button, Image, Tag, Divider } from 'antd';
 import { EditOutlined, LinkOutlined } from '@ant-design/icons';
 import { Event } from '@/types/event.type';
 import { formatDate, formatDateRange } from '@/utils/dateUtils';
-import { mockEventDetails } from '@/mocks/event/eventData';
 
 interface EventDetailModalProps {
   visible: boolean;
