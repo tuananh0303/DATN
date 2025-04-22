@@ -36,7 +36,10 @@ export interface Event {
     logo: string;
     contact?: string;
   };
-  // Fields that will be merged from EventDetail when displaying full event info
+  // Additional fields for display purposes
+  facilityName?: string;
+  facilityAddress?: string;
+  sportName?: string;
 }
 
 // Interface cho giải thưởng trong các sự kiện giải đấu
@@ -167,7 +170,6 @@ export interface EventFormData {
   registrationProcess?: string;
 }
 
-
 // Interface cho trạng thái sự kiện trong store
 export interface EventState {
   events: Event[];
@@ -175,5 +177,29 @@ export interface EventState {
   isLoading: boolean;
   error: string | null;
   selectedFacilityId: string | null;
+}
+
+// Interface mở rộng cho hiển thị Event trong danh sách
+export interface DisplayEvent extends Event {
+  facilityName: string;
+  facilityAddress: string;
+  sportName?: string;
+  currentParticipants?: number;
+  maxParticipants?: number;
+  registrationEndDate?: string;
+  discountPercent?: number;
+  discountAmount?: number;
+  freeSlots?: number;
+  discountType?: string;
+  activities?: string[];
+  targetUserType?: string;
+  minBookingValue?: number;
+  maxUsageCount?: number;
+  registrationFee?: number;
+  isFreeRegistration?: boolean;
+  tournamentFormat?: string[] | string;
+  totalPrize?: string;
+  fields?: string[];
+  prizes?: EventPrize[];
 }
 

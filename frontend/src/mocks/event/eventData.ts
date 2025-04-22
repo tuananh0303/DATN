@@ -1,5 +1,13 @@
 import { Event, EventDetail } from '@/types/event.type';
 
+// Mock sports data that will be used in events
+export const mockSports = [
+  { id: 1, name: 'Bóng đá' },
+  { id: 2, name: 'Bóng rổ' },
+  { id: 3, name: 'Tennis' },
+  { id: 4, name: 'Cầu lông' }
+];
+
 // Mock data for events
 export const mockEvents: Event[] = [
   {
@@ -135,7 +143,7 @@ export const mockEventDetails: EventDetail[] = [
     id: 1,
     eventType: 'TOURNAMENT',
     facilityId: '2',
-    tournamentName: 'Giải Cầu Lông Mở Rộng Hè 2025',
+    tournamentName: 'Giải Tennis Mở Rộng Hè 2025',
     sportTypes: [3], // Tennis
     targetSportId: 3, // For backward compatibility
     image: 'https://via.placeholder.com/600x400?text=Tennis+Tournament',
@@ -146,13 +154,13 @@ export const mockEventDetails: EventDetail[] = [
     minParticipants: 16,
     currentParticipants: 24,
     registrationType: 'individual',
-    registrationEndDate: '2024-07-10T23:59:59Z',
+    registrationEndDate: '2025-07-10T23:59:59Z',
     registrationLink: 'https://forms.example.com/tennis-tournament',
     registrationFee: 500000,
     isFreeRegistration: false,
-    paymentInstructions: 'Thanh toán phí tham gia trước ngày 10/07/2024. Gửi bằng chứng thanh toán qua Zalo/Email của BTC.',
+    paymentInstructions: 'Thanh toán phí tham gia trước ngày 10/07/2025. Gửi bằng chứng thanh toán qua Zalo/Email của BTC.',
     paymentMethod: ['bank', 'momo'],
-    paymentDeadline: '2024-07-10T23:59:59Z',
+    paymentDeadline: '2025-07-10T23:59:59Z',
     paymentAccountInfo: 'Ngân hàng Vietcombank | STK: 1234567890 | Chủ TK: Nguyễn Văn A | Nội dung CK: Tennis2025-TenNguoiChoi',
     paymentQrImage: 'https://via.placeholder.com/300x300?text=QR+Payment',
     registrationProcess: '1. Đăng ký và nhận email xác nhận\n2. Thanh toán phí tham gia\n3. Gửi bằng chứng thanh toán cho BTC\n4. BTC xác nhận và phê duyệt đăng ký',
@@ -188,7 +196,12 @@ export const mockEventDetails: EventDetail[] = [
     discountCode: 'EARLY20',
     targetUserType: 'ALL',
     targetProducts: ['ALL'],
-    maxUsageCount: 0 // Không giới hạn
+    maxUsageCount: 0, // Không giới hạn
+    contact: {
+      name: 'Lê Thị B',
+      email: 'lethib@example.com',
+      phone: '0912345678'
+    }
   },
   {
     id: 3,
@@ -205,12 +218,12 @@ export const mockEventDetails: EventDetail[] = [
     minParticipants: 8,
     currentParticipants: 16,
     registrationType: 'team',
-    registrationEndDate: '2024-05-05T23:59:59Z',
+    registrationEndDate: '2025-05-05T23:59:59Z',
     registrationFee: 1000000,
     isFreeRegistration: false,
     paymentInstructions: 'Mỗi đội đóng 1.000.000đ phí tham gia. Thanh toán trước khi bốc thăm chia bảng.',
     paymentMethod: ['bank', 'cash'],
-    paymentDeadline: '2024-05-01T23:59:59Z',
+    paymentDeadline: '2025-05-01T23:59:59Z',
     paymentAccountInfo: 'Ngân hàng Techcombank | STK: 9876543210 | Chủ TK: Trần Văn B | Nội dung CK: CupPK-TenDoi',
     registrationProcess: '1. Đội trưởng đăng ký thông tin đội\n2. Nộp danh sách cầu thủ và thanh toán phí tham gia\n3. BTC xác nhận và phê duyệt đăng ký\n4. Tham gia lễ bốc thăm chia bảng',
     ageLimit: '18+',
@@ -242,6 +255,13 @@ export const mockEventDetails: EventDetail[] = [
     specialServices: ['Đồ ăn miễn phí', 'Huấn luyện viên hướng dẫn', 'Trò chơi cho trẻ em', 'Quà tặng cho gia đình tham gia'],
     location: 'Khu phức hợp thể thao Bình Chánh',
     registrationLink: 'https://forms.example.com/family-sports-day',
+    isFreeRegistration: true,
+    maxParticipants: 100,
+    currentParticipants: 45,
+    registrationEndDate: '2025-07-20T23:59:59Z',
+    registrationProcess: 'Đăng ký trực tuyến qua form đính kèm. Mỗi gia đình điền đầy đủ thông tin các thành viên tham gia.',
+    tournamentFormat: ['other'],
+    tournamentFormatDescription: 'Các hoạt động thi đấu giao lưu không chuyên, dành cho gia đình có trẻ em. Không áp dụng luật thi đấu chuyên nghiệp.',
     contact: {
       name: 'Lê Thị C',
       email: 'lethic@example.com',
@@ -261,7 +281,12 @@ export const mockEventDetails: EventDetail[] = [
     discountCode: 'NEWCUSTOMER30',
     targetUserType: 'NEW',
     targetProducts: ['ALL'],
-    maxUsageCount: 100
+    maxUsageCount: 100,
+    contact: {
+      name: 'Nguyễn Thị D',
+      email: 'nguyenthid@example.com',
+      phone: '0934567890'
+    }
   },
   {
     id: 6,
@@ -318,7 +343,12 @@ export const mockEventDetails: EventDetail[] = [
     discountCode: 'NOON50K',
     targetUserType: 'ALL',
     targetProducts: ['FIELD_FOOTBALL', 'FIELD_BADMINTON'],
-    maxUsageCount: 30
+    maxUsageCount: 30,
+    contact: {
+      name: 'Trần Thị E',
+      email: 'tranthie@example.com',
+      phone: '0945678901'
+    }
   },
   {
     id: 8,
@@ -333,6 +363,11 @@ export const mockEventDetails: EventDetail[] = [
     discountCode: 'VIPFREE2',
     targetUserType: 'VIP',
     targetProducts: ['ALL'],
-    maxUsageCount: 50
+    maxUsageCount: 50,
+    contact: {
+      name: 'Vũ Văn F',
+      email: 'vuvanf@example.com',
+      phone: '0956789012'
+    }
   }
 ];
