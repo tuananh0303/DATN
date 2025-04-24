@@ -11,7 +11,7 @@ import {
   GiftOutlined,
   LeftOutlined, RightOutlined
 } from '@ant-design/icons';
-import { Event, EventType, EventStatus, DiscountType, TargetUserType } from '@/types/event.type';
+import { EventType, EventStatus, DisplayEvent } from '@/types/event.type';
 import { mockEvents } from '@/mocks/event/eventData';
 import { Sport } from '@/types/sport.type';
 import { sportService } from '@/services/sport.service';
@@ -27,14 +27,6 @@ const mockFacilities: Record<string, { name: string; address: string }> = {
   '4': { name: 'Sân cầu lông Phạm Kha', address: '123 Đường Phạm Văn Đồng, Quận Gò Vấp, TPHCM' }
 };
 
-// Display Event interface cho hiển thị
-interface DisplayEvent extends Omit<Event, 'discountType' | 'targetUserType'> {
-  facilityName: string;
-  facilityAddress: string;
-  sportName?: string;
-  discountType?: DiscountType | string;
-  targetUserType?: TargetUserType | string;
-}
 
 const EventList: React.FC = () => {
   const navigate = useNavigate();
@@ -139,7 +131,7 @@ const EventList: React.FC = () => {
             event.facilityAddress.toLowerCase().includes(lowerCaseSearch) ||
             (event.sportName && event.sportName.toLowerCase().includes(lowerCaseSearch)) ||
             (event.discountType === 'PERCENT' && 'giảm giá phần trăm'.includes(lowerCaseSearch)) ||
-            (event.discountType === 'AMOUNT' && 'giảm giá tiền'.includes(lowerCaseSearch)) ||
+            (event.discountType === 'FIXED_AMOUNT' && 'giảm giá tiền'.includes(lowerCaseSearch)) ||
             (event.discountType === 'FREE_SLOT' && 'tặng lượt đặt miễn phí'.includes(lowerCaseSearch)) ||
             (event.targetUserType === 'NEW' && 'người mới'.includes(lowerCaseSearch)) ||
             (event.targetUserType === 'LOYALTY' && 'khách hàng vip'.includes(lowerCaseSearch))
@@ -439,7 +431,7 @@ const EventList: React.FC = () => {
                     </div>
                   )}
                   
-                  {event.discountType === 'AMOUNT' && event.discountAmount !== undefined && (
+                  {event.discountType === 'FIXED_AMOUNT' && event.discountAmount !== undefined && (
                     <div className="event-info-item">
                       <span style={{ fontSize: '14px', marginRight: '5px' }}>💵</span>
                       <Text className="ml-1">
@@ -604,7 +596,7 @@ const EventList: React.FC = () => {
                       </span>
                     )}
                     
-                    {event.discountType === 'AMOUNT' && event.discountAmount && (
+                    {event.discountType === 'FIXED_AMOUNT' && event.discountAmount && (
                       <span className="highlight-discount">
                         <span style={{ marginRight: '5px' }}>💵</span> Giảm {event.discountAmount?.toLocaleString('vi-VN')}đ
                       </span>

@@ -28,23 +28,14 @@ import {
   DollarOutlined, 
   InfoCircleOutlined,
 } from '@ant-design/icons';
-import { mockEvents, mockSports } from '@/mocks/event/eventData';
+import { mockEvents } from '@/mocks/event/eventData';
 import { mockFacilitiesDropdown } from '@/mocks/facility/mockFacilities';
-import { Event, EventType, EventStatus, DiscountType, TargetUserType } from '@/types/event.type';
+import { EventType, EventStatus, DisplayEvent } from '@/types/event.type';
 import { useAppSelector, useAppDispatch } from '@/hooks/reduxHooks';
 import { showLoginModal } from '@/store/slices/userSlice';
 import dayjs from 'dayjs';
 
 const { Title, Text, Paragraph } = Typography;
-
-// Enhanced Event interface for display
-interface DisplayEvent extends Omit<Event, 'discountType' | 'targetUserType'> {
-  facilityName: string;
-  facilityAddress: string;
-  sportName?: string;
-  discountType?: DiscountType | string;
-  targetUserType?: TargetUserType | string;
-}
 
 // Mock facility data for display
 const mockFacilityDetails: Record<string, { name: string; address: string }> = {
@@ -53,6 +44,14 @@ const mockFacilityDetails: Record<string, { name: string; address: string }> = {
   '3': { name: 'Sân bóng rổ Quận 7', address: '789 Đường Nguyễn Thị Thập, Quận 7, TPHCM' },
   '4': { name: 'Sân cầu lông Phạm Kha', address: '123 Đường Phạm Văn Đồng, Quận Gò Vấp, TPHCM' }
 };
+
+// Mock sports data that will be used in events
+const mockSports = [
+  { id: 1, name: 'Bóng đá' },
+  { id: 2, name: 'Bóng rổ' },
+  { id: 3, name: 'Tennis' },
+  { id: 4, name: 'Cầu lông' }
+];
 
 const EventDetailPage: React.FC = () => {
   const navigate = useNavigate();
@@ -139,10 +138,6 @@ const EventDetailPage: React.FC = () => {
     return dayjs(dateString).format('DD/MM/YYYY');
   };
   
-//   // Format time
-//   const formatTime = (dateString: string) => {
-//     return dayjs(dateString).format('HH:mm');
-//   };
   
   // Helper function to render event status
   const renderEventStatus = (status?: EventStatus) => {
@@ -352,7 +347,7 @@ const EventDetailPage: React.FC = () => {
                           </Descriptions.Item>
                         )}
                         
-                        {event.discountType === 'AMOUNT' && event.discountAmount && (
+                        {event.discountType === 'FIXED_AMOUNT' && event.discountAmount && (
                           <Descriptions.Item label={<span className="font-medium"><DollarOutlined className="mr-2" />Mức giảm giá</span>}>
                             {event.discountAmount.toLocaleString('vi-VN')}đ
                           </Descriptions.Item>

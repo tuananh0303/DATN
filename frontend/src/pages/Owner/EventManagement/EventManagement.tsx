@@ -30,7 +30,6 @@ const EventManagement: React.FC = () => {
   const [eventTypeFilter, setEventTypeFilter] = useState<EventType | 'all'>('all');
   const [search, setSearch] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
 
   // Modal states
   const [detailModalVisible, setDetailModalVisible] = useState<boolean>(false);
@@ -79,7 +78,6 @@ const EventManagement: React.FC = () => {
 
   const fetchEvents = useCallback(() => {
     setLoading(true);
-    setError(null);
     
     // Simulate API call with a delay
     setTimeout(() => {

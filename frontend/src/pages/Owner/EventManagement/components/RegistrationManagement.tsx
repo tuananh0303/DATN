@@ -11,8 +11,8 @@ import {
   message,
   Input,
   Select,
-  Spin,
-  Tabs
+  Tabs,
+  Divider
 } from 'antd';
 import {
   CheckCircleOutlined,
@@ -84,7 +84,7 @@ const RegistrationManagement: React.FC<RegistrationManagementProps> = ({
         
         setRegistrations(mockRegistrations);
         setLoading(false);
-      }, 1000);
+      }, 100);
     }
   }, [visible, event]);
 
@@ -202,7 +202,7 @@ const RegistrationManagement: React.FC<RegistrationManagementProps> = ({
           return reg;
         });
         
-        setRegistrations(updatedRegistrations);
+        setRegistrations(updatedRegistrations as EventRegistration[]);
         message.success('Đã cập nhật trạng thái thanh toán');
       }
     });
@@ -502,7 +502,7 @@ const RegistrationManagement: React.FC<RegistrationManagementProps> = ({
               allowClear
             >
               {statusFilterOptions.map(option => (
-                <Option key={option.value || 'all'} value={option.value as any}>
+                <Option key={option.value || 'all'} value={option.value as RegistrationApprovalStatus | null}>
                   {option.label}
                 </Option>
               ))}

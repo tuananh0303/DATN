@@ -1,19 +1,5 @@
 import { Event, EventFormData } from '@/types/event.type';
 
-// Mock sports data that will be used in events
-export const mockSports = [
-  { id: 1, name: 'Bóng đá' },
-  { id: 2, name: 'Bóng rổ' },
-  { id: 3, name: 'Tennis' },
-  { id: 4, name: 'Cầu lông' }
-];
-
-// Mock event types
-export const mockEventTypes = [
-  { id: 'DISCOUNT', name: 'Khuyến mãi' },
-  { id: 'TOURNAMENT', name: 'Giải đấu' }
-];
-
 // Mock data for events
 export const mockEvents: Event[] = [
   {
@@ -193,7 +179,7 @@ export const mockEvents: Event[] = [
     eventType: 'DISCOUNT',
     image: ['https://via.placeholder.com/600x400?text=Flash+Sale+Noon'],
     bannerImage: 'https://via.placeholder.com/1200x400?text=Flash+Sale+Noon+Banner',
-    discountType: 'AMOUNT',
+    discountType: 'FIXED_AMOUNT',
     discountAmount: 50000,
     minBookingValue: 100000,
     targetUserType: 'ALL',

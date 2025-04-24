@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal, Descriptions, Badge, Button, Image, Tag, Divider, Space } from 'antd';
-import { EditOutlined, LinkOutlined } from '@ant-design/icons';
+import { EditOutlined } from '@ant-design/icons';
 import { Event, EventStatus, DiscountType, TargetUserType } from '@/types/event.type';
 import dayjs from 'dayjs';
 
@@ -179,7 +179,7 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({
         </Descriptions.Item>
         
         <Descriptions.Item label="Trạng thái">
-          <Badge status={getStatusBadge(event.status) as "success" | "warning" | "error" | "default" | "processing"} text={getStatusText(event.status)} />
+          <Badge status={getStatusBadge(event.status || 'upcoming') as "success" | "warning" | "error" | "default" | "processing"} text={getStatusText(event.status || 'upcoming')} />
         </Descriptions.Item>
         
         <Descriptions.Item label="Thời gian diễn ra" span={2}>
@@ -362,7 +362,7 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({
               </Descriptions.Item>
             )}
             
-            {event.discountType === 'AMOUNT' && event.discountAmount && (
+            {event.discountType === 'FIXED_AMOUNT' && event.discountAmount && (
               <Descriptions.Item label="Số tiền giảm giá">
                 {event.discountAmount.toLocaleString('vi-VN')} VNĐ
               </Descriptions.Item>

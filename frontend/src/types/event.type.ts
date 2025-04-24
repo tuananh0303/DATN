@@ -5,7 +5,7 @@ export type EventStatus = 'active' | 'upcoming' | 'expired';
 export type EventType = 'TOURNAMENT' | 'DISCOUNT';
 
 // Các loại khuyến mãi
-export type DiscountType = 'PERCENT' | 'AMOUNT' | 'FREE_SLOT';
+export type DiscountType = 'PERCENT' | 'FIXED_AMOUNT' | 'FREE_SLOT';    
 
 // Các đối tượng áp dụng khuyến mãi
 export type TargetUserType = 'ALL' | 'NEW' | 'LOYALTY' | 'CASUAL';
@@ -47,7 +47,7 @@ export interface Event {
   status?: EventStatus;
   eventType: EventType;
   facilityId: string;
-  image: string[]; // URL của ảnh
+  image?: string[]; // URL của ảnh
   bannerImage?: string;
   location?: string;
   createdAt?: string;
@@ -60,38 +60,38 @@ export interface Event {
   // Thuộc tính cho giải đấu
   sportIds?: number[];  
   fieldIds?: number[];  
-  maxParticipants?: number;
-  minParticipants?: number;
-  currentParticipants?: number;
-  registrationType?: RegistrationType;
-  registrationEndDate?: string; 
-  registrationFee?: number;
-  ageLimit?: string;
-  tournamentFormat?: string[] | string;
-  tournamentFormatDescription?: string;
-  totalPrize?: string;
-  prizeDescription?: string;
-  prizes?: EventPrize[];
-  currentStatus?: RegistrationStatus;
-  rulesAndRegulations?: string;
-  isFreeRegistration?: boolean;
-  paymentInstructions?: string;
-  paymentMethod?: string[] | string;
-  paymentDeadline?: string;
-  paymentAccountInfo?: string;
-  paymentQrImage?: string;
-  registrationProcess?: string;
+  maxParticipants?: number;  // Số lượng người tham gia tối đa
+  minParticipants?: number; // Số lượng người tham gia tối thiểu để bắt đầu sự kiện
+  currentParticipants?: number; // Số lượng người tham gia hiện tại
+  registrationType?: RegistrationType; // Loại đăng ký
+  registrationEndDate?: string;  // Ngày kết thúc đăng ký
+  registrationFee?: number; // Phí đăng ký
+  ageLimit?: string; // Giới hạn tuổi
+  tournamentFormat?: string[] | string; // Thể thức giải đấu
+  tournamentFormatDescription?: string; // Mô tả thể thức giải đấu
+  totalPrize?: string; // Tổng giải thưởng
+  prizeDescription?: string; // Mô tả giải thưởng
+  prizes?: EventPrize[]; // Danh sách giải thưởng
+  currentStatus?: RegistrationStatus; // Trạng thái đăng ký
+  rulesAndRegulations?: string; // Quy tắc và luật lệ giải đấu
+  isFreeRegistration?: boolean; // Có miễn phí đăng ký không
+  paymentInstructions?: string; // Hướng dẫn thanh toán
+  paymentMethod?: string[] | string; // Phương thức thanh toán
+  paymentDeadline?: string; // Ngày hạn thanh toán
+  paymentAccountInfo?: string; // Thông tin tài khoản thanh toán
+  paymentQrImage?: string; // Hình ảnh QR thanh toán
+  registrationProcess?: string; // Quy trình đăng ký
 
   // Thuộc tính cho khuyến mãi
-  discountType?: DiscountType;
-  discountPercent?: number;
-  discountAmount?: number;
-  freeSlots?: number;
-  minBookingValue?: number;
-  targetUserType?: TargetUserType;
-  maxUsageCount?: number;
-  descriptionOfDiscount?: string;
-  contact?: ContactInfo;
+  discountType?: DiscountType; // Loại khuyến mãi
+  discountPercent?: number; // Phần trăm giảm giá
+  discountAmount?: number; // Số tiền giảm giá
+  freeSlots?: number; // Số lượt đặt sân miễn phí
+  minBookingValue?: number; // Giá trị đặt sân tối thiểu
+  targetUserType?: TargetUserType; // Đối tượng áp dụng khuyến mãi
+  maxUsageCount?: number; // Số lần sử dụng khuyến mãi
+  descriptionOfDiscount?: string; // Mô tả khuyến mãi
+  contact?: ContactInfo; // Thông tin liên hệ 
 }
 
 // Type guard để kiểm tra nếu một sự kiện là giải đấu
@@ -162,28 +162,38 @@ export interface EventState {
 }
 
 // Interface mở rộng cho hiển thị Event trong danh sách
-export interface DisplayEvent extends Omit<Event, 'discountType' | 'targetUserType'> {
+export interface DisplayEvent
+  extends Omit<Event, 'discountType' | 'targetUserType'> {
+  // Derived từ facilityId → hiển thị
   facilityName: string;
   facilityAddress: string;
+
+  // Lọc / hiển thị môn chính
   sportName?: string;
-  currentParticipants?: number;
+
+  // ––––– TOURNAMENT –––––
+  currentParticipants?: number;   // live số người/phần trăm
   maxParticipants?: number;
-  registrationEndDate?: string;
-  discountPercent?: number;
-  discountAmount?: number;
-  freeSlots?: number;
-  discountType?: string;
-  targetUserType?: string;
-  minBookingValue?: number;
-  maxUsageCount?: number;
-  registrationFee?: number;
-  isFreeRegistration?: boolean;
+  registrationEndDate?: string;   // ISO date để show deadline
+  isFreeRegistration?: boolean;   // show badge “Miễn phí”
+  registrationFee?: number;       // nếu không miễn phí
   tournamentFormat?: string[] | string;
   totalPrize?: string;
+  prizes?: EventPrize[];
+
+  // ––––– DISCOUNT –––––
+  discountType?: DiscountType;      // 'PERCENT' | 'FIXED_AMOUNT' | 'FREE_SLOT'
+  discountPercent?: number;         // khi discountType === 'PERCENT'
+  discountAmount?: number;          // khi discountType === 'FIXED_AMOUNT'
+  freeSlots?: number;               // khi discountType === 'FREE_SLOT'
+  minBookingValue?: number;
+  targetUserType?: TargetUserType;  // 'ALL' | 'NEW' | 'LOYALTY'
+  maxUsageCount?: number;
+  descriptionOfDiscount?: string;   // label ngắn gọn hiển thị
+
+  // Nếu cần filter / tag
   sportIds?: number[];
   fieldIds?: number[];
-  descriptionOfDiscount?: string;
-  prizes?: EventPrize[];
 }
 
 // Trạng thái phê duyệt đăng ký
@@ -207,8 +217,8 @@ export interface EventRegistration {
   paymentMethod?: string;
   paymentDate?: string;
   approvedBy?: string; // ID của admin/owner phê duyệt
-  approvedDate?: string;
-  rejectionReason?: string;
+  approvedDate?: string; // Ngày phê duyệt
+  rejectionReason?: string; // Lý do từ chối đăng ký
   teamName?: string; // Tên đội (cho đăng ký theo đội)
   teamMembers?: Array<{name: string; email?: string; phone?: string}>; // Thành viên đội
   notes?: string; // Ghi chú đăng ký

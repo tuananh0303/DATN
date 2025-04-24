@@ -4,7 +4,6 @@ import { Form, Input, Button, Select, InputNumber, Card, Typography, Space, Divi
 import { PlusOutlined, DeleteOutlined, ArrowLeftOutlined, UploadOutlined } from '@ant-design/icons';
 import { EventFormData, EventType } from '@/types/event.type';
 import { mockFacilitiesDropdown } from '@/mocks/facility/mockFacilities';
-import { mockEventTypes } from '@/mocks/event/eventData';
 import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
@@ -21,6 +20,12 @@ const mockSports = [
   { id: 2, name: 'Bóng rổ' },
   { id: 3, name: 'Tennis' },
   { id: 4, name: 'Cầu lông' }
+];
+
+// Mock event types
+const mockEventTypes = [
+  { id: 'DISCOUNT', name: 'Khuyến mãi' },
+  { id: 'TOURNAMENT', name: 'Giải đấu' }
 ];
 
 interface CreateEventProps {
@@ -1276,7 +1281,7 @@ const CreateEvent: React.FC<CreateEventProps> = ({ onCancel, onSubmit }) => {
                             <span className="font-medium mr-2">🏷️ Ưu đãi:</span>
                             <span>
                               {event.discountType === 'PERCENT' && `Giảm ${event.discountPercent}%`}
-                              {event.discountType === 'AMOUNT' && `Giảm ${event.discountAmount?.toLocaleString('vi-VN')}đ`}
+                              {event.discountType === 'FIXED_AMOUNT' && `Giảm ${event.discountAmount?.toLocaleString('vi-VN')}đ`}
                               {event.discountType === 'FREE_SLOT' && `Tặng ${event.freeSlots} lượt đặt miễn phí`}
                             </span>
                           </div>

@@ -103,7 +103,7 @@ const EventTable: React.FC<EventTableProps> = ({
               {record.discountType === 'PERCENT' && record.discountPercent && (
                 <Tag color="purple">Giảm {record.discountPercent}%</Tag>
               )}
-              {record.discountType === 'AMOUNT' && record.discountAmount && (
+              {record.discountType === 'FIXED_AMOUNT' && record.discountAmount && (
                 <Tag color="purple">Giảm {record.discountAmount.toLocaleString('vi-VN')} đ</Tag>
               )}
               {record.discountType === 'FREE_SLOT' && record.freeSlots && (

@@ -1,21 +1,25 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Form, Input, DatePicker, Select, Button, Spin, InputNumber, Switch, Space, Divider, Upload } from 'antd';
-import { Event, EventType, DiscountType, TargetUserType, RegistrationType } from '@/types/event.type';
-import { mockEventTypes } from '@/mocks/event/eventData';
+import { Modal, Form, Input, DatePicker, Select, Button, Spin, InputNumber, Switch, Divider } from 'antd';
+import { Event, EventType, DiscountType } from '@/types/event.type';
 import { mockFacilitiesDropdown } from '@/mocks/facility/mockFacilities';
-import { PlusOutlined, UploadOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
 const { TextArea } = Input;
 const { Option } = Select;
 const { RangePicker } = DatePicker;
 
-// Mock sports data
+// Mock sports data that will be used in events
 const mockSports = [
   { id: 1, name: 'Bóng đá' },
   { id: 2, name: 'Bóng rổ' },
   { id: 3, name: 'Tennis' },
   { id: 4, name: 'Cầu lông' }
+];
+
+// Mock event types
+const mockEventTypes = [
+  { id: 'DISCOUNT', name: 'Khuyến mãi' },
+  { id: 'TOURNAMENT', name: 'Giải đấu' }
 ];
 
 // Mock tournament formats
@@ -136,7 +140,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({
     // Reset discount values based on the type
     if (value === 'PERCENT') {
       form.setFieldsValue({ discountAmount: undefined, freeSlots: undefined });
-    } else if (value === 'AMOUNT') {
+    } else if (value === 'FIXED_AMOUNT') {
       form.setFieldsValue({ discountPercent: undefined, freeSlots: undefined });
     } else if (value === 'FREE_SLOT') {
       form.setFieldsValue({ discountPercent: undefined, discountAmount: undefined });
@@ -339,8 +343,11 @@ const EventEditModal: React.FC<EventEditModalProps> = ({
               min={0} 
               style={{ width: '100%' }} 
               placeholder="Nhập phí đăng ký (VNĐ)"
-              formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-              parser={value => value ? value.replace(/\$\s?|(,*)/g, '') : ''}
+              formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+                  parser={(value: string | undefined) => {
+                  if (!value) return 0;
+                  return Number(value.replace(/\./g, ''));
+                }}
             />
           </Form.Item>
         )}
@@ -452,7 +459,7 @@ const EventEditModal: React.FC<EventEditModalProps> = ({
           </Form.Item>
         )}
 
-        {selectedDiscountType === 'AMOUNT' && (
+        {selectedDiscountType === 'FIXED_AMOUNT' && (
           <Form.Item
             name="discountAmount"
             label="Số tiền giảm giá"
@@ -462,8 +469,11 @@ const EventEditModal: React.FC<EventEditModalProps> = ({
               min={1000} 
               style={{ width: '100%' }} 
               placeholder="Nhập số tiền giảm giá (VNĐ)"
-              formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-              parser={value => value ? value.replace(/\$\s?|(,*)/g, '') : ''}
+              formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+                  parser={(value: string | undefined) => {
+                  if (!value) return 0;
+                  return Number(value.replace(/\./g, ''));
+                }}
             />
           </Form.Item>
         )}
@@ -503,8 +513,11 @@ const EventEditModal: React.FC<EventEditModalProps> = ({
             min={0} 
             style={{ width: '100%' }} 
             placeholder="Nhập giá trị đặt sân tối thiểu (VNĐ)"
-            formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-            parser={value => value ? value.replace(/\$\s?|(,*)/g, '') : ''}
+            formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+            parser={(value: string | undefined) => {
+            if (!value) return 0;
+            return Number(value.replace(/\./g, ''));
+            }}
           />
         </Form.Item>
 
