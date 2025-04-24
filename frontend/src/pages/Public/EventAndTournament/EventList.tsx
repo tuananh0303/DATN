@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Card, Typography, Row, Col, Tag, Button, Space, Select,
-  Input, Empty, Pagination, Tabs, Badge, Avatar, Spin, Breadcrumb, Carousel
+  Input, Empty, Pagination, Tabs, Badge, Avatar, Spin, Breadcrumb, Carousel, Modal, Form, Upload, message
 } from 'antd';
 import type { CarouselRef } from 'antd/es/carousel';
 import { 
   SearchOutlined, CalendarOutlined, EnvironmentOutlined, TeamOutlined,
   TrophyOutlined, ArrowRightOutlined, ClockCircleOutlined, PercentageOutlined,
   GiftOutlined,
-  LeftOutlined, RightOutlined
+  LeftOutlined, RightOutlined, UploadOutlined
 } from '@ant-design/icons';
 import { EventType, EventStatus, DisplayEvent } from '@/types/event.type';
 import { mockEvents } from '@/mocks/event/eventData';
@@ -30,6 +30,10 @@ const mockFacilities: Record<string, { name: string; address: string }> = {
 
 const EventList: React.FC = () => {
   const navigate = useNavigate();
+  // Registration modal state
+  const [registerModalVisible, setRegisterModalVisible] = useState(false);
+  const [currentEventForRegister, setCurrentEventForRegister] = useState<DisplayEvent | null>(null);
+  const [registrationForm] = Form.useForm();
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState<DisplayEvent[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<DisplayEvent[]>([]);
@@ -203,14 +207,13 @@ const EventList: React.FC = () => {
   // Handle register for event
   const handleRegister = (eventId: number) => {
     const event = events.find(e => e.id === eventId);
-    
     if (event?.eventType === 'TOURNAMENT') {
-      navigate(`/event/${eventId}?register=true`);
+      // Show registration modal
+      setCurrentEventForRegister(event);
+      setRegisterModalVisible(true);
     } else if (event?.eventType === 'DISCOUNT' && event.facilityId) {
-      // Đối với khuyến mãi, chuyển đến trang booking của cơ sở
       navigate(`/booking/${event.facilityId}`);
     } else {
-      // Fallback nếu không xác định được loại sự kiện
       navigate(`/event/${eventId}`);
     }
   };
@@ -797,6 +800,58 @@ const EventList: React.FC = () => {
           </div>
         )}
       </div>
+      
+      {/* Registration Modal */}
+      <Modal
+        title={`Đăng ký tham gia ${currentEventForRegister?.name}`}
+        open={registerModalVisible}
+        onCancel={() => setRegisterModalVisible(false)}
+        okText="Xác nhận"
+        cancelText="Hủy"
+        onOk={() => {
+          registrationForm.validateFields()
+            .then(() => {
+              // TODO: call API or mock push new registration
+              message.success('Đăng ký thành công!');
+              registrationForm.resetFields();
+              setRegisterModalVisible(false);
+            })
+            .catch(errorInfo => {
+              console.log('Validation Failed:', errorInfo);
+            });
+        }}
+      >
+        <Form form={registrationForm} layout="vertical">
+          <Form.Item name="userName" label="Họ và tên" rules={[{ required: true, message: 'Nhập họ và tên' }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item name="userEmail" label="Email" rules={[{ required: true, type: 'email', message: 'Nhập email hợp lệ' }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item name="userPhone" label="Số điện thoại" rules={[{ required: true, message: 'Nhập số điện thoại' }]}>
+            <Input />
+          </Form.Item>
+          {!currentEventForRegister?.isFreeRegistration && (
+            <>
+              <Form.Item name="paymentMethod" label="Phương thức thanh toán" rules={[{ required: true, message: 'Chọn phương thức thanh toán' }]}>
+                <Select placeholder="Chọn phương thức">
+                  <Option value="bank">Chuyển khoản</Option>
+                  <Option value="momo">Momo</Option>
+                  <Option value="cash">Tiền mặt</Option>
+                </Select>
+              </Form.Item>
+              <Form.Item name="paymentProofFile" label="Chứng từ thanh toán" valuePropName="file" getValueFromEvent={e => e.file.originFileObj} rules={[{ required: true, message: 'Upload chứng từ' }]}>
+                <Upload beforeUpload={() => false} listType="picture">
+                  <Button icon={<UploadOutlined />}>Upload</Button>
+                </Upload>
+              </Form.Item>
+            </>
+          )}
+          <Form.Item name="notes" label="Ghi chú">
+            <Input.TextArea rows={3} />
+          </Form.Item>
+        </Form>
+      </Modal>
       
       <style>
         {`

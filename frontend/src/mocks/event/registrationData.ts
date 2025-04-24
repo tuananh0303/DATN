@@ -4,8 +4,8 @@ import { EventRegistration } from '@/types/event.type';
 export const mockEventRegistrations: EventRegistration[] = [
   {
     id: 'reg-001',
+    userId: '64ee35ec-b755-4045-90c4-c0f1e2a5be79',
     eventId: 1, // Giải đấu Tennis mùa hè
-    userId: 'user-001',
     userName: 'Nguyễn Văn A',
     userEmail: 'nguyenvana@example.com',
     userPhone: '0901234567',
@@ -17,8 +17,8 @@ export const mockEventRegistrations: EventRegistration[] = [
   },
   {
     id: 'reg-002',
-    eventId: 1, // Giải đấu Tennis mùa hè
-    userId: 'user-002',
+    userId: '64ee35ec-b755-4045-90c4-c0f1e2a5be79',
+    eventId: 4, // Giải đấu Tennis mùa hè
     userName: 'Trần Thị B',
     userEmail: 'tranthib@example.com',
     userPhone: '0912345678',
@@ -33,8 +33,8 @@ export const mockEventRegistrations: EventRegistration[] = [
   },
   {
     id: 'reg-003',
-    eventId: 3, // Cúp Bóng đá Phạm Kha
     userId: 'user-003',
+    eventId: 3, // Cúp Bóng đá Phạm Kha
     userName: 'Lê Văn C',
     userEmail: 'levanc@example.com',
     userPhone: '0923456789',
@@ -50,8 +50,8 @@ export const mockEventRegistrations: EventRegistration[] = [
   },
   {
     id: 'reg-004',
-    eventId: 3, // Cúp Bóng đá Phạm Kha
     userId: 'user-004',
+    eventId: 3, // Cúp Bóng đá Phạm Kha
     userName: 'Phạm Thị D',
     userEmail: 'phamthid@example.com',
     userPhone: '0934567890',
@@ -73,8 +73,8 @@ export const mockEventRegistrations: EventRegistration[] = [
   },
   {
     id: 'reg-005',
-    eventId: 6, // Giải đấu Cầu lông Phạm Kha
     userId: 'user-005',
+    eventId: 6, // Giải đấu Cầu lông Phạm Kha
     userName: 'Vũ Thị I',
     userEmail: 'vuthii@example.com',
     userPhone: '0989012345',
@@ -86,8 +86,8 @@ export const mockEventRegistrations: EventRegistration[] = [
   },
   {
     id: 'reg-006',
-    eventId: 6, // Giải đấu Cầu lông Phạm Kha
     userId: 'user-006',
+    eventId: 6, // Giải đấu Cầu lông Phạm Kha
     userName: 'Đặng Văn K',
     userEmail: 'dangvank@example.com',
     userPhone: '0990123456',
@@ -105,6 +105,11 @@ export const mockEventRegistrations: EventRegistration[] = [
 // Function lấy đăng ký theo ID sự kiện
 export const getRegistrationsByEventId = (eventId: number): EventRegistration[] => {
   return mockEventRegistrations.filter(reg => reg.eventId === eventId);
+};
+
+// Function lấy đăng ký theo ID người dùng (player)
+export const getRegistrationsByUserId = (userId: string): EventRegistration[] => {
+  return mockEventRegistrations.filter(reg => reg.userId === userId);
 };
 
 // Function lấy số lượng đăng ký theo từng trạng thái

@@ -175,7 +175,7 @@ export interface DisplayEvent
   currentParticipants?: number;   // live số người/phần trăm
   maxParticipants?: number;
   registrationEndDate?: string;   // ISO date để show deadline
-  isFreeRegistration?: boolean;   // show badge “Miễn phí”
+  isFreeRegistration?: boolean;   // show badge "Miễn phí"
   registrationFee?: number;       // nếu không miễn phí
   tournamentFormat?: string[] | string;
   totalPrize?: string;
@@ -202,25 +202,59 @@ export type RegistrationApprovalStatus = 'pending' | 'approved' | 'rejected';
 // Trạng thái thanh toán
 export type PaymentStatus = 'pending' | 'paid' | 'refunded';
 
-// Interface cho đăng ký tham gia sự kiện
+// Thứ hai: model trả về từ server, đã có id, ngày giờ, trạng thái, metadata duyệt và thanh toán
 export interface EventRegistration {
   id: string;
+  userId: string; // ID của người đăng ký
+  
+  // Gốc là những gì user gửi
   eventId: number;
-  userId: string;
   userName: string;
   userEmail: string;
   userPhone: string;
-  registrationDate: string;
-  status: RegistrationApprovalStatus;
-  paymentStatus?: PaymentStatus;
-  paymentProof?: string; // URL của ảnh chứng từ thanh toán
-  paymentMethod?: string;
+  teamName?: string;
+  teamMembers?: Array<{ name: string; email?: string; phone?: string }>;
+  notes?: string;
+
+  // Tự động do hệ thống thêm
+  registrationDate: string;                  // khi user submit
+  status: RegistrationApprovalStatus;        // 'pending' | 'approved' | 'rejected'
+
+  // Nếu sự kiện có thu phí
+  paymentStatus?: PaymentStatus;             // 'pending' | 'paid' | 'refunded'
+  paymentMethod?: string;                    // bank / momo /…
+  paymentProof?: string;                     // URL chứng từ
   paymentDate?: string;
-  approvedBy?: string; // ID của admin/owner phê duyệt
-  approvedDate?: string; // Ngày phê duyệt
-  rejectionReason?: string; // Lý do từ chối đăng ký
-  teamName?: string; // Tên đội (cho đăng ký theo đội)
-  teamMembers?: Array<{name: string; email?: string; phone?: string}>; // Thành viên đội
-  notes?: string; // Ghi chú đăng ký
+
+  // Quá trình duyệt của admin
+  approvedBy?: string;                       // adminId
+  approvedDate?: string;
+  rejectionReason?: string;
+}
+
+// Dùng làm payload khi user submit form đăng ký (kèm payment nếu có)
+export interface EventRegistrationInput {
+  // Khóa liên kết tới sự kiện
+  eventId: number;
+
+  // Thông tin người đăng ký
+  userName: string;
+  userEmail: string;
+  userPhone: string;
+
+  // Nếu đăng ký theo đội
+  teamName?: string;
+  teamMembers?: Array<{
+    name: string;
+    email?: string;
+    phone?: string;
+  }>;
+
+  notes?: string;   // ghi chú thêm từ user
+
+  // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+  // Phần payment (chỉ yêu cầu khi event.isFreeRegistration === false)
+  paymentMethod?: string;    // e.g. 'bank', 'momo', 'vnpay'…
+  paymentProofFile?: File;   // cho phép upload hình chụp biên lai/chứng từ
 }
 

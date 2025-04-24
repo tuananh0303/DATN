@@ -13,7 +13,11 @@ import {
   Divider, 
   List, 
   Avatar, 
-  Modal, 
+  Modal,
+  Form,
+  Input,
+  Upload,
+  Select,
   Descriptions,
   message
 } from 'antd';
@@ -27,6 +31,7 @@ import {
   GiftOutlined, 
   DollarOutlined, 
   InfoCircleOutlined,
+  UploadOutlined
 } from '@ant-design/icons';
 import { mockEvents } from '@/mocks/event/eventData';
 import { mockFacilitiesDropdown } from '@/mocks/facility/mockFacilities';
@@ -36,6 +41,7 @@ import { showLoginModal } from '@/store/slices/userSlice';
 import dayjs from 'dayjs';
 
 const { Title, Text, Paragraph } = Typography;
+const { Option } = Select;
 
 // Mock facility data for display
 const mockFacilityDetails: Record<string, { name: string; address: string }> = {
@@ -69,6 +75,7 @@ const EventDetailPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [facility, setFacility] = useState<{id: string; name: string; image?: string}|null>(null);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [registrationForm] = Form.useForm();
   
   // Mock fetch event data
   useEffect(() => {
@@ -224,8 +231,13 @@ const EventDetailPage: React.FC = () => {
   
   // Handle register submit
   const handleRegisterSubmit = () => {
-    message.success('Đăng ký tham gia thành công! Ban tổ chức sẽ liên hệ với bạn.');
-    setShowRegisterModal(false);
+    registrationForm.validateFields()
+      .then(() => {
+        message.success('Đăng ký thành công! Ban tổ chức sẽ liên hệ với bạn.');
+        setShowRegisterModal(false);
+        registrationForm.resetFields();
+      })
+      .catch(info => console.log('Validate Failed:', info));
   };
   
   // Handle visit facility
@@ -566,43 +578,65 @@ const EventDetailPage: React.FC = () => {
         
         {/* Register Modal */}
         <Modal
-          title={`Đăng ký tham gia ${event.name}`}
+          title={`Đăng ký tham gia ${event?.name}`}
           open={showRegisterModal}
           onCancel={() => setShowRegisterModal(false)}
-          footer={[
-            <Button key="cancel" onClick={() => setShowRegisterModal(false)}>
-              Hủy
-            </Button>,
-            <Button key="submit" type="primary" onClick={handleRegisterSubmit}>
-              Xác nhận đăng ký
-            </Button>
-          ]}
+          okText="Xác nhận"
+          cancelText="Hủy"
+          onOk={handleRegisterSubmit}
         >
-          <div className="py-2">
-            <Paragraph>
-              Bạn đang đăng ký tham gia sự kiện <strong>{event.name}</strong>.
-            </Paragraph>
-            
-            {event.eventType === 'TOURNAMENT' && (
+          <Form form={registrationForm} layout="vertical">
+            <Form.Item
+              name="userName"
+              label="Họ và tên"
+              rules={[{ required: true, message: 'Nhập họ và tên' }]}
+            >
+              <Input />
+            </Form.Item>
+            <Form.Item
+              name="userEmail"
+              label="Email"
+              rules={[{ required: true, type: 'email', message: 'Nhập email hợp lệ' }]}
+            >
+              <Input />
+            </Form.Item>
+            <Form.Item
+              name="userPhone"
+              label="Số điện thoại"
+              rules={[{ required: true, message: 'Nhập số điện thoại' }]}
+            >
+              <Input />
+            </Form.Item>
+            {event?.eventType === 'TOURNAMENT' && !event?.isFreeRegistration && (
               <>
-                {!event.isFreeRegistration && event.registrationFee && (
-                  <Paragraph>
-                    <strong>Phí tham gia:</strong> {event.registrationFee.toLocaleString('vi-VN')}đ
-                  </Paragraph>
-                )}
-                
-                {event.registrationEndDate && (
-                  <Paragraph>
-                    <strong>Hạn đăng ký:</strong> {formatDate(event.registrationEndDate)}
-                  </Paragraph>
-                )}
-                
-                <Paragraph>
-                  Ban tổ chức sẽ liên hệ với bạn qua thông tin trong tài khoản để xác nhận đăng ký.
-                </Paragraph>
+                <Form.Item
+                  name="paymentMethod"
+                  label="Phương thức thanh toán"
+                  rules={[{ required: true, message: 'Chọn phương thức thanh toán' }]}
+                >
+                  <Select placeholder="Chọn phương thức">
+                    <Option value="bank">Chuyển khoản</Option>
+                    <Option value="momo">Momo</Option>
+                    <Option value="cash">Tiền mặt</Option>
+                  </Select>
+                </Form.Item>
+                <Form.Item
+                  name="paymentProofFile"
+                  label="Chứng từ thanh toán"
+                  valuePropName="file"
+                  getValueFromEvent={e => e.file.originFileObj}
+                  rules={[{ required: true, message: 'Upload chứng từ thanh toán' }]}
+                >
+                  <Upload beforeUpload={() => false} listType="picture">
+                    <Button icon={<UploadOutlined />}>Upload</Button>
+                  </Upload>
+                </Form.Item>
               </>
             )}
-          </div>
+            <Form.Item name="notes" label="Ghi chú">
+              <Input.TextArea rows={3} />
+            </Form.Item>
+          </Form>
         </Modal>
       </div>
     </div>
