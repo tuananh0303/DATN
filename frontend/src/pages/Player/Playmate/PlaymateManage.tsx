@@ -96,19 +96,19 @@ const PlaymateManage: React.FC = () => {
       // Get applications made by current user (mock)
       const userApplications = mockPlaymateSearches.reduce((acc, search) => {
         if (search.applications) {
-          const userApps = search.applications.filter(app => app.userId === currentUserId);
+          const userApps = search.applications.filter((app: PlaymateApplication) => app.userId === currentUserId);
           if (userApps.length > 0) {
-            userApps.forEach(app => {
+            userApps.forEach((app: PlaymateApplication) => {
               acc.push({
                 ...app,
                 search: {
                   id: search.id,
                   title: search.title,
                   sportId: search.sportId,
-                  sportName: search.sportName,
+                  sportName: search.sportName || '',
                   date: search.date,
-                  timeStart: search.timeStart,
-                  timeEnd: search.timeEnd,
+                  timeStart: search.startTime,
+                  timeEnd: search.endTime,
                   location: search.location,
                   creator: search.userInfo
                 }
@@ -206,7 +206,7 @@ const PlaymateManage: React.FC = () => {
           <div className="h-40 sm:h-48 overflow-hidden relative">
             <img
               alt={search.sportName}
-              src={`https://source.unsplash.com/random/400x200/?${search.sportName.toLowerCase()}`}
+              src={`https://source.unsplash.com/random/400x200/?${search.sportName?.toLowerCase()}`}
               className="w-full h-full object-cover transition-transform hover:scale-105"
               loading="lazy"
             />
@@ -219,7 +219,7 @@ const PlaymateManage: React.FC = () => {
             />
           </div>
         }
-        bodyStyle={{ padding: 16 }}
+        style={{ padding: 16 }}
       >
         <div className="p-1 h-full flex flex-col">
           <Title level={5} className="mb-2 text-gray-800 line-clamp-1">{search.title}</Title>
@@ -231,7 +231,7 @@ const PlaymateManage: React.FC = () => {
             
             <div className="ml-auto flex items-center">
               <TeamOutlined className="mr-1" />
-              <span>{search.participants.current}/{search.participants.required}</span>
+              <span>{search.currentParticipants}/{search.maximumParticipants}</span>
             </div>
           </div>
           
@@ -250,7 +250,7 @@ const PlaymateManage: React.FC = () => {
             <Col span={12}>
               <Space>
                 <ClockCircleOutlined className="text-xs sm:text-sm" />
-                <Text className="text-xs sm:text-sm">{search.timeStart} - {search.timeEnd}</Text>
+                <Text className="text-xs sm:text-sm">{search.startTime} - {search.endTime}</Text>
               </Space>
             </Col>
           </Row>

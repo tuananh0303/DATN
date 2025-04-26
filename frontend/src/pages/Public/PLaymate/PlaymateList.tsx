@@ -1,306 +1,365 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { mockPlaymateSearches, filterBySport } from '@/mocks/playmate/playmate.mock';
-import { PlaymateSearch, SkillLevel, PlaymateSearchType } from '@/types/playmate.type';
-import { format } from 'date-fns';
-import { vi } from 'date-fns/locale';
+import { Link, useNavigate } from 'react-router-dom';
+import { 
+  PlaymateSearch, 
+  PlaymateSearchType, 
+  SkillLevel, 
+  CostType 
+} from '@/types/playmate.type';
+import { getAllPlaymateSearches } from '@/services/playmate.service';
+import { sportService } from '@/services/sport.service';
+
 import {
+  Card,
   Typography,
-  Button,
   Row,
   Col,
-  Card,
-  Select,
-  Tag,
-  Spin,
-  Empty,
-  Breadcrumb,
-  Avatar,
+  Button,
   Space,
-  Divider
+  Tag,
+  Input,
+  Select,
+  Divider,
+  Breadcrumb,
+  Empty,
+  Spin,
+  Avatar,
+  message
 } from 'antd';
 import {
   PlusOutlined,
-  EnvironmentOutlined,
   CalendarOutlined,
   ClockCircleOutlined,
+  EnvironmentOutlined,
   UserOutlined,
-  TeamOutlined
+  TeamOutlined,
+  MoneyCollectOutlined
 } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
+const { Search } = Input;
+
+interface Sport {
+  id: number;
+  name: string;
+}
 
 const PlaymateList: React.FC = () => {
-  const [filteredSearches, setFilteredSearches] = useState<PlaymateSearch[]>([]);
+  const navigate = useNavigate();
   const [loading, setLoading] = useState<boolean>(true);
-  const [sportFilter, setSportFilter] = useState<number | null>(null);
-  const [skillFilter, setSkillFilter] = useState<SkillLevel | null>(null);
-  const [typeFilter, setTypeFilter] = useState<PlaymateSearchType | null>(null);
+  const [playmateSearches, setPlaymateSearches] = useState<PlaymateSearch[]>([]);
+  const [filteredSearches, setFilteredSearches] = useState<PlaymateSearch[]>([]);
+  const [sports, setSports] = useState<Sport[]>([]);
+  
+  // Filter states
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [selectedSportId, setSelectedSportId] = useState<number | null>(null);
+  const [selectedSkillLevel, setSelectedSkillLevel] = useState<SkillLevel | null>(null);
+  const [selectedSearchType, setSelectedSearchType] = useState<PlaymateSearchType | null>(null);
 
   useEffect(() => {
-    // Giả lập API call
-    setTimeout(() => {
-      setFilteredSearches(mockPlaymateSearches);
-      setLoading(false);
-    }, 500);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        // Fetch sport list
+        const sportData = await sportService.getSport();
+        setSports(sportData || []);
+        
+        // Fetch playmate searches
+        const searches = await getAllPlaymateSearches();
+        setPlaymateSearches(searches);
+        setFilteredSearches(searches);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        message.error('Không thể tải dữ liệu. Vui lòng thử lại sau.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
+  // Apply filters whenever any filter changes
   useEffect(() => {
-    let result = mockPlaymateSearches;
-    
-    if (sportFilter !== null) {
-      result = filterBySport(sportFilter);
+    let result = [...playmateSearches];
+
+    // Only show active searches
+    result = result.filter(search => search.status === 'ACTIVE');
+
+    // Filter by search term (title, description, location)
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(
+        search => 
+          search.title.toLowerCase().includes(term) || 
+          (search.description && search.description.toLowerCase().includes(term)) ||
+          (search.location && search.location.toLowerCase().includes(term))
+      );
     }
-    
-    if (skillFilter !== null) {
-      result = result.filter(search => search.skillLevel === skillFilter);
+
+    // Apply filters
+    if (selectedSportId) {
+      result = result.filter(search => search.sportId === selectedSportId);
     }
-    
-    if (typeFilter !== null) {
-      result = result.filter(search => search.searchType === typeFilter);
+
+    if (selectedSkillLevel) {
+      result = result.filter(search => {
+        if (selectedSkillLevel === 'ANY') return true;
+        return search.requiredSkillLevel === selectedSkillLevel;
+      });
     }
-    
+
+    if (selectedSearchType) {
+      result = result.filter(search => search.playmateSearchType === selectedSearchType);
+    }
+
+    // Sort by date (newest first)
+    result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
     setFilteredSearches(result);
-  }, [sportFilter, skillFilter, typeFilter]);
+  }, [playmateSearches, searchTerm, selectedSportId, selectedSkillLevel, selectedSearchType]);
 
-  const handleSportFilterChange = (value: string) => {
-    setSportFilter(value ? parseInt(value) : null);
+  const handleCreatePlaymate = () => {
+    navigate('/user/playmate/create');
   };
 
-  const handleSkillFilterChange = (value: string) => {
-    setSkillFilter(value as SkillLevel || null);
+  const handleSearch = (value: string) => {
+    setSearchTerm(value);
   };
 
-  const handleTypeFilterChange = (value: string) => {
-    setTypeFilter(value as PlaymateSearchType || null);
+  const handleSportFilter = (value: number | null) => {
+    setSelectedSportId(value);
   };
 
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return format(date, 'dd/MM/yyyy', { locale: vi });
+  const handleSkillLevelFilter = (value: SkillLevel | null) => {
+    setSelectedSkillLevel(value);
   };
 
-  const getSkillLevelText = (level: SkillLevel) => {
-    const skillMap: Record<SkillLevel, string> = {
-      'BEGINNER': 'Người mới',
-      'INTERMEDIATE': 'Trung bình',
-      'ADVANCED': 'Nâng cao',
-      'PROFESSIONAL': 'Chuyên nghiệp',
-      'ANY': 'Tất cả'
-    };
-    return skillMap[level];
+  const handleSearchTypeFilter = (value: PlaymateSearchType | null) => {
+    setSelectedSearchType(value);
+  };
+  
+  const getCostTypeDisplay = (costType?: CostType, price?: number, costMale?: number, costFemale?: number) => {
+    if (!costType || costType === 'FREE') return <Tag color="success">Miễn phí</Tag>;
+    
+    if (costType === 'PER_PERSON' && price) {
+      return <Text>{price.toLocaleString('vi-VN')}đ/người</Text>;
+    }
+    
+    if (costType === 'TOTAL' && price) {
+      return <Text>{price.toLocaleString('vi-VN')}đ tổng</Text>;
+    }
+    
+    if (costType === 'GENDER_BASED') {
+      return (
+        <Space direction="vertical" size={0}>
+          {costMale && <Text>Nam: {costMale.toLocaleString('vi-VN')}đ</Text>}
+          {costFemale && <Text>Nữ: {costFemale.toLocaleString('vi-VN')}đ</Text>}
+        </Space>
+      );
+    }
+    
+    return null;
   };
 
-  // Hàm trả về màu của Tag dựa trên loại
-  const getTagColor = (type: string) => {
-    const colorMap: Record<string, string> = {
-      'sport': 'blue',
-      'skill': 'purple',
-      'gender': 'orange',
-      'price': 'green',
-      'searchType': 'cyan'
-    };
-    return colorMap[type] || 'default';
+  const renderPlaymateCard = (search: PlaymateSearch) => {
+    const sportName = sports.find(s => s.id === search.sportId)?.name || search.sportName || '';
+    
+    return (
+      <Card 
+        key={search.id} 
+        className="h-full shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+        onClick={() => navigate(`/user/playmate/${search.id}`)}
+      >
+        <Row gutter={[16, 16]}>
+          {/* Upper section: Title, tags */}
+          <Col span={24}>
+            <Space direction="vertical" size={12} className="w-full">
+              <Title level={5} className="mb-0 line-clamp-2" title={search.title}>
+                {search.title}
+              </Title>
+              
+              <Space wrap>
+                {sportName && <Tag color="blue">{sportName}</Tag>}
+                <Tag color={search.playmateSearchType === 'INDIVIDUAL' ? 'green' : 'purple'}>
+                  {search.playmateSearchType === 'INDIVIDUAL' ? 'Cá nhân' : 'Nhóm'}
+                </Tag>
+                <Tag color="orange">{
+                  search.requiredSkillLevel === 'BEGINNER' ? 'Mới bắt đầu' :
+                  search.requiredSkillLevel === 'INTERMEDIATE' ? 'Trung cấp' :
+                  search.requiredSkillLevel === 'ADVANCED' ? 'Nâng cao' :
+                  search.requiredSkillLevel === 'PROFESSIONAL' ? 'Chuyên nghiệp' :
+                  'Mọi trình độ'
+                }</Tag>
+              </Space>
+            </Space>
+          </Col>
+          
+          {/* Middle section: Date, time, location */}
+          <Col span={24}>
+            <Space direction="vertical" size={4} className="w-full">
+              <Space>
+                <CalendarOutlined className="text-gray-500" />
+                <Text>{search.date}</Text>
+              </Space>
+              
+              <Space>
+                <ClockCircleOutlined className="text-gray-500" />
+                <Text>{`${search.startTime} - ${search.endTime}`}</Text>
+              </Space>
+              
+              {search.location && (
+                <Space className="line-clamp-1">
+                  <EnvironmentOutlined className="text-gray-500" />
+                  <Text title={search.location}>{search.location}</Text>
+                </Space>
+              )}
+            </Space>
+          </Col>
+          
+          {/* Bottom section: User info, participants, cost */}
+          <Col span={24}>
+            <Divider className="my-2" />
+            <Row gutter={[8, 8]} align="middle">
+              <Col xs={24} sm={12}>
+                <Space>
+                  <Avatar src={search.userInfo.avatar} icon={<UserOutlined />} />
+                  <Text className="font-medium">{search.userInfo.name}</Text>
+                </Space>
+              </Col>
+              
+              <Col xs={12} sm={6}>
+                <Space>
+                  <TeamOutlined className="text-gray-500" />
+                  <Text>{`${search.currentParticipants || 1}/${search.requiredParticipants}`}</Text>
+                </Space>
+              </Col>
+              
+              <Col xs={12} sm={6} className="text-right">
+                <Space>
+                  <MoneyCollectOutlined className="text-gray-500" />
+                  {getCostTypeDisplay(search.costType, search.price, search.costMale, search.costFemale)}
+                </Space>
+              </Col>
+            </Row>
+          </Col>
+        </Row>
+      </Card>
+    );
   };
 
   return (
-    <div className="w-full px-4 py-6 bg-white min-h-screen">
+    <div className="min-h-screen bg-white p-4">
       <div className="max-w-7xl mx-auto">
+        {/* Breadcrumb & Title */}
         <Breadcrumb className="mb-4 md:mb-6">
           <Breadcrumb.Item>
-            <Link to="/">Trang chủ</Link>
+            <Link to="/user/dashboard">Trang chủ</Link>
           </Breadcrumb.Item>
           <Breadcrumb.Item>Tìm bạn chơi</Breadcrumb.Item>
         </Breadcrumb>
-
-        <Row justify="space-between" align="middle" className="mb-6">
-          <Col>
-            <Title level={2} className="mb-0 text-xl md:text-2xl lg:text-3xl">Tìm bạn chơi thể thao</Title>
+        
+        <Row gutter={[16, 16]} className="mb-6">
+          <Col xs={24} md={12}>
+            <Title level={2} className="mb-0">Tìm bạn chơi</Title>
+            <Text type="secondary">Tìm kiếm bạn chơi thể thao cùng sở thích</Text>
           </Col>
-          <Col>
-            <Link to="/user/playmate/create">
-              <Button 
-                type="primary" 
-                icon={<PlusOutlined />}
-                size="large"
-              >
-                Tạo tìm kiếm mới
-              </Button>
-            </Link>
+          <Col xs={24} md={12} className="flex justify-end items-center">
+            <Button 
+              type="primary" 
+              icon={<PlusOutlined />} 
+              onClick={handleCreatePlaymate}
+              size="large"
+            >
+              Tạo bài đăng
+            </Button>
           </Col>
         </Row>
-
-        <Card title="Bộ lọc" className="mb-6 shadow-md border border-gray-200">
+        
+        {/* Filters */}
+        <Card className="mb-6">
           <Row gutter={[16, 16]}>
-            <Col xs={24} md={8}>
-              <div>
-                <Text strong>Môn thể thao</Text>
-                <Select
-                  style={{ width: '100%', marginTop: 8 }}
-                  placeholder="Tất cả môn thể thao"
-                  value={sportFilter?.toString() || undefined}
-                  onChange={handleSportFilterChange}
-                  allowClear
-                >
-                  <Option value="">Tất cả môn thể thao</Option>
-                  <Option value="1">Bóng đá</Option>
-                  <Option value="2">Tennis</Option>
-                  <Option value="3">Cầu lông</Option>
-                  <Option value="4">Bơi lội</Option>
-                  <Option value="5">Yoga</Option>
-                  <Option value="6">Golf</Option>
-                  <Option value="7">Bóng rổ</Option>
-                </Select>
-              </div>
+            <Col xs={24} md={8} lg={10}>
+              <Search
+                placeholder="Tìm kiếm theo tên, mô tả, địa điểm..."
+                onSearch={handleSearch}
+                style={{ width: '100%' }}
+                size="large"
+                allowClear
+              />
             </Col>
-            <Col xs={24} md={8}>
-              <div>
-                <Text strong>Trình độ</Text>
-                <Select
-                  style={{ width: '100%', marginTop: 8 }}
-                  placeholder="Tất cả trình độ"
-                  value={skillFilter || undefined}
-                  onChange={handleSkillFilterChange}
-                  allowClear
-                >
-                  <Option value="">Tất cả trình độ</Option>
-                  <Option value="BEGINNER">Người mới</Option>
-                  <Option value="INTERMEDIATE">Trung bình</Option>
-                  <Option value="ADVANCED">Nâng cao</Option>
-                  <Option value="PROFESSIONAL">Chuyên nghiệp</Option>
-                </Select>
-              </div>
-            </Col>
-            <Col xs={24} md={8}>
-              <div>
-                <Text strong>Loại tìm kiếm</Text>
-                <Select
-                  style={{ width: '100%', marginTop: 8 }}
-                  placeholder="Tất cả loại"
-                  value={typeFilter || undefined}
-                  onChange={handleTypeFilterChange}
-                  allowClear
-                >
-                  <Option value="">Tất cả loại</Option>
-                  <Option value="INDIVIDUAL">Cá nhân</Option>
-                  <Option value="GROUP">Nhóm</Option>
-                </Select>
-              </div>
+            
+            <Col xs={24} md={16} lg={14}>
+              <Row gutter={[16, 16]}>
+                <Col xs={24} sm={8}>
+                  <Select
+                    placeholder="Môn thể thao"
+                    style={{ width: '100%' }}
+                    onChange={handleSportFilter}
+                    allowClear
+                    size="large"
+                  >
+                    {sports.map(sport => (
+                      <Option key={sport.id} value={sport.id}>{sport.name}</Option>
+                    ))}
+                  </Select>
+                </Col>
+                
+                <Col xs={24} sm={8}>
+                  <Select
+                    placeholder="Trình độ"
+                    style={{ width: '100%' }}
+                    onChange={handleSkillLevelFilter}
+                    allowClear
+                    size="large"
+                  >
+                    <Option value="BEGINNER">Mới bắt đầu</Option>
+                    <Option value="INTERMEDIATE">Trung cấp</Option>
+                    <Option value="ADVANCED">Nâng cao</Option>
+                    <Option value="PROFESSIONAL">Chuyên nghiệp</Option>
+                    <Option value="ANY">Mọi trình độ</Option>
+                  </Select>
+                </Col>
+                
+                <Col xs={24} sm={8}>
+                  <Select
+                    placeholder="Loại tìm kiếm"
+                    style={{ width: '100%' }}
+                    onChange={handleSearchTypeFilter}
+                    allowClear
+                    size="large"
+                  >
+                    <Option value="INDIVIDUAL">Cá nhân</Option>
+                    <Option value="GROUP">Nhóm</Option>
+                  </Select>
+                </Col>
+              </Row>
             </Col>
           </Row>
         </Card>
-
+        
+        {/* Search results */}
         {loading ? (
-          <div className="flex justify-center items-center py-12 bg-gray-50 rounded-lg shadow-md border border-gray-200">
+          <div className="flex justify-center py-12">
             <Spin size="large" />
           </div>
-        ) : filteredSearches.length === 0 ? (
-          <Empty 
-            description="Không tìm thấy kết quả nào phù hợp với bộ lọc" 
-            className="py-12 bg-gray-50 rounded-lg shadow-md border border-gray-200"
-          />
-        ) : (
+        ) : filteredSearches.length > 0 ? (
           <Row gutter={[16, 16]}>
-            {filteredSearches.map((search) => (
-              <Col key={search.id} xs={24} sm={12} lg={8}>
-                <Card
-                  hoverable
-                  className="h-full shadow-md hover:shadow-lg transition-shadow border border-gray-200"
-                  cover={
-                    <div className="relative h-48">
-                      <img
-                        alt={search.sportName}
-                        src={`https://source.unsplash.com/random/400x200/?${search.sportName.toLowerCase()}`}
-                        className="w-full h-full object-cover"
-                      />
-                      <Tag 
-                        color={search.searchType === 'INDIVIDUAL' ? 'cyan' : 'blue'}
-                        className="absolute top-3 right-3 text-xs px-2 py-1"
-                      >
-                        {search.searchType === 'INDIVIDUAL' ? 'Cá nhân' : `Nhóm (${search.participants.current}/${search.participants.required})`}
-                      </Tag>
-                    </div>
-                  }
-                  bodyStyle={{ padding: 16 }}
-                >
-                  <div className="flex flex-col h-full">
-                    <div className="mb-3">
-                      <Space>
-                        <Avatar 
-                          src={search.userInfo.avatar || undefined} 
-                          icon={!search.userInfo.avatar && <UserOutlined />} 
-                        />
-                        <div>
-                          <Text strong className="block">{search.userInfo.name}</Text>
-                          <Text type="secondary" className="text-xs">{formatDate(search.createdAt)}</Text>
-                        </div>
-                      </Space>
-                    </div>
-                    
-                    <Title level={5} className="mb-3 line-clamp-1">{search.title}</Title>
-                    
-                    <div className="mb-2">
-                      <Space>
-                        <EnvironmentOutlined className="text-gray-400" />
-                        <Text className="text-sm line-clamp-1">
-                          {search.facilityName || search.location}
-                        </Text>
-                      </Space>
-                    </div>
-                    
-                    <Row className="mb-3">
-                      <Col span={12}>
-                        <Space>
-                          <CalendarOutlined className="text-gray-400" />
-                          <Text className="text-sm">{formatDate(search.date)}</Text>
-                        </Space>
-                      </Col>
-                      <Col span={12}>
-                        <Space>
-                          <ClockCircleOutlined className="text-gray-400" />
-                          <Text className="text-sm">{search.timeStart} - {search.timeEnd}</Text>
-                        </Space>
-                      </Col>
-                    </Row>
-                    
-                    <div className="mb-4">
-                      <Space wrap>
-                        <Tag color={getTagColor('sport')}>{search.sportName}</Tag>
-                        <Tag color={getTagColor('skill')}>{getSkillLevelText(search.skillLevel)}</Tag>
-                        <Tag color={getTagColor('gender')}>
-                          {search.genderPreference === 'ANY' ? 'Không yêu cầu giới tính' : 
-                          search.genderPreference === 'MALE' ? 'Nam' : 'Nữ'}
-                        </Tag>
-                        {search.price && (
-                          <Tag color={getTagColor('price')}>
-                            {search.price.toLocaleString('vi-VN')}đ
-                          </Tag>
-                        )}
-                      </Space>
-                    </div>
-                    
-                    <Divider className="my-2" />
-                    
-                    <Link to={`/user/playmate/${search.id}`}>
-                      <Button type="primary" block>
-                        Xem chi tiết
-                      </Button>
-                    </Link>
-                  </div>
-                </Card>
+            {filteredSearches.map(search => (
+              <Col key={search.id} xs={24} sm={12} md={8} lg={6} className="mb-4">
+                {renderPlaymateCard(search)}
               </Col>
             ))}
           </Row>
+        ) : (
+          <Empty
+            description="Không tìm thấy bài đăng nào phù hợp"
+            className="py-12"
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+          />
         )}
-        
-        <div className="mt-6 text-center">
-          <Link to="/user/playmate/manage">
-            <Button icon={<TeamOutlined />} size="large">
-              Quản lý tìm kiếm của tôi
-            </Button>
-          </Link>
-        </div>
       </div>
     </div>
   );

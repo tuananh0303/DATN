@@ -1,446 +1,496 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { getSearchById, createApplication } from '@/mocks/playmate/playmate.mock';
-import { PlaymateSearch } from '@/types/playmate.type';
-import { format } from 'date-fns';
-import { vi } from 'date-fns/locale';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { PlaymateSearch, SkillLevel } from '@/types/playmate.type';
+import { getPlaymateSearchById, createApplication } from '@/services/playmate.service';
+import moment from 'moment';
+
 import {
-  Typography,
-  Button,
   Card,
+  Typography,
   Row,
   Col,
-  Spin,
-  Empty,
-  Avatar,
+  Button,
+  Space,
   Tag,
+  Divider,
+  Breadcrumb,
   Descriptions,
+  Avatar,
   Modal,
   Form,
+  Select,
   Input,
-  Breadcrumb,
-  Divider,
-  List,
-  Badge,
-  Space,
-  message
+  message,
+  Spin,
+  Result
 } from 'antd';
 import {
-  ArrowLeftOutlined,
-  UserOutlined,
-  TeamOutlined,
-  EnvironmentOutlined,
   CalendarOutlined,
   ClockCircleOutlined,
-  CheckCircleOutlined
+  EnvironmentOutlined,
+  UserOutlined,
+  TeamOutlined,
+  MoneyCollectOutlined,
+  TrophyOutlined,
+  ArrowLeftOutlined
 } from '@ant-design/icons';
-import { useAppSelector, useAppDispatch } from '@/hooks/reduxHooks';
-import { showLoginModal } from '@/store/slices/userSlice';
+
 const { Title, Text, Paragraph } = Typography;
+const { Option } = Select;
 const { TextArea } = Input;
+
+// Interface cho form đăng ký
+interface ApplicationFormValues {
+  skillLevel?: SkillLevel;
+  message?: string;
+}
 
 const PlaymateDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const dispatch = useAppDispatch();
-  const [search, setSearch] = useState<PlaymateSearch | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [showApplyModal, setShowApplyModal] = useState<boolean>(false);
-  const [submitting, setSubmitting] = useState<boolean>(false);
-  const [applied, setApplied] = useState<boolean>(false);
   const [form] = Form.useForm();
-
-  // Get auth state from Redux
-  const { isAuthenticated, user } = useAppSelector(state => state.user);
   
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [playmateSearch, setPlaymateSearch] = useState<PlaymateSearch | null>(null);
+  const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
+  const [submitting, setSubmitting] = useState<boolean>(false);
+  
+  // Mock: Thông tin người dùng hiện tại
+  const currentUser = {
+    id: 'user123',
+    name: 'Nguyễn Văn A',
+    avatar: 'https://randomuser.me/api/portraits/men/85.jpg',
+    gender: 'male',
+    phoneNumber: '0987123456'
+  };
+
+  // Fetch playmate search data
   useEffect(() => {
-    if (id) {
-      // Giả lập API call
-      setTimeout(() => {
-        const searchData = getSearchById(parseInt(id));
-        if (searchData) {
-          setSearch(searchData);
+    const fetchPlaymateSearch = async () => {
+      if (!id) return;
+      
+      try {
+        setLoading(true);
+        const data = await getPlaymateSearchById(Number(id));
+        
+        if (!data) {
+          setError('Không tìm thấy bài đăng.');
+          return;
         }
+        
+        setPlaymateSearch(data);
+      } catch (error) {
+        console.error('Error fetching playmate search:', error);
+        setError('Đã có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại sau.');
+      } finally {
         setLoading(false);
-      }, 500);
-    }
+      }
+    };
+    
+    fetchPlaymateSearch();
   }, [id]);
 
-  if (loading) {
-    return (
-      <div className="w-full px-4 py-6 bg-white min-h-screen">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex justify-center items-center py-20">
-            <Spin size="large" />
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Check if user has already applied
+  const hasApplied = playmateSearch?.applications?.some(app => app.userId === currentUser.id);
+  
+  // Check if the search is created by current user
+  const isOwner = playmateSearch?.userId === currentUser.id;
+  
+  // Check if the search is full
+  const isFull = playmateSearch && 
+    playmateSearch.currentParticipants !== undefined && 
+    playmateSearch.maximumParticipants !== undefined && 
+    playmateSearch.currentParticipants >= playmateSearch.maximumParticipants;
 
-  if (!search) {
-    return (
-      <div className="w-full px-4 py-6 bg-white min-h-screen">
-        <div className="max-w-7xl mx-auto">
-          <Empty
-            description="Không tìm thấy bài đăng"
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            className="py-12"
-          >
-            <Paragraph type="secondary" className="mb-4">
-              Bài đăng tìm kiếm người chơi bạn yêu cầu không tồn tại hoặc đã bị xóa.
-            </Paragraph>
-            <Link to="/user/playmate">
-              <Button type="primary">Quay lại danh sách</Button>
-            </Link>
-          </Empty>
-        </div>
-      </div>
-    );
-  }
-
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return format(date, 'dd/MM/yyyy', { locale: vi });
+  // Check if the search is active
+  const isActive = playmateSearch?.status === 'ACTIVE';
+  
+  // Show application modal
+  const showModal = () => {
+    setIsModalVisible(true);
   };
-
-  const getSkillLevelText = (level: string) => {
-    const skillMap: Record<string, string> = {
-      'BEGINNER': 'Người mới',
-      'INTERMEDIATE': 'Trung bình',
-      'ADVANCED': 'Nâng cao',
-      'PROFESSIONAL': 'Chuyên nghiệp',
-      'ANY': 'Tất cả'
-    };
-    return skillMap[level] || level;
+  
+  // Close application modal
+  const handleCancel = () => {
+    setIsModalVisible(false);
+    form.resetFields();
   };
-
-  const getGenderPreferenceText = (preference: string) => {
-    const genderMap: Record<string, string> = {
-      'MALE': 'Nam',
-      'FEMALE': 'Nữ',
-      'ANY': 'Không yêu cầu giới tính'
-    };
-    return genderMap[preference] || preference;
-  };
-
-  const getStatusText = (status: string) => {
-    const statusMap: Record<string, string> = {
-      'ACTIVE': 'Đang tìm kiếm',
-      'COMPLETED': 'Đã tìm đủ',
-      'CANCELLED': 'Đã hủy',
-      'EXPIRED': 'Đã hết hạn',
-      'PENDING': 'Đang chờ',
-      'ACCEPTED': 'Đã chấp nhận',
-      'REJECTED': 'Đã từ chối'
-    };
-    return statusMap[status] || status;
-  };
-
-  const getStatusColor = (status: string) => {
-    const colorMap: Record<string, string> = {
-      'ACTIVE': 'success',
-      'COMPLETED': 'processing',
-      'CANCELLED': 'error',
-      'EXPIRED': 'default',
-      'PENDING': 'warning',
-      'ACCEPTED': 'success',
-      'REJECTED': 'error'
-    };
-    return colorMap[status] || 'default';
-  };
-
-  const handleApplyClick = () => {
-    // Check if user is authenticated and has player role
-    if (!isAuthenticated || user?.role !== 'player') {
-      // Show login modal if not authenticated, with redirect back to this page
-      dispatch(showLoginModal({ path: `/playmate/${id}`, role: 'player' }));
-      message.info('Vui lòng đăng nhập với vai trò người chơi để đăng ký tham gia');
-      return;
-    }
+  
+  // Handle application form submission
+  const handleApply = async (values: ApplicationFormValues) => {
+    if (!playmateSearch || !id) return;
     
-    // If authenticated as player, show the apply modal
-    setShowApplyModal(true);
-  };
-
-  const handleApply = () => {
-    form.validateFields().then(values => {
+    try {
       setSubmitting(true);
       
-      // Giả lập API call
-      setTimeout(() => {
-        // Assuming we have the current user info
-        const mockCurrentUser = {
-          id: "current_user_id",
-          userInfo: {
-            name: "Người dùng hiện tại",
-            avatar: "https://randomuser.me/api/portraits/men/99.jpg",
-            gender: "male",
-            phoneNumber: "0987123456"
-          }
-        };
-        
-        const newApplication = createApplication(
-          search.id,
-          mockCurrentUser.id,
-          mockCurrentUser.userInfo,
-          values.message
-        );
-        
-        // Update the local state to reflect the change
-        if (search.applications) {
-          setSearch({
-            ...search,
-            applications: [...search.applications, newApplication]
-          });
-        } else {
-          setSearch({
-            ...search,
-            applications: [newApplication]
-          });
-        }
-        
-        setSubmitting(false);
-        setShowApplyModal(false);
-        setApplied(true);
-        form.resetFields();
-      }, 1000);
-    });
+      const applicationData = {
+        playmateSearchId: Number(id),
+        userId: currentUser.id,
+        userInfo: {
+          name: currentUser.name,
+          avatar: currentUser.avatar,
+          gender: currentUser.gender,
+          phoneNumber: currentUser.phoneNumber
+        },
+        skillLevel: values.skillLevel,
+        message: values.message
+      };
+      
+      await createApplication(applicationData);
+      
+      message.success('Đăng ký thành công!');
+      setIsModalVisible(false);
+      
+      // Reload data to show updated application status
+      const updatedData = await getPlaymateSearchById(Number(id));
+      setPlaymateSearch(updatedData || null);
+    } catch (error) {
+      console.error('Error applying to playmate search:', error);
+      message.error('Đã có lỗi xảy ra khi đăng ký. Vui lòng thử lại sau.');
+    } finally {
+      setSubmitting(false);
+    }
   };
-
-  const handleGoBack = () => {
-    navigate('/user/playmate');
+  
+  // Get cost display
+  const getCostDisplay = () => {
+    if (!playmateSearch) return null;
+    
+    if (!playmateSearch.costType || playmateSearch.costType === 'FREE') {
+      return <Tag color="success">Miễn phí</Tag>;
+    }
+    
+    if (playmateSearch.costType === 'PER_PERSON' && playmateSearch.price) {
+      return <Text>{playmateSearch.price.toLocaleString('vi-VN')}đ/người</Text>;
+    }
+    
+    if (playmateSearch.costType === 'TOTAL' && playmateSearch.price) {
+      return <Text>{playmateSearch.price.toLocaleString('vi-VN')}đ tổng</Text>;
+    }
+    
+    if (playmateSearch.costType === 'GENDER_BASED') {
+      return (
+        <Space direction="vertical" size={0}>
+          {playmateSearch.costMale && (
+            <Text>Nam: {playmateSearch.costMale.toLocaleString('vi-VN')}đ</Text>
+          )}
+          {playmateSearch.costFemale && (
+            <Text>Nữ: {playmateSearch.costFemale.toLocaleString('vi-VN')}đ</Text>
+          )}
+        </Space>
+      );
+    }
+    
+    return null;
   };
-
+  
+  // Format date time
+  // const formatDateTime = (date: string, time: string) => {
+  //   const formattedDate = moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
+  //   return `${formattedDate} ${time}`;
+  // };
+  
+  // Get skill level display
+  const getSkillLevelDisplay = (level: SkillLevel) => {
+    switch (level) {
+      case 'BEGINNER':
+        return 'Mới bắt đầu';
+      case 'INTERMEDIATE':
+        return 'Trung cấp';
+      case 'ADVANCED':
+        return 'Nâng cao';
+      case 'PROFESSIONAL':
+        return 'Chuyên nghiệp';
+      case 'ANY':
+        return 'Mọi trình độ';
+      default:
+        return level;
+    }
+  };
+  
+  // Render loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white p-4 flex justify-center items-center">
+        <Spin size="large" />
+      </div>
+    );
+  }
+  
+  // Render error state
+  if (error || !playmateSearch) {
+    return (
+      <div className="min-h-screen bg-white p-4">
+        <div className="max-w-4xl mx-auto">
+          <Result
+            status="404"
+            title="Không tìm thấy bài đăng"
+            subTitle={error || 'Bài đăng không tồn tại hoặc đã bị xóa.'}
+            extra={
+              <Button type="primary" onClick={() => navigate('/user/playmate')}>
+                Quay lại danh sách
+              </Button>
+            }
+          />
+        </div>
+      </div>
+    );
+  }
+  
   return (
-    <div className="w-full px-4 py-6 bg-white min-h-screen">
-      <div className="max-w-7xl mx-auto">
-        <Breadcrumb className="mb-4 md:mb-6">
+    <div className="min-h-screen bg-white p-4">
+      <div className="max-w-4xl mx-auto">
+        {/* Breadcrumb */}
+        <Breadcrumb className="mb-4">
           <Breadcrumb.Item>
-            <Link to="/">Trang chủ</Link>
+            <Link to="/user/dashboard">Trang chủ</Link>
           </Breadcrumb.Item>
           <Breadcrumb.Item>
             <Link to="/user/playmate">Tìm bạn chơi</Link>
           </Breadcrumb.Item>
           <Breadcrumb.Item>Chi tiết</Breadcrumb.Item>
         </Breadcrumb>
-
+        
+        {/* Back button */}
         <Button 
-          type="link" 
           icon={<ArrowLeftOutlined />} 
-          onClick={handleGoBack}
-          className="px-0 mb-4"
+          onClick={() => navigate('/user/playmate')}
+          className="mb-4"
         >
-          Quay lại danh sách
+          Quay lại
         </Button>
         
-        <Card bordered={false} className="shadow-md">
-          <div className="relative">
-            <div className="h-48 md:h-64 lg:h-80 overflow-hidden mb-6">
-              <img 
-                src={`https://source.unsplash.com/random/1200x400/?${search.sportName.toLowerCase()}`} 
-                alt={search.sportName} 
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <Badge 
-              status={getStatusColor(search.status) as "success" | "error" | "default" | "processing" | "warning"} 
-              text={getStatusText(search.status)}
-              className="absolute top-4 right-4 bg-white px-3 py-1 rounded-full"
-            />
-          </div>
-          
-          <Title level={2} className="mb-4 text-xl md:text-2xl lg:text-3xl">{search.title}</Title>
-          
-          <Row gutter={16} align="middle" className="mb-6">
-            <Col>
-              <Avatar 
-                size={64} 
-                src={search.userInfo.avatar} 
-                icon={!search.userInfo.avatar && <UserOutlined />}
-              />
-            </Col>
-            <Col>
-              <Title level={4} className="m-0">{search.userInfo.name}</Title>
-              <Text type="secondary">Đăng ngày {formatDate(search.createdAt)}</Text>
-            </Col>
-          </Row>
-          
-          <Card title="Mô tả" bordered={false} className="mb-6 border border-gray-200">
-            <Paragraph>
-              {search.description || 'Không có mô tả'}
-            </Paragraph>
-          </Card>
-          
-          <Row gutter={24}>
-            <Col xs={24} md={12}>
-              <Card title="Thông tin chung" bordered={false} className="mb-6 border border-gray-200">
-                <Descriptions column={1} layout="horizontal" bordered>
-                  <Descriptions.Item label="Môn thể thao">{search.sportName}</Descriptions.Item>
-                  <Descriptions.Item label="Trình độ">{getSkillLevelText(search.skillLevel)}</Descriptions.Item>
-                  <Descriptions.Item label="Loại tìm kiếm">
-                    {search.searchType === 'INDIVIDUAL' ? 'Cá nhân' : 'Nhóm'}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Số người">
-                    {search.participants.current}/{search.participants.required}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Giới tính">
-                    {getGenderPreferenceText(search.genderPreference)}
-                  </Descriptions.Item>
-                  {search.price && (
-                    <Descriptions.Item label="Chi phí">
-                      {search.price.toLocaleString('vi-VN')}đ
-                    </Descriptions.Item>
+        {/* Header */}
+        <Card className="mb-4">
+          <Row gutter={[16, 16]}>
+            <Col xs={24} md={18}>
+              <Space direction="vertical" size={8} className="w-full">
+                {/* Title */}
+                <Title level={3}>{playmateSearch.title}</Title>
+                
+                {/* Tags */}
+                <Space wrap>
+                  {playmateSearch.sportName && (
+                    <Tag color="blue">{playmateSearch.sportName}</Tag>
                   )}
-                </Descriptions>
-              </Card>
+                  <Tag color={playmateSearch.playmateSearchType === 'INDIVIDUAL' ? 'green' : 'purple'}>
+                    {playmateSearch.playmateSearchType === 'INDIVIDUAL' ? 'Cá nhân' : 'Nhóm'}
+                  </Tag>
+                  <Tag color="orange">
+                    {getSkillLevelDisplay(playmateSearch.requiredSkillLevel)}
+                  </Tag>
+                  {!isActive && (
+                    <Tag color="red">
+                      {playmateSearch.status === 'COMPLETED' ? 'Đã hoàn thành' : 'Đã hủy'}
+                    </Tag>
+                  )}
+                </Space>
+              </Space>
             </Col>
             
-            <Col xs={24} md={12}>
-              <Card title="Thời gian và địa điểm" bordered={false} className="mb-6 border border-gray-200">
-                <Descriptions column={1} layout="horizontal" bordered>
-                  <Descriptions.Item label="Ngày">
-                    <Space>
-                      <CalendarOutlined />
-                      {formatDate(search.date)}
-                    </Space>
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Thời gian">
-                    <Space>
-                      <ClockCircleOutlined />
-                      {search.timeStart} - {search.timeEnd}
-                    </Space>
-                  </Descriptions.Item>
-                  {search.facilityName && (
-                    <Descriptions.Item label="Cơ sở">{search.facilityName}</Descriptions.Item>
-                  )}
-                  <Descriptions.Item label="Địa điểm">
-                    <Space>
-                      <EnvironmentOutlined />
-                      {search.location}
-                    </Space>
-                  </Descriptions.Item>
-                </Descriptions>
-              </Card>
-            </Col>
-          </Row>
-          
-          {search.applications && search.applications.length > 0 && (
-            <Card 
-              title={`Danh sách đăng ký (${search.applications.length})`}
-              bordered={false}
-              className="mb-6 border border-gray-200"
-            >
-              <List
-                itemLayout="horizontal"
-                dataSource={search.applications}
-                renderItem={(app) => (
-                  <List.Item
-                    actions={[
-                      <Tag 
-                        color={
-                          app.status === 'PENDING' ? 'warning' :
-                          app.status === 'ACCEPTED' ? 'success' :
-                          'error'
-                        }
-                      >
-                        {app.status === 'PENDING' ? 'Đang chờ' : 
-                        app.status === 'ACCEPTED' ? 'Đã chấp nhận' : 'Đã từ chối'}
-                      </Tag>
-                    ]}
-                  >
-                    <List.Item.Meta
-                      avatar={<Avatar src={app.userInfo.avatar} icon={!app.userInfo.avatar && <UserOutlined />} />}
-                      title={<Text strong>{app.userInfo.name}</Text>}
-                      description={
-                        <div>
-                          <Text type="secondary" className="text-xs">
-                            {formatDate(app.createdAt)}
-                          </Text>
-                          {app.message && (
-                            <Paragraph className="mt-2 text-sm text-gray-500 italic">
-                              "{app.message}"
-                            </Paragraph>
-                          )}
-                        </div>
-                      }
-                    />
-                  </List.Item>
-                )}
-              />
-            </Card>
-          )}
-          
-          <Divider />
-          
-          <Row justify="space-between">
-            <Col>
-              <Button onClick={handleGoBack} size="large">
-                Quay lại danh sách
-              </Button>
-            </Col>
-            
-            <Col>
-              {search.status === 'ACTIVE' && !applied ? (
-                <Button
-                  type="primary"
-                  onClick={handleApplyClick}
-                  disabled={search.participants.current >= search.participants.required}
-                  icon={<TeamOutlined />}
-                  size="large"
-                >
-                  {search.participants.current >= search.participants.required ? 'Đã đủ người' : 'Đăng ký tham gia'}
-                </Button>
-              ) : applied && (
+            <Col xs={24} md={6} className="flex justify-end items-start">
+              {!isOwner && isActive && (
                 <Button 
-                  type="text" 
-                  icon={<CheckCircleOutlined />} 
-                  className="text-green-600"
-                  disabled
+                  type="primary" 
                   size="large"
+                  onClick={showModal}
+                  disabled={hasApplied || isFull || isFull === null}
                 >
-                  Đã đăng ký
+                  {hasApplied ? 'Đã đăng ký' : (isFull ? 'Đã đủ người' : 'Đăng ký tham gia')}
+                </Button>
+              )}
+              {isOwner && (
+                <Button 
+                  type="primary" 
+                  onClick={() => navigate(`/user/playmate/manage/${id}`)}
+                >
+                  Quản lý bài đăng
                 </Button>
               )}
             </Col>
           </Row>
         </Card>
         
-        <Modal
-          title="Đăng ký tham gia"
-          open={showApplyModal}
-          onCancel={() => setShowApplyModal(false)}
-          footer={[
-            <Button key="back" onClick={() => setShowApplyModal(false)} disabled={submitting}>
-              Hủy
-            </Button>,
-            <Button 
-              key="submit" 
-              type="primary" 
-              loading={submitting} 
-              onClick={handleApply}
-            >
-              Gửi đăng ký
-            </Button>
-          ]}
-        >
-          <Form
-            form={form}
-            layout="vertical"
-            initialValues={{ message: '' }}
-          >
-            <Form.Item 
-              name="message" 
-              label="Lời nhắn (tùy chọn)"
-            >
-              <TextArea
-                rows={4}
-                placeholder="Giới thiệu ngắn gọn về bạn hoặc lý do bạn muốn tham gia..."
-              />
-            </Form.Item>
-          </Form>
-        </Modal>
+        {/* Main content */}
+        <Row gutter={[16, 16]}>
+          {/* Left column - details */}
+          <Col xs={24} md={16}>
+            <Card className="mb-4">
+              <Space direction="vertical" size={16} className="w-full">
+                {/* Time and location */}
+                <Space direction="vertical" size={8} className="w-full">
+                  <Space align="center">
+                    <CalendarOutlined className="text-gray-500" />
+                    <Text>{moment(playmateSearch.date).format('DD/MM/YYYY')}</Text>
+                  </Space>
+                  
+                  <Space align="center">
+                    <ClockCircleOutlined className="text-gray-500" />
+                    <Text>{`${playmateSearch.startTime} - ${playmateSearch.endTime}`}</Text>
+                  </Space>
+                  
+                  {playmateSearch.location && (
+                    <Space align="center">
+                      <EnvironmentOutlined className="text-gray-500" />
+                      <Text>{playmateSearch.location}</Text>
+                    </Space>
+                  )}
+                </Space>
+                
+                <Divider />
+                
+                {/* Description */}
+                <div>
+                  <Title level={5}>Mô tả</Title>
+                  <Paragraph>
+                    {playmateSearch.description || 'Không có mô tả chi tiết.'}
+                  </Paragraph>
+                </div>
+                
+                {playmateSearch.communicationDescription && (
+                  <>
+                    <Divider />
+                    <div>
+                      <Title level={5}>Thông tin liên hệ</Title>
+                      <Paragraph>
+                        {playmateSearch.communicationDescription}
+                      </Paragraph>
+                    </div>
+                  </>
+                )}
+              </Space>
+            </Card>
+          </Col>
+          
+          {/* Right column - summary */}
+          <Col xs={24} md={8}>
+            {/* Creator info */}
+            <Card className="mb-4">
+              <Space direction="vertical" size={16} className="w-full">
+                <Title level={5}>Người tạo</Title>
+                <Space>
+                  <Avatar 
+                    size={64} 
+                    src={playmateSearch.userInfo.avatar} 
+                    icon={<UserOutlined />} 
+                  />
+                  <Space direction="vertical" size={0}>
+                    <Text strong>{playmateSearch.userInfo.name}</Text>
+                    {playmateSearch.userInfo.phoneNumber && (
+                      <Text>{playmateSearch.userInfo.phoneNumber}</Text>
+                    )}
+                  </Space>
+                </Space>
+              </Space>
+            </Card>
+            
+            {/* Details box */}
+            <Card className="mb-4">
+              <Descriptions title="Thông tin chi tiết" column={1} bordered>
+                <Descriptions.Item label="Số người cần thiết">
+                  <Space>
+                    <TeamOutlined />
+                    <Text>{`${playmateSearch.currentParticipants || 1}/${playmateSearch.requiredParticipants}`}</Text>
+                  </Space>
+                </Descriptions.Item>
+                
+                {playmateSearch.maximumParticipants && (
+                  <Descriptions.Item label="Số người tối đa">
+                    <Space>
+                      <TeamOutlined />
+                      <Text>{playmateSearch.maximumParticipants}</Text>
+                    </Space>
+                  </Descriptions.Item>
+                )}
+                
+                <Descriptions.Item label="Trình độ yêu cầu">
+                  <Space>
+                    <TrophyOutlined />
+                    <Text>{getSkillLevelDisplay(playmateSearch.requiredSkillLevel)}</Text>
+                  </Space>
+                </Descriptions.Item>
+                
+                {playmateSearch.genderPreference && (
+                  <Descriptions.Item label="Giới tính ưu tiên">
+                    <Space>
+                      <UserOutlined />
+                      <Text>
+                        {playmateSearch.genderPreference === 'MALE' ? 'Nam' : 
+                         playmateSearch.genderPreference === 'FEMALE' ? 'Nữ' : 
+                         'Không giới hạn'}
+                      </Text>
+                    </Space>
+                  </Descriptions.Item>
+                )}
+                
+                <Descriptions.Item label="Chi phí">
+                  <Space>
+                    <MoneyCollectOutlined />
+                    {getCostDisplay()}
+                  </Space>
+                </Descriptions.Item>
+                
+                {playmateSearch.costDetails && (
+                  <Descriptions.Item label="Chi tiết chi phí">
+                    <Text>{playmateSearch.costDetails}</Text>
+                  </Descriptions.Item>
+                )}
+              </Descriptions>
+            </Card>
+          </Col>
+        </Row>
       </div>
+
+      {/* Application Modal */}
+      <Modal
+        title="Đăng ký tham gia"
+        open={isModalVisible}
+        onCancel={handleCancel}
+        footer={null}
+        destroyOnClose
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleApply}
+          requiredMark={false}
+        >
+          <Form.Item
+            name="skillLevel"
+            label="Trình độ của bạn"
+            rules={[{ required: true, message: 'Vui lòng chọn trình độ!' }]}
+          >
+            <Select placeholder="Chọn trình độ của bạn">
+              <Option value="BEGINNER">Mới bắt đầu</Option>
+              <Option value="INTERMEDIATE">Trung cấp</Option>
+              <Option value="ADVANCED">Nâng cao</Option>
+              <Option value="PROFESSIONAL">Chuyên nghiệp</Option>
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            name="message"
+            label="Lời nhắn"
+          >
+            <TextArea
+              rows={4}
+              placeholder="Nhập lời nhắn cho người tạo (không bắt buộc)"
+            />
+          </Form.Item>
+
+          <Form.Item className="mb-0">
+            <Space className="w-full justify-end">
+              <Button onClick={handleCancel}>
+                Hủy
+              </Button>
+              <Button type="primary" htmlType="submit" loading={submitting}>
+                Đăng ký
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 };
