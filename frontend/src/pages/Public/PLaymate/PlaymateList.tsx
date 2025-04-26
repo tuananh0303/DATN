@@ -191,7 +191,7 @@ const PlaymateList: React.FC = () => {
       case 'ACTIVE':
         return <Tag color="green">Đang diễn ra</Tag>;
       case 'COMPLETED':
-        return <Tag color="blue">Đã hoàn thành</Tag>;
+        return <Tag color="blue">Đã kết thúc</Tag>;
       case 'CANCELED':
         return <Tag color="red">Đã hủy</Tag>;
       case 'EXPIRED':
@@ -417,17 +417,21 @@ const PlaymateList: React.FC = () => {
                       count={playmateSearches.filter(s => s.status === 'ACTIVE').length} 
                       offset={[15, 0]}
                     >
-                      <span>Đang hoạt động</span>
+                      <span>Đang diễn ra</span>
                     </Badge>
                   ),
                 },
                 {
                   key: 'COMPLETED',
-                  label: <span>Đã hoàn thành</span>,
+                  label: <span>Đã kết thúc</span>,
                 },
                 {
                   key: 'CANCELED',
                   label: <span>Đã hủy</span>,
+                },
+                {
+                  key: 'EXPIRED',
+                  label: <span>Đã hết hạn</span>,
                 },
               ]}
             />
