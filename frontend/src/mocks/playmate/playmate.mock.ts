@@ -105,6 +105,7 @@ export const mockPlaymateSearches: PlaymateSearch[] = [
     sportName: "Bóng đá",
     title: "Tìm đối tác chơi bóng đá 5v5",
     description: "Đang tìm thêm người để chơi bóng đá 5v5 vào cuối tuần. Mình có sân và cần thêm 3 người nữa.",
+    image: ["https://randomuser.me/api/portraits/men/4.jpg", "https://randomuser.me/api/portraits/men/5.jpg", "https://randomuser.me/api/portraits/men/6.jpg"],
     facilityId: "facility123",
     facilityName: "Sân bóng đá Mini HCMC",
     location: "123 Nguyễn Huệ, Quận 1, TP.HCM",

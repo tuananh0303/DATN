@@ -256,7 +256,7 @@ const PlaymateList: React.FC = () => {
         {/* Breadcrumb & Title */}
         <Breadcrumb className="mb-4 md:mb-6">
           <Breadcrumb.Item>
-            <Link to="/user/dashboard">Trang chủ</Link>
+            <Link to="/">Trang chủ</Link>
           </Breadcrumb.Item>
           <Breadcrumb.Item>Tìm bạn chơi</Breadcrumb.Item>
         </Breadcrumb>
