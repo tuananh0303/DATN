@@ -1,7 +1,6 @@
-import React, { createContext, useEffect, useMemo, ReactNode } from 'react';
+import React, { useEffect, useMemo, ReactNode } from 'react';
 import { SocketService } from '@/services/socket.service';
-
-export const SocketContext = createContext<SocketService | null>(null);
+import { SocketContext } from '@/contexts/SocketContext';
 
 interface SocketServiceProviderProps {
   children: ReactNode;

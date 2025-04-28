@@ -1,5 +1,5 @@
 import { useContext } from 'react';
-import { SocketContext } from '@/providers/SocketServiceProvider';
+import { SocketContext } from '@/contexts/SocketContext';
 import { SocketService } from '@/services/socket.service';
 
 export const useSocketService = (): SocketService => {
