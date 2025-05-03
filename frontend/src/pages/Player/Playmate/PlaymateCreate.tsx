@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import { PlaymateFormData } from '@/types/playmate.type';
-import { createPlaymateSearch } from '@/services/playmate.service';
+import playmateService from '@/services/playmate.service';
 import { sportService } from '@/services/sport.service';
 // import { facilityService } from '@/services/facility.service';
 import {
@@ -156,7 +156,7 @@ const PlaymateCreate: React.FC = () => {
       };
       
       // Tạo bài đăng
-      const response = await createPlaymateSearch(playmateFormData);
+      const response = await playmateService.createPlaymateSearch(playmateFormData);
       const newSearch = response as unknown as PlaymateSearchResponse;
       message.success('Đã tạo bài đăng tìm bạn chơi thành công!');
       navigate(`/user/playmate/${newSearch.id}`);

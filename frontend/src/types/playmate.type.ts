@@ -99,7 +99,7 @@ export interface PlaymateFormData {
   // Thông tin cơ bản
   title: string;
   description?: string;
-  image?: File[];
+  image?: string[];
   
   // Thông tin địa điểm và thời gian
   facilityId: string;

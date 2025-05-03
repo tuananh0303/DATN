@@ -6,7 +6,7 @@ import {
   SkillLevel, 
   CostType 
 } from '@/types/playmate.type';
-import { getAllPlaymateSearches } from '@/services/playmate.service';
+import playmateService from '@/services/playmate.service';
 import { sportService } from '@/services/sport.service';
 
 import {
@@ -74,7 +74,7 @@ const PlaymateList: React.FC = () => {
         setSports(sportData || []);
         
         // Fetch playmate searches
-        const searches = await getAllPlaymateSearches();
+        const searches = await playmateService.getAllPlaymateSearches();
         setPlaymateSearches(searches);
         setFilteredSearches(searches);
       } catch (error) {

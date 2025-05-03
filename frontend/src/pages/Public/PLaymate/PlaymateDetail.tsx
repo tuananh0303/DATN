@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { PlaymateSearch, SkillLevel } from '@/types/playmate.type';
-import { getPlaymateSearchById, createApplication } from '@/services/playmate.service';
+import { PlaymateApplication, PlaymateSearch, SkillLevel } from '@/types/playmate.type';
+import playmateService from '@/services/playmate.service';
 import moment from 'moment';
 
 import {
@@ -77,7 +77,7 @@ const PlaymateDetail: React.FC = () => {
       
       try {
         setLoading(true);
-        const data = await getPlaymateSearchById(Number(id));
+        const data = await playmateService.getPlaymateSearchById(Number(id));
         
         if (!data) {
           setError('Không tìm thấy bài đăng.');
@@ -147,13 +147,13 @@ const PlaymateDetail: React.FC = () => {
         message: values.message
       };
       
-      await createApplication(applicationData);
+      await playmateService.createApplication(applicationData as PlaymateApplication);
       
       message.success('Đăng ký thành công!');
       setIsModalVisible(false);
       
       // Reload data to show updated application status
-      const updatedData = await getPlaymateSearchById(Number(id));
+      const updatedData = await playmateService.getPlaymateSearchById(Number(id));
       setPlaymateSearch(updatedData || null);
     } catch (error) {
       console.error('Error applying to playmate search:', error);
