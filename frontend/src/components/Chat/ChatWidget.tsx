@@ -112,6 +112,7 @@ const ChatWidget: React.FC = () => {
 
   const handleSendClick = () => {
     if (currentMessage.trim()) {
+      console.log('ChatWidget sending message:', currentMessage);
       handleSendMessage(currentMessage);
       setCurrentMessage('');
     }

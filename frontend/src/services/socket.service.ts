@@ -16,12 +16,21 @@ export class SocketService {
   private maxReconnectAttempts = 5;
 
   constructor() {
-    // Không kết nối ngay lập tức, đợi token sẵn sàng
-    this.setupSocketListeners();
+    console.log('SocketService initialized');
+    
+    // Try to connect immediately if token is available
+    const token = this.getToken();
+    if (token) {
+      console.log('Token available, connecting immediately');
+      setTimeout(() => {
+        this.connect();
+      }, 100);
+    }
     
     // Lắng nghe sự thay đổi token
     window.addEventListener('storage', (event) => {
       if (event.key === 'access_token') {
+        console.log('Token changed, reconnecting socket');
         this.reconnect();
       }
     });
@@ -31,12 +40,16 @@ export class SocketService {
     return localStorage.getItem('access_token') || '';
   }
 
-  private setupSocketListeners(): void {
-    // Không thiết lập socket ở đây, sẽ được gọi trong connect()
-  }
-
   private connect(): void {
-    if (this.isConnecting || this.socket?.connected) return;
+    if (this.isConnecting) {
+      console.log('Already attempting to connect. Skipping redundant connect call.');
+      return;
+    }
+    
+    if (this.socket?.connected) {
+      console.log('Socket already connected.');
+      return;
+    }
     
     const token = this.getToken();
     if (!token) {
@@ -50,10 +63,13 @@ export class SocketService {
     try {
       // Ngắt kết nối cũ nếu có
       if (this.socket) {
+        console.log('Disconnecting existing socket');
         this.socket.disconnect();
+        this.socket = null;
       }
 
       // Tạo kết nối mới
+      console.log('Creating new socket connection');
       this.socket = io('http://localhost:3000/ws/message', {
         extraHeaders: {
           Authorization: token
@@ -61,13 +77,19 @@ export class SocketService {
         autoConnect: true,
         reconnection: true,
         reconnectionAttempts: this.maxReconnectAttempts,
-        reconnectionDelay: 1000
+        reconnectionDelay: 1000,
+        timeout: 5000
       });
 
       // Thiết lập các event listeners
       this.socket.on('connect', () => {
-        console.log('Connected to chat server');
+        console.log('Connected to chat server successfully!');
         this.reconnectAttempts = 0;
+        this.isConnecting = false;
+      });
+      
+      this.socket.on('connect_error', (error) => {
+        console.error('Socket connection error:', error);
         this.isConnecting = false;
       });
       
@@ -314,29 +336,46 @@ export class SocketService {
   sendMessage(conversationId: string, content: string): void {
     console.log('Attempting to send message:', { conversationId, content });
     
-    if (!this.socket?.connected) {
-      // Only attempt to connect if not already connected
-      if (!this.isConnecting) {
-        console.log('Socket not connected. Attempting to connect...');
-        this.connect();
-        
-        // Đợi kết nối thành công trước khi gửi tin nhắn
-        setTimeout(() => {
-          if (this.socket?.connected) {
-            console.log('Connected. Sending delayed message.');
-            this.socket.emit('send-message', {
-              conversationId,
-              content
-            });
-          } else {
-            console.error('Failed to connect socket for sending message.');
-          }
-        }, 500); // Increased timeout to ensure connection completes
-      } else {
-        console.log('Already attempting to connect. Message not sent.');
+    // Always ensure we have a connection
+    if (!this.socket || !this.socket.connected) {
+      console.log('Socket not connected. Starting connection and queuing message.');
+      
+      // Force start a new connection if needed
+      if (this.socket) {
+        this.socket.disconnect();
       }
+      
+      // Always try to reconnect with fresh socket
+      this.isConnecting = false;
+      this.connect();
+      
+      // Queue the message to be sent after connection
+      setTimeout(() => {
+        console.log('Checking if socket is connected now...');
+        if (this.socket && this.socket.connected) {
+          console.log('Connected now. Sending queued message.');
+          this.socket.emit('send-message', {
+            conversationId,
+            content
+          });
+        } else {
+          console.error('Failed to connect socket for sending message.');
+          // Try one more time with longer timeout
+          setTimeout(() => {
+            if (this.socket && this.socket.connected) {
+              console.log('Connected on second attempt. Sending message.');
+              this.socket.emit('send-message', {
+                conversationId,
+                content
+              });
+            } else {
+              console.error('Failed to connect socket after second attempt.');
+            }
+          }, 1000);
+        }
+      }, 500);
     } else {
-      console.log('Socket connected. Sending message immediately.');
+      console.log('Socket already connected. Sending message immediately.');
       this.socket.emit('send-message', {
         conversationId,
         content
@@ -345,21 +384,36 @@ export class SocketService {
   }
   
   sendImages(conversationId: string, imageUrls: string[]): void {
-    if (!this.socket?.connected) {
-      // Only attempt to connect if not already connected
-      if (!this.isConnecting) {
-        this.connect();
-        
-        // Đợi kết nối thành công trước khi gửi hình ảnh
-        setTimeout(() => {
-          if (this.socket?.connected) {
-            this.socket.emit('send-images', {
-              conversationId,
-              imageUrls
-            });
-          }
-        }, 500); // Increased timeout
+    // Similar approach to sendMessage
+    if (!this.socket || !this.socket.connected) {
+      // Force start a new connection if needed
+      if (this.socket) {
+        this.socket.disconnect();
       }
+      
+      // Always try to reconnect with fresh socket
+      this.isConnecting = false;
+      this.connect();
+      
+      // Queue the message to be sent after connection
+      setTimeout(() => {
+        if (this.socket && this.socket.connected) {
+          this.socket.emit('send-images', {
+            conversationId,
+            imageUrls
+          });
+        } else {
+          // Try one more time with longer timeout
+          setTimeout(() => {
+            if (this.socket && this.socket.connected) {
+              this.socket.emit('send-images', {
+                conversationId,
+                imageUrls
+              });
+            }
+          }, 1000);
+        }
+      }, 500);
     } else {
       this.socket.emit('send-images', {
         conversationId,
@@ -369,21 +423,45 @@ export class SocketService {
   }
 
   markAsSeen(conversationId: string, messageId: string): void {
-    if (!this.socket?.connected) {
-      // Only attempt to connect if not already in the process of connecting
-      if (!this.isConnecting) {
-        this.connect();
-        // Đợi kết nối thành công trước khi gửi seen message
-        setTimeout(() => {
-          if (this.socket?.connected) {
-            this.socket.emit('seen-message', {
-              conversationId,
-              messageId
-            });
-          }
-        }, 200);
+    console.log('Marking message as seen:', { conversationId, messageId });
+    
+    // Similar approach to sendMessage
+    if (!this.socket || !this.socket.connected) {
+      console.log('Socket not connected for marking as seen. Connecting...');
+      
+      // Force start a new connection if needed
+      if (this.socket) {
+        this.socket.disconnect();
       }
+      
+      // Always try to reconnect with fresh socket
+      this.isConnecting = false;
+      this.connect();
+      
+      // Queue the seen message to be sent after connection
+      setTimeout(() => {
+        if (this.socket && this.socket.connected) {
+          console.log('Connected now. Marking message as seen.');
+          this.socket.emit('seen-message', {
+            conversationId,
+            messageId
+          });
+        } else {
+          console.error('Failed to connect socket for marking as seen.');
+          // Try once more
+          setTimeout(() => {
+            if (this.socket && this.socket.connected) {
+              console.log('Connected on second attempt. Marking message as seen.');
+              this.socket.emit('seen-message', {
+                conversationId,
+                messageId
+              });
+            }
+          }, 1000);
+        }
+      }, 500);
     } else {
+      console.log('Socket connected. Marking message as seen immediately.');
       this.socket.emit('seen-message', {
         conversationId,
         messageId
@@ -394,22 +472,46 @@ export class SocketService {
   // Observables để component có thể đăng ký nghe sự kiện
   getConnectedUsers(): Observable<string[]> {
     // Đảm bảo kết nối đã được thiết lập trước khi trả về giá trị
-    if (!this.socket?.connected && !this.isConnecting) {
-      this.connect();
+    if (!this.socket || !this.socket.connected) {
+      if (!this.isConnecting) {
+        console.log('Socket not connected in getConnectedUsers. Initiating connection.');
+        // Force a fresh connection
+        if (this.socket) {
+          this.socket.disconnect();
+        }
+        this.isConnecting = false;
+        this.connect();
+      }
     }
     return this.connectedUsers.asObservable();
   }
 
   getConversations(): Observable<Conversation[]> {
-    if (!this.socket?.connected && !this.isConnecting) {
-      this.connect();
+    if (!this.socket || !this.socket.connected) {
+      if (!this.isConnecting) {
+        console.log('Socket not connected in getConversations. Initiating connection.');
+        // Force a fresh connection
+        if (this.socket) {
+          this.socket.disconnect();
+        }
+        this.isConnecting = false;
+        this.connect();
+      }
     }
     return this.conversations.asObservable(); 
   }
 
   getMessages(conversationId: string): Observable<Message[]> {
-    if (!this.socket?.connected && !this.isConnecting) {
-      this.connect();
+    if (!this.socket || !this.socket.connected) {
+      if (!this.isConnecting) {
+        console.log('Socket not connected in getMessages. Initiating connection.');
+        // Force a fresh connection
+        if (this.socket) {
+          this.socket.disconnect();
+        }
+        this.isConnecting = false;
+        this.connect();
+      }
     }
     
     return new Observable((observer: { next: (value: Message[]) => void }) => {
