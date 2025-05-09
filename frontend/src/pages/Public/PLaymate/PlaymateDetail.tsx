@@ -97,7 +97,7 @@ const PlaymateDetail: React.FC = () => {
   
   // Check if the search is full - count accepted participants plus creator
   const acceptedParticipants = playmateSearch?.participants ? 
-    playmateSearch.participants.filter(p => p.status === 'accepted' || p.status === 'ACCEPTED').length : 0;
+    playmateSearch.participants.filter(p => p.status === 'accepted').length : 0;
   
   const currentCount = 1 + acceptedParticipants; // +1 for the creator
   
@@ -106,7 +106,7 @@ const PlaymateDetail: React.FC = () => {
     currentCount >= playmateSearch.maximumParticipants;
 
   // Check if the search is active
-  const isActive = playmateSearch?.status === 'ACTIVE';
+  const isActive = playmateSearch?.status;
   
   // Show application modal
   const showModal = () => {
@@ -154,15 +154,15 @@ const PlaymateDetail: React.FC = () => {
     
     const costType = playmateSearch.costType;
     
-    if (!costType || costType === 'FREE' || costType === 'free') {
+    if (!costType || costType === 'free') {
       return <Tag color="success">Miễn phí</Tag>;
     }
            
-    if ((costType === 'TOTAL' || costType === 'total') && playmateSearch.price) {
+    if ((costType === 'total') && playmateSearch.price) {
       return <Text>{playmateSearch.price.toLocaleString('vi-VN')}đ tổng</Text>;
     }
     
-    if (costType === 'GENDER_BASED' || costType === 'genderBased') {
+    if (costType === 'gender') {
       return (
         <Space direction="vertical" size={0}>
           {playmateSearch.costMale && (
@@ -193,15 +193,15 @@ const PlaymateDetail: React.FC = () => {
     const levelUpper = level.toUpperCase() as SkillLevel;
     
     switch (levelUpper) {
-      case 'BEGINNER':
+      case 'newbie':
         return 'Mới bắt đầu';
-      case 'INTERMEDIATE':
+      case 'intermediate':
         return 'Trung cấp';
-      case 'ADVANCED':
+      case 'advance':
         return 'Nâng cao';
-      case 'PROFESSIONAL':
+      case 'professional':
         return 'Chuyên nghiệp';
-      case 'ANY':
+      case 'any':
         return 'Mọi trình độ';
       default:
         return level;
@@ -415,8 +415,8 @@ const PlaymateDetail: React.FC = () => {
               <Tag color={isActive ? 'green' : 'red'}>
                 {isActive ? 'Đang hoạt động' : 'Đã kết thúc'}
               </Tag>
-              <Tag color={playmateSearch.playmateSearchType === 'INDIVIDUAL' ? 'blue' : 'purple'}>
-                {playmateSearch.playmateSearchType === 'INDIVIDUAL' ? 'Cá nhân' : 'Nhóm'}
+              <Tag color={playmateSearch.playmateSearchType === 'individual' ? 'blue' : 'purple'}>
+                {playmateSearch.playmateSearchType === 'individual' ? 'Cá nhân' : 'Nhóm'}
               </Tag>
             </div>
           </div>
@@ -428,7 +428,7 @@ const PlaymateDetail: React.FC = () => {
                 <div className="relative w-full h-auto">
                   <Image
                     src={mainImage || (playmateSearch.image && playmateSearch.image.length > 0 ? 
-                      playmateSearch.image[0] : 'https://via.placeholder.com/800x400?text=No+Image')}
+                      playmateSearch.image[0] : 'https://res.cloudinary.com/db3dx1dos/image/upload/v1746769804/hyfcz9nb8j3d5q4lfpqp.jpg')}
                     alt={playmateSearch.title}
                     className="w-full rounded-lg"
                     style={{ 
@@ -564,9 +564,9 @@ const PlaymateDetail: React.FC = () => {
             rules={[{ required: true, message: 'Vui lòng chọn trình độ!' }]}
           >
             <Select placeholder="Chọn trình độ của bạn">
-              <Option value="beginner">Mới bắt đầu</Option>
+              <Option value="newbie">Mới bắt đầu</Option>
               <Option value="intermediate">Trung cấp</Option>
-              <Option value="advanced">Nâng cao</Option>
+              <Option value="advance">Nâng cao</Option>
               <Option value="professional">Chuyên nghiệp</Option>
               <Option value="any">Không xác định</Option>
             </Select>

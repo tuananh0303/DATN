@@ -186,16 +186,16 @@ const PlaymateManage: React.FC = () => {
   const renderSearchCard = (search: PlaymateSearch) => {
     // Count accepted participants
     const acceptedParticipants = search.participants ? 
-      search.participants.filter(p => p.status === 'accepted' || p.status === 'ACCEPTED').length : 0;
+      search.participants.filter(p => p.status === 'accepted').length : 0;
     
     // Count current participants (creator + accepted participants)
     const currentCount = 1 + acceptedParticipants; // +1 for the creator
     
     // Count pending applications
     const pendingApplications = search.participants ? 
-      search.participants.filter(p => p.status === 'pending' || p.status === 'PENDING').length : 0;
+      search.participants.filter(p => p.status === 'pending').length : 0;
     
-    const defaultImage = `https://via.placeholder.com/400x200?text=${encodeURIComponent(search.title)}`;
+    const defaultImage = `https://res.cloudinary.com/db3dx1dos/image/upload/v1746769804/hyfcz9nb8j3d5q4lfpqp.jpg`;
     const coverImage = search.image && search.image.length > 0 ? search.image[0] : defaultImage;
     
     return (
@@ -212,9 +212,9 @@ const PlaymateManage: React.FC = () => {
             />
             <Badge
               className="absolute top-3 right-3"
-              status={getStatusColor(search.status) as "success" | "error" | "default" | "processing" | "warning"}
+              status={getStatusColor(search.status ? 'open' : 'closed') as "success" | "error" | "default" | "processing" | "warning"}
               text={
-                <span className="bg-white px-2 py-1 rounded text-xs">{getStatusText(search.status)}</span>
+                <span className="bg-white px-2 py-1 rounded text-xs">{getStatusText(search.status ? 'open' : 'closed')}</span>
               }
             />
             {pendingApplications > 0 && (
@@ -233,8 +233,8 @@ const PlaymateManage: React.FC = () => {
           
           <div className="flex items-center mb-2 text-gray-500 text-xs sm:text-sm">
             <div className="flex-1">
-              <Tag color={search.playmateSearchType === 'INDIVIDUAL' ? 'blue' : 'purple'}>
-                {search.playmateSearchType === 'INDIVIDUAL' ? 'Cá nhân' : 'Nhóm'}
+              <Tag color={search.playmateSearchType === 'individual' ? 'blue' : 'purple'}>
+                {search.playmateSearchType === 'individual' ? 'Cá nhân' : 'Nhóm'}
               </Tag>
             </div>
             
@@ -346,7 +346,7 @@ const PlaymateManage: React.FC = () => {
       return null; // Should not happen but just in case
     }
     
-    const defaultImage = `https://via.placeholder.com/400x200?text=${encodeURIComponent(search.title)}`;
+    const defaultImage = `https://res.cloudinary.com/db3dx1dos/image/upload/v1746769804/hyfcz9nb8j3d5q4lfpqp.jpg`;
     const coverImage = search.image && search.image.length > 0 ? search.image[0] : defaultImage;
     
     return (
@@ -512,19 +512,24 @@ const PlaymateManage: React.FC = () => {
     }
   ];
 
+  // Breadcrumb items configuration
+  const breadcrumbItems = [
+    {
+      title: <Link to="/">Trang chủ</Link>
+    },
+    {
+      title: <Link to="/user/playmate">Tìm bạn chơi</Link>
+    },
+    {
+      title: 'Quản lý'
+    }
+  ];
+
   return (
     <div className="w-full px-4 py-6 bg-white min-h-screen">
       <div className="max-w-7xl mx-auto">
         {/* Breadcrumb */}
-        <Breadcrumb className="mb-4 md:mb-6">
-          <Breadcrumb.Item>
-            <Link to="/">Trang chủ</Link>
-          </Breadcrumb.Item>
-          <Breadcrumb.Item>
-            <Link to="/user/playmate">Tìm bạn chơi</Link>
-          </Breadcrumb.Item>
-          <Breadcrumb.Item>Quản lý</Breadcrumb.Item>
-        </Breadcrumb>
+        <Breadcrumb className="mb-4 md:mb-6" items={breadcrumbItems} />
       
         {/* Title */}
         <div className="mb-6">
