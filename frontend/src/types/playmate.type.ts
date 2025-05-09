@@ -70,6 +70,20 @@ export interface Participant {
   status: ApplicationStatus;
   skillLevel: SkillLevel;
   note?: string;
+  player?: {
+    id: string;
+    name: string;
+    email: string;
+    password: string;
+    phoneNumber?: string;
+    avatarUrl?: string | null;
+    gender?: string | null;
+    dob?: string | null;
+    bankAccount?: string | null;
+    role?: string;
+    createdAt?: string;
+    updatedAt?: string;
+  };
 }
 
 // Interface API PlaymateSearch response
@@ -296,7 +310,7 @@ export const mapApiToPlaymateSearch = (api: ApiPlaymateSearch): PlaymateSearch =
       playmateSearchType: api.isTeam ? 'group' : 'individual',
       requiredParticipants: api.minParticipant,
       maximumParticipants: api.maxParticipant,
-      currentParticipants: api.participants.filter(p => p.status === 'accepted').length + 1, // +1 for creator
+      currentParticipants: api.participants.filter(p => p.status === 'accepted' || p.status === 'pending').length,
       genderPreference: genderPref,
       price: api.costType === 'total' ? api.totalCost : undefined,
       costType: mapCostType(api.costType),

@@ -267,7 +267,7 @@ const PlaymateCreate: React.FC = () => {
                 layout="vertical"
                 onFinish={handleSubmit}
                 onFinishFailed={onFinishFailed}
-                requiredMark="optional"
+                requiredMark={false}
                 scrollToFirstError
                 disabled={loading}
                 className="playmate-form"
@@ -577,7 +577,7 @@ const PlaymateCreate: React.FC = () => {
                   </Form.Item>
                   
                   <Form.Item
-                    label={<span className="required-field">Trình độ yêu cầu</span>}
+                    label={<span className="required-field">Trình độ yêu cầu tối thiểu</span>}
                     name="skillLevel"
                     rules={[{ required: true, message: 'Vui lòng chọn trình độ yêu cầu!' }]}
                   >
