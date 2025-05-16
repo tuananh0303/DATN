@@ -136,15 +136,20 @@ export const bookingService = {
    * @param paymentId The ID of the payment to process
    * @param paymentOption Payment method (e.g., 'vnpay')
    * @param voucherId Optional voucher ID
+   * @param refundedPoint Optional flag to use refunded points
    */
-  async processPayment(paymentId: string, paymentOption: string, voucherId?: number) {
+  async processPayment(paymentId: string, paymentOption: string, voucherId?: number, refundedPoint?: number) {
     try {
-      const payload: { paymentOption: string; voucherId?: number } = {
+      const payload: { paymentOption: string; voucherId?: number; refundedPoint?: number } = {
         paymentOption
       };
       
       if (voucherId) {
         payload.voucherId = voucherId;
+      }
+      
+      if (refundedPoint) {
+        payload.refundedPoint = refundedPoint;
       }
       
       const response = await api.put(`/payment/${paymentId}`, payload);
@@ -198,6 +203,22 @@ export const bookingService = {
     }
   },
 
+  /**
+   * Get bookings for facility owner
+   * @param facilityId The ID of the facility to get bookings for
+   */
+  async getBookingOwner(facilityId: string) {
+    try {
+      const response = await api.get(`/booking/owner`, {
+        params: { facility: facilityId }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching owner bookings:', error);
+      throw error;
+    }
+  },
+
   async getBookingDetail(bookingId: string) {
     try {
       const response = await api.get(`/booking/${bookingId}/detail`);
@@ -221,8 +242,19 @@ export const bookingService = {
     }
   },
 
-  
-  
+  /**
+   * Cancel a booking
+   * @param bookingId The ID of the booking to cancel
+   */
+  async cancelBooking(bookingId: string) {
+    try {
+      const response = await api.put(`/booking/${bookingId}/cancel`);
+      return response.data;
+    } catch (error) {
+      console.error('Error canceling booking:', error);
+      throw error;
+    }
+  }
 };
 
 export default bookingService;

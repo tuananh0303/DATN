@@ -47,6 +47,8 @@ import { facilityService } from '@/services/facility.service';
 import { reviewService } from '@/services/review.service';
 import { useAppSelector, useAppDispatch } from '@/hooks/reduxHooks';
 import { showLoginModal } from '@/store/slices/userSlice';
+import { ChatService } from '@/services/chat.service';
+import { openChatWidget, setActiveConversation } from '@/store/slices/chatSlice';
 import dayjs from 'dayjs';
 
 // Import CSS ghi đè Ant Design
@@ -104,7 +106,7 @@ interface FacilityEvent extends Omit<Event, 'eventType'> {
   maxParticipants?: number;
   prizes?: EventPrize[];
   eventType?: EventType;
-  image?: string;
+  image?: string[];
 }
 
 const DetailFacility: React.FC = () => {
@@ -294,9 +296,75 @@ const DetailFacility: React.FC = () => {
     }
   };
 
-  const handleMessageClick = () => {
-    message.info('Chức năng nhắn tin đang được phát triển');
-    // Sau này sẽ điều hướng đến trang chat hoặc mở modal chat
+  const handleMessageClick = async () => {
+    // Kiểm tra đăng nhập
+    if (!isAuthenticated || user?.role !== 'player') {
+      dispatch(showLoginModal({ path: `/facility/${facilityId}`, role: 'player' }));
+      message.info('Vui lòng đăng nhập với vai trò người chơi để nhắn tin với chủ sở hữu');
+      return;
+    }
+
+    if (!facility?.owner?.id) {
+      message.error('Không thể tìm thấy thông tin chủ sở hữu');
+      return;
+    }
+
+    try {
+      // Lấy danh sách conversation từ API
+      message.loading({ content: 'Đang kiểm tra...', key: 'chatCheck' });
+      const conversationsData = await ChatService.getConversations();
+      
+      // Kiểm tra xem đã có conversation với owner chưa
+      const existingConversation = conversationsData.find(conv => 
+        !conv.isGroup && 
+        conv.participants.some(p => p.person?.id === facility.owner?.id)
+      );
+
+      if (existingConversation) {
+        // Nếu đã có conversation, chọn conversation đó
+        message.success({ content: 'Đã mở cuộc trò chuyện', key: 'chatCheck' });
+        
+        // Đầu tiên mở chat widget
+        dispatch(openChatWidget());
+        
+        // Đặt active conversation sau một khoảng thời gian ngắn
+        setTimeout(() => {
+          dispatch(setActiveConversation(existingConversation.id));
+        }, 200);
+      } else {
+        // Nếu chưa có, tạo conversation mới
+        message.loading({ content: 'Đang kết nối...', key: 'chatCheck' });
+        try {
+          const conversation = await ChatService.createConversation(facility.owner.id);
+          message.success({ content: 'Đã kết nối với chủ sở hữu', key: 'chatCheck' });
+          
+          // Cập nhật lại danh sách conversations
+          await ChatService.getConversations();
+          
+          // Mở chat widget
+          dispatch(openChatWidget());
+          
+          // Đặt conversation mới làm active sau một khoảng thời gian ngắn
+          setTimeout(() => {      
+            if (conversation && conversation.id) {
+              dispatch(setActiveConversation(conversation.id));
+            }
+          }, 200);
+        } catch (createError) {
+          console.error('Error creating conversation:', createError);
+          message.error({ 
+            content: 'Không thể tạo cuộc trò chuyện mới. Vui lòng thử lại sau.', 
+            key: 'chatCheck' 
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error handling chat:', error);
+      message.error({ 
+        content: 'Không thể kết nối với chủ sở hữu. Vui lòng thử lại sau.', 
+        key: 'chatCheck' 
+      });
+    }
   };
 
   // Define breadcrumb items
@@ -371,11 +439,18 @@ const DetailFacility: React.FC = () => {
             <Card 
               className="mb-4 overflow-hidden" 
               cover={
-                <img 
-                  alt={event.name} 
-                  src={event.image} 
-                  className="h-48 object-cover"
-                />
+                <div className="relative h-48">
+                  <img 
+                    alt={event.name} 
+                    src={event.image?.[0] || 'https://via.placeholder.com/800x400'} 
+                    className="w-full h-full object-cover"
+                  />
+                  {event.image && event.image.length > 1 && (
+                    <div className="absolute bottom-2 right-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-sm">
+                      +{event.image.length - 1} ảnh
+                    </div>
+                  )}
+                </div>
               }
             >
               <div className="flex justify-between items-start mb-2">
