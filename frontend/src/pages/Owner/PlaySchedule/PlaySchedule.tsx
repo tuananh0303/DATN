@@ -66,6 +66,8 @@ interface BookingScheduleItem {
     fieldPrice: number;
     servicePrice: number | null;
     discount: number | null;
+    refund: number;
+    refundedPoint: number;
     status: string;
   };
   player?: {
@@ -1077,7 +1079,7 @@ const PlaySchedule: React.FC = () => {
     // Tính toán giá trị từ điểm tích lũy đã sử dụng (chuyển đổi điểm sang tiền)
     const refundedPointValue = item.booking.payment?.refundedPoint || 0;
     
-    return fieldPrice + servicePrice - discount - refundedPointValue;
+    return fieldPrice + servicePrice - discount - refundedPointValue*1000;
   };
 
   // Chuyển sang trang chi tiết booking
@@ -1530,7 +1532,7 @@ const PlaySchedule: React.FC = () => {
                                     backgroundColor: booking.status === 'completed' ? '#d6f5d6' : 
                                                     booking.status === 'cancelled' ? '#fff1f0' : 
                                                     '#fff7e6',
-                                    color: booking.status === 'completed' ? '#52c41a' : 
+                                    color: booking.status === 'completed' ? '#377916' : 
                                           booking.status === 'cancelled' ? '#f5222d' : 
                                           '#fa8c16',
                                     position: 'relative',
@@ -1547,16 +1549,7 @@ const PlaySchedule: React.FC = () => {
                                       <div className="text-xs">{booking.player.phoneNumber}</div>
                                     )}
                                     <div className="text-xs mt-1">
-                                      <div className="flex items-center gap-1">
-                                        <div className={`w-2 h-2 rounded-full ${
-                                          booking.status === 'completed' ? 'bg-green-500' :
-                                          booking.status === 'cancelled' ? 'bg-red-500' : 
-                                          'bg-orange-500'
-                                        }`}></div>
-                                        <span>
-                                          {booking.status === 'completed' ? 'Đã hoàn thành' :
-                                          booking.status === 'cancelled' ? 'Đã hủy' : 'Đang chờ'}
-                                        </span>
+                                      <div className="flex items-center gap-1">                                                                   
                                       </div>
                                     </div>
                                     <div className="text-xs mt-1">
@@ -1708,7 +1701,7 @@ const PlaySchedule: React.FC = () => {
               
               {currentSlot.booking ? (
                 <>
-                  <div className="mb-4">
+                  {/* <div className="mb-4">
                     <strong className="mr-2">Trạng thái:</strong>
                     <Badge 
                       status={
@@ -1720,7 +1713,7 @@ const PlaySchedule: React.FC = () => {
                         currentSlot.booking.status === 'cancelled' ? 'Đã hủy' : 'Đang chờ'
                       }
                     />
-                  </div>
+                  </div> */}
                   
                   {currentSlot.booking.player && (
                     <div>
@@ -1738,17 +1731,16 @@ const PlaySchedule: React.FC = () => {
                       </div>
                     </div>
                   )}
-                  
-                  <div className="mb-4">
-                    <strong className="mr-2">Thanh toán:</strong>
-                    <Badge 
-                      status={currentSlot.booking.payment?.status === 'paid' ? 'success' : 'warning'} 
-                      text={currentSlot.booking.payment?.status === 'paid' ? 'Đã thanh toán' : 'Chưa thanh toán'}
-                    />
-                  </div>
+                                   
                   <div className="mb-4">
                     <strong className="mr-2">Giá tiền:</strong>
-                    <span>{currentSlot.booking.payment?.fieldPrice?.toLocaleString()} đ</span>
+                    <span>{currentSlot.booking.payment?.fieldPrice?
+                    currentSlot.booking.payment?.fieldPrice+
+                    (currentSlot.booking.payment?.servicePrice||0)-
+                    (currentSlot.booking.payment?.discount||0)-
+                    (currentSlot.booking.payment?.refund||0)
+                    :0
+                    .toLocaleString()} đ</span>
                   </div>
                 </>
               ) : (
