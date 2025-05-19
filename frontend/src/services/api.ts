@@ -1,13 +1,11 @@
 import axios from 'axios';
 
-// URL cơ sở của API backend
-const BASE_URL = 'http://localhost:3000';
 
 /**
  * Tạo một Axios instance với cấu hình mặc định
  */
 const api = axios.create({
-  baseURL: BASE_URL,
+  baseURL: import.meta.env.VITE_API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -76,7 +74,7 @@ api.interceptors.response.use(
           throw new Error('No refresh token');
         }
 
-        const response = await axios.put(`${BASE_URL}/auth/refresh-token`, {
+        const response = await axios.put(`${import.meta.env.VITE_API_URL}/auth/refresh-token`, {
           refreshToken
         });
 
