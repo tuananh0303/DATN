@@ -234,6 +234,7 @@ const BookingStepPayment: React.FC<BookingStepPaymentProps> = ({
           name="paymentMethod"
           label="Phương thức thanh toán"
           rules={[{ required: true, message: 'Vui lòng chọn phương thức thanh toán' }]}
+
         >
           <Radio.Group className="w-full">
             <Space direction="vertical" className="w-full">

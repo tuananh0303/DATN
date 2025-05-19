@@ -1,6 +1,5 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import AdminLayout from '@/routers/layouts/AdminLayout';
 
 import LoginPage from '@/pages/LoginPage';
@@ -39,12 +38,8 @@ const AppRouter: React.FC = () => {
       {/* Public routes */}
       <Route path="/login" element={<LoginPage />} />      
       
-      {/* Protected routes */}
-      <Route element={
-        // <ProtectedRoute>
-          <AdminLayout />
-        // </ProtectedRoute>
-      }>
+      {/* Admin routes */}
+      <Route element={<AdminLayout />}>
         <Route path="/dashboard" element={<DashboardPage />} />
 
         <Route path="/users" element={<UsersPage />} />
@@ -73,8 +68,8 @@ const AppRouter: React.FC = () => {
         <Route path="/settings" element={<SettingsPage />} />
       </Route>
       
-      {/* Default route to dashboard */}
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      {/* Default route to login */}
+      <Route path="/" element={<Navigate to="/login" replace />} />
       
       {/* 404 page */}
       <Route path="*" element={<NotFoundPage />} />
