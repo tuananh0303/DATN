@@ -1,7 +1,6 @@
 import LogoIcon from '@/assets/Logo.svg'
 import { useNavigate } from 'react-router-dom'
-import { PhoneOutlined, MailOutlined, EnvironmentOutlined, FacebookOutlined, InstagramOutlined, YoutubeOutlined } from '@ant-design/icons'
-import LogoBCT from '@/assets/images.png'
+import { PhoneOutlined, MailOutlined, EnvironmentOutlined } from '@ant-design/icons'
 
 const Footer = () => {
   const navigate = useNavigate()
@@ -11,86 +10,90 @@ const Footer = () => {
   }
 
   return (
-    <footer className="bg-[#2C3E50] text-white">
+    <footer className="bg-gradient-to-b from-[#2C3E50] to-[#1a2530] text-white">
       {/* Main footer content */}
-      <div className="w-full px-4 pt-10 pb-6">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className="w-full px-6 pt-14 pb-20">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
           {/* Company Info */}
-          <div>
+          <div className="mb-8 md:mb-0">
             <img 
               src={LogoIcon} 
               alt="HI5PORT" 
-              className="w-44 md:w-56 h-auto cursor-pointer mb-6" 
+              className="w-44 md:w-56 h-auto cursor-pointer mb-6 hover:opacity-90 transition-opacity" 
               onClick={handleNavigateHome} 
             />
-            <div className="space-y-3 text-sm">
-              <p className="flex items-start">
-                <EnvironmentOutlined className="text-lg mr-2 mt-1" />
-                <span>A3.11 Block A Tòa nhà Sky Center 5B Phổ Quang, Phường 2, Quận Tân Bình, Thành phố Hồ Chí Minh, Việt Nam</span>
+            
+          </div>
+
+          <div className="mb-8 md:mb-0">
+            <h3 className="text-lg font-bold mb-5 pb-2 border-b border-gray-600 inline-block">Thông tin liên hệ</h3>
+            <div className="space-y-4">
+              <p className="flex items-start group">
+                <EnvironmentOutlined className="text-lg mr-3 mt-1 text-blue-300 group-hover:text-blue-400 transition-colors" />
+                <span className="text-sm text-gray-300 group-hover:text-white transition-colors">405-H6 Block A Tòa nhà Sky Center 5B Phổ Quang, Phường 2, Quận Tân Bình, Thành phố Hồ Chí Minh, Việt Nam</span>
               </p>
-              <p className="flex items-center">
-                <PhoneOutlined className="text-lg mr-2" />
-                <a href="tel:0904438369" className="hover:text-blue-300">0904438369</a>
+              <p className="flex items-center group">
+                <PhoneOutlined className="text-lg mr-3 text-blue-300 group-hover:text-blue-400 transition-colors" />
+                <a href="tel:0976032687" className="text-sm text-gray-300 hover:text-blue-300 transition-colors">0976032687</a>
               </p>
-              <p className="flex items-center">
-                <MailOutlined className="text-lg mr-2" />
-                <a href="mailto:info@vietcas.vn" className="hover:text-blue-300">info@vietcas.vn</a>
+              <p className="flex items-center group">
+                <MailOutlined className="text-lg mr-3 text-blue-300 group-hover:text-blue-400 transition-colors" />
+                <a href="mailto:anhhello564@gmail.com" className="text-sm text-gray-300 hover:text-blue-300 transition-colors">anhhello564@gmail.com</a>
               </p>
-              <div className="flex space-x-4 pt-2">
-                <a href="#" className="hover:text-blue-400 text-xl">
-                  <FacebookOutlined />
-                </a>
-                <a href="#" className="hover:text-pink-400 text-xl">
-                  <InstagramOutlined />
-                </a>
-                <a href="#" className="hover:text-red-500 text-xl">
-                  <YoutubeOutlined />
-                </a>
-              </div>
             </div>
           </div>
 
           {/* Rules & Policies */}
-          <div>
-            <h3 className="text-lg font-bold mb-4">Quy định và chính sách</h3>
-            <ul className="space-y-2 text-sm">
-              <li><a href="#" className="hover:text-blue-300">Hướng dẫn sử dụng</a></li>
-              <li><a href="#" className="hover:text-blue-300">Quy chế Hoạt động ứng dụng</a></li>
-              <li><a href="#" className="hover:text-blue-300">Thông tin về thanh toán</a></li>
-              <li><a href="#" className="hover:text-blue-300">Chính sách bảo mật thông tin cá nhân</a></li>
-              <li><a href="#" className="hover:text-blue-300">Thông tin chăm sóc khách hàng</a></li>
+          <div className="mb-8 md:mb-0">
+            <h3 className="text-lg font-bold mb-5 pb-2 border-b border-gray-600 inline-block">Quy định và chính sách</h3>
+            <ul className="space-y-3 text-sm">
+              <li className="transition-transform duration-300 hover:translate-x-1">
+                <a href="#" className="text-gray-300 hover:text-blue-300 transition-colors">Hướng dẫn sử dụng</a>
+              </li>
+              <li className="transition-transform duration-300 hover:translate-x-1">
+                <a href="#" className="text-gray-300 hover:text-blue-300 transition-colors">Quy chế Hoạt động ứng dụng</a>
+              </li>
+              <li className="transition-transform duration-300 hover:translate-x-1">
+                <a href="#" className="text-gray-300 hover:text-blue-300 transition-colors">Thông tin về thanh toán</a>
+              </li>
+              <li className="transition-transform duration-300 hover:translate-x-1">
+                <a href="#" className="text-gray-300 hover:text-blue-300 transition-colors">Chính sách bảo mật thông tin cá nhân</a>
+              </li>
+              <li className="transition-transform duration-300 hover:translate-x-1">
+                <a href="#" className="text-gray-300 hover:text-blue-300 transition-colors">Thông tin chăm sóc khách hàng</a>
+              </li>
             </ul>
           </div>
 
           {/* Quick Links */}
-          <div>
-            <h3 className="text-lg font-bold mb-4">Liên kết nhanh</h3>
-            <ul className="space-y-2 text-sm">
-              <li><a href="#" className="hover:text-blue-300">Trang chủ</a></li>
-              <li><a href="#" className="hover:text-blue-300">Danh cho đối tác</a></li>
-              <li><a href="#" className="hover:text-blue-300">Tin tức</a></li>
-              <li><a href="#" className="hover:text-blue-300">Về chúng tôi</a></li>
-              <li><a href="#" className="hover:text-blue-300">Liên hệ</a></li>
+          <div className="mb-6 md:mb-0">
+            <h3 className="text-lg font-bold mb-5 pb-2 border-b border-gray-600 inline-block">Liên kết nhanh</h3>
+            <ul className="space-y-3 text-sm">
+              <li className="transition-transform duration-300 hover:translate-x-1">
+                <a href="#" className="text-gray-300 hover:text-blue-300 transition-colors">Trang chủ</a>
+              </li>
+              <li className="transition-transform duration-300 hover:translate-x-1">
+                <a href="#" className="text-gray-300 hover:text-blue-300 transition-colors">Dành cho đối tác</a>
+              </li>
+              <li className="transition-transform duration-300 hover:translate-x-1">
+                <a href="#" className="text-gray-300 hover:text-blue-300 transition-colors">Tin tức</a>
+              </li>
+              <li className="transition-transform duration-300 hover:translate-x-1">
+                <a href="#" className="text-gray-300 hover:text-blue-300 transition-colors">Về chúng tôi</a>
+              </li>
+              <li className="transition-transform duration-300 hover:translate-x-1">
+                <a href="#" className="text-gray-300 hover:text-blue-300 transition-colors">Liên hệ</a>
+              </li>
             </ul>
-          </div>
-
-          {/* Registration */}
-          <div>
-            <h3 className="text-lg font-bold mb-4">Đã đăng ký</h3>
-            <img 
-              src={LogoBCT} 
-              alt="Đã đăng ký Bộ Công Thương" 
-              className="w-40 h-auto"
-            />
           </div>
         </div>
       </div>
 
       {/* Copyright */}
-      <div className="max-w-7xl mx-auto border-t border-white-500">
-        <div className="w-full px-4 py-4">
-          <p className="text-center text-xs text-gray-400">
-            Copyright © 2023 – <span className="text-red-500 font-semibold">Hi5port</span>. All rights reserved. Designed by <a href="https://aegona.com" className="text-blue-400 hover:underline">Aegona</a>
+      <div className="max-w-7xl mx-auto border-t border-gray-700">
+        <div className="w-full px-6 py-5">
+          <p className="text-center text-sm text-gray-400">
+            Copyright © 2025 – <span className="text-red-500 font-semibold">TAN sport</span>. All rights reserved. Designed by <a href="https://aegona.com" className="text-blue-400 hover:text-blue-300 transition-colors">Aegona</a>
           </p>
         </div>
       </div>
