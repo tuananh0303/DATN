@@ -34,6 +34,39 @@ export const bookingService = {
   },
 
   /**
+   * Create a draft booking by owner (direct booking)
+   * @param startTime Booking start time
+   * @param endTime Booking end time
+   * @param bookingSlot Booking slot with date and fieldId
+   * @param guestName Guest's name
+   * @param guestPhone Guest's phone number
+   * @param sportId Sport ID
+   */
+  async createDraftBookingByOwner(
+    startTime: string,
+    endTime: string,
+    bookingSlot: { date: string; fieldId: number },
+    guestName: string,
+    guestPhone: string,
+    sportId: number
+  ): Promise<Booking> {
+    try {
+      const response = await api.post('/booking/create-draft-owner', {
+        startTime,
+        endTime,
+        bookingSlot,
+        guestName,
+        guestPhone,
+        sportId
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error creating draft booking by owner:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Update booking slots for an existing booking
    * @param bookingId The ID of the booking to update
    * @param bookingSlots Array of booking slots with date and fieldId
@@ -69,6 +102,40 @@ export const bookingService = {
       return response.data;
     } catch (error) {
       console.error('Error updating additional services:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Update additional services for a booking by owner
+   * @param bookingId The ID of the booking to update
+   * @param additionalServices Array of services with serviceId and quantity
+   */
+  async updateAdditionalServicesByOwner(
+    bookingId: string,
+    additionalServices: { serviceId: number; quantity: number }[]
+  ): Promise<Booking> {
+    try {
+      const response = await api.put(`/booking/${bookingId}/update-additional-services-by-owner`, {
+        additionalServices
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating additional services by owner:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Process payment for a booking by owner (direct booking)
+   * @param paymentId The ID of the payment to process
+   */
+  async processPaymentByOwner(paymentId: string) {
+    try {
+      const response = await api.put(`/payment/${paymentId}/owner`);
+      return response.data;
+    } catch (error) {
+      console.error('Error processing payment by owner:', error);
       throw error;
     }
   },
