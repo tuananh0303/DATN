@@ -2,14 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Card, Typography, Row, Col, Tag, Button, Space, Select,
-  Input, Empty, Pagination, Tabs, Badge, Avatar, Spin, Breadcrumb, Carousel, Modal, Form, Upload, message
+  Input, Empty, Pagination, Tabs, Badge, Avatar, Spin, Breadcrumb, Modal, Form, Upload, message
 } from 'antd';
-import type { CarouselRef } from 'antd/es/carousel';
 import { 
   SearchOutlined, CalendarOutlined, EnvironmentOutlined, TeamOutlined,
   TrophyOutlined, ArrowRightOutlined, ClockCircleOutlined, PercentageOutlined,
-  GiftOutlined,
-  LeftOutlined, RightOutlined, UploadOutlined
+  GiftOutlined, UploadOutlined
 } from '@ant-design/icons';
 import { EventType, EventStatus, DisplayEvent } from '@/types/event.type';
 import { mockEvents } from '@/mocks/event/eventData';
@@ -44,8 +42,6 @@ const EventList: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(6);
   const [sportsList, setSportsList] = useState<Sport[]>([]);
-  const [upcomingEvents, setUpcomingEvents] = useState<DisplayEvent[]>([]);
-  const carouselRef = React.useRef<CarouselRef>(null);
 
   // Fetch sports data
   useEffect(() => {
@@ -151,47 +147,6 @@ const EventList: React.FC = () => {
       setCurrentPage(1);
     }
   }, [sportFilter, events, activeTab, searchTerm, typeFilter]);
-
-  // Filter 3 nearest upcoming events
-  useEffect(() => {
-    if (events.length > 0) {
-      // Lấy ngày hiện tại
-      const today = new Date();
-      
-      // Lọc tất cả sự kiện upcoming (thời gian bắt đầu sau hôm nay)
-      const upcomingEvents = events.filter(event => 
-        event.status === 'upcoming' && new Date(event.startDate) >= today
-      );
-      
-      // Nếu có đủ 3 sự kiện upcoming trở lên
-      if (upcomingEvents.length >= 3) {
-        // Sắp xếp theo ngày bắt đầu gần nhất
-        const sorted = [...upcomingEvents].sort((a, b) => 
-          new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
-        );
-        
-        setUpcomingEvents(sorted.slice(0, 3));
-      } 
-      // Nếu không đủ 3 sự kiện upcoming
-      else {
-        // Lấy tất cả sự kiện đang diễn ra (active)
-        const activeEvents = events.filter(event => 
-          event.status === 'active' && new Date(event.endDate) >= today
-        );
-        
-        // Kết hợp sự kiện upcoming và active, ưu tiên upcoming trước
-        const combined = [...upcomingEvents, ...activeEvents];
-        
-        // Sắp xếp theo ngày bắt đầu gần nhất
-        const sorted = combined.sort((a, b) => 
-          new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
-        );
-        
-        // Lấy 3 sự kiện đầu tiên, nếu không đủ thì lấy tất cả
-        setUpcomingEvents(sorted.slice(0, 3));
-      }
-    }
-  }, [events]);
 
   // Generate options for sport filter from API data
   const sportOptions = sportsList.map(sport => ({
@@ -512,136 +467,6 @@ const EventList: React.FC = () => {
     ));
   };
 
-  // Custom arrow components for the carousel
-  interface ArrowProps {
-    onClick?: React.MouseEventHandler<HTMLDivElement>;
-  }
-
-  const NextArrow: React.FC<ArrowProps> = (props) => {
-    const { onClick } = props;
-    return (
-      <div 
-        className="custom-carousel-arrow custom-carousel-next" 
-        onClick={onClick}
-      >
-        <RightOutlined />
-      </div>
-    );
-  };
-
-  const PrevArrow: React.FC<ArrowProps> = (props) => {
-    const { onClick } = props;
-    return (
-      <div 
-        className="custom-carousel-arrow custom-carousel-prev" 
-        onClick={onClick}
-      >
-        <LeftOutlined />
-      </div>
-    );
-  };
-
-  // Carousel slide render function
-  const renderCarouselSlide = (event: DisplayEvent) => {
-    if (!event) return null;
-    
-    return (
-      <div key={event.id} className="highlight-event-slide">
-        <div className="highlight-event-cover">
-          <img 
-            alt={event.name} 
-            src={event.image && event.image.length > 0 ? 
-              event.image[0] : 
-              `https://via.placeholder.com/1200x400?text=${encodeURIComponent(event.name)}`
-            }
-            className="highlight-event-image"
-          />
-          <div className="highlight-event-overlay">
-            <div className="highlight-event-content">
-              <Space>
-                {event.status && renderEventStatus(event.status)}
-                {renderEventType(event.eventType)}
-              </Space>
-              <Title level={3} className="highlight-event-title">
-                {event.name}
-              </Title>
-              <Space className="highlight-event-details" wrap>
-                <span>
-                  <CalendarOutlined /> {formatDate(event.startDate)}
-                  {event.startDate !== event.endDate && 
-                    ` - ${formatDate(event.endDate)}`}
-                </span>
-                <span>
-                  <EnvironmentOutlined /> {event.facilityName}
-                </span>
-                
-                {event.eventType === 'TOURNAMENT' && (
-                  <>
-                    {event.sportName && (
-                      <span>
-                        <span style={{ marginRight: '5px' }}>🏆</span> {event.sportName}
-                      </span>
-                    )}
-                    
-                    {event.totalPrize && (
-                      <span className="highlight-prize">
-                        <TrophyOutlined /> Giải thưởng: {event.totalPrize}
-                      </span>
-                    )}
-                  </>
-                )}
-                
-                {event.eventType === 'DISCOUNT' && (
-                  <>
-                    {event.discountType === 'PERCENT' && event.discountPercent && (
-                      <span className="highlight-discount">
-                        <PercentageOutlined /> Giảm {event.discountPercent}%
-                      </span>
-                    )}
-                    
-                    {event.discountType === 'FIXED_AMOUNT' && event.discountAmount && (
-                      <span className="highlight-discount">
-                        <span style={{ marginRight: '5px' }}>💵</span> Giảm {event.discountAmount?.toLocaleString('vi-VN')}đ
-                      </span>
-                    )}
-                    
-                    {event.discountType === 'FREE_SLOT' && event.freeSlots && (
-                      <span className="highlight-discount">
-                        <GiftOutlined /> Tặng {event.freeSlots} lượt đặt miễn phí
-                      </span>
-                    )}
-                  </>
-                )}
-              </Space>
-              
-              <Paragraph className="highlight-event-description" ellipsis={{ rows: 2 }}>
-                {event.description}
-              </Paragraph>
-              
-              <div className="highlight-event-actions">
-                <Button 
-                  type="primary" 
-                  size="large"
-                  onClick={() => event.id && handleViewEvent(event.id)}
-                >
-                  Xem chi tiết
-                </Button>
-                <Button 
-                  type="default" 
-                  size="large"
-                  onClick={() => event.id && handleRegister(event.id)}
-                  disabled={!isRegistrationAvailable(event)}
-                >
-                  {event.eventType === 'TOURNAMENT' ? 'Đăng ký ngay' : 'Đặt sân ngay'}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="w-full px-4 py-6">
       <div className="max-w-7xl mx-auto">
@@ -693,30 +518,6 @@ const EventList: React.FC = () => {
             </Space>
           </div>
         </div>
-        
-        {/* Event Highlight Carousel Section - Di chuyển lên trên activeTab */}
-        {/* {loading ? (
-          <div className="text-center py-8 mb-6 spin-container">
-            <Spin />
-            <div className="mt-3">Đang tải danh sách sự kiện...</div>
-          </div>
-        ) : upcomingEvents.length > 0 ? (
-          <div className="mb-6 highlight-event-carousel">
-               
-            <Carousel
-              ref={carouselRef}
-              autoplay
-              autoplaySpeed={5000}
-              dots={true}
-              arrows
-              nextArrow={<NextArrow />}
-              prevArrow={<PrevArrow />}
-              className="custom-carousel"
-            >
-              {upcomingEvents.map(event => renderCarouselSlide(event))}
-            </Carousel>
-          </div>
-        ) : null} */}
         
         <Card className="mb-4 md:mb-6">
           <div className="flex flex-col md:flex-row md:justify-between md:items-center">
@@ -1001,160 +802,6 @@ const EventList: React.FC = () => {
           
           .event-tabs {
             margin-bottom: 0 !important;
-          }
-          
-          /* Carousel Styles */
-          .highlight-event-carousel {
-            margin-bottom: 24px;
-            border-radius: 12px;
-            overflow: hidden;
-            position: relative;
-          }
-          
-          .highlight-event-slide {
-            height: 400px;
-          }
-          
-          .highlight-event-cover {
-            position: relative;
-            height: 400px;
-          }
-          
-          .highlight-event-image {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-          }
-          
-          .highlight-event-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.7));
-            display: flex;
-            align-items: flex-end;
-            padding: 24px;
-          }
-          
-          .highlight-event-content {
-            color: white;
-            width: 100%;
-          }
-          
-          .highlight-event-title {
-            color: white !important;
-            margin: 12px 0;
-          }
-          
-          .highlight-event-details {
-            margin-bottom: 16px;
-            color: rgba(255, 255, 255, 0.85);
-            font-size: 14px;
-          }
-          
-          .highlight-event-description {
-            color: rgba(255, 255, 255, 0.85) !important;
-            margin-bottom: 24px;
-            font-size: 16px;
-          }
-          
-          .highlight-event-actions {
-            display: flex;
-            gap: 12px;
-          }
-          
-          .highlight-discount {
-            color: #fff;
-            background: rgba(245, 34, 45, 0.7);
-            padding: 2px 8px;
-            border-radius: 4px;
-            display: inline-flex;
-            align-items: center;
-          }
-          
-          .highlight-prize {
-            color: #fff;
-            background: rgba(250, 173, 20, 0.7);
-            padding: 2px 8px;
-            border-radius: 4px;
-            display: inline-flex;
-            align-items: center;
-          }
-          
-          /* Custom Carousel Arrows */
-          .custom-carousel-arrow {
-            position: absolute;
-            z-index: 10;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 40px;
-            height: 40px;
-            background: rgba(255, 255, 255, 0.7);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s;
-            color: rgba(0, 0, 0, 0.65);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-          }
-          
-          .custom-carousel-arrow:hover {
-            background: rgba(255, 255, 255, 0.9);
-            color: rgba(0, 0, 0, 0.85);
-          }
-          
-          .custom-carousel-prev {
-            left: 16px;
-          }
-          
-          .custom-carousel-next {
-            right: 16px;
-          }
-          
-          /* Make carousel dots white */
-          .custom-carousel .slick-dots li button {
-            background: rgba(255, 255, 255, 0.7) !important;
-          }
-          
-          .custom-carousel .slick-dots li.slick-active button {
-            background: white !important;
-          }
-          
-          @media (max-width: 768px) {
-            .highlight-event-slide {
-              height: 300px;
-            }
-            
-            .highlight-event-cover {
-              height: 300px;
-            }
-            
-            .highlight-event-actions {
-              flex-direction: column;
-              gap: 8px;
-              align-items: flex-start;
-            }
-            
-            .highlight-event-actions button {
-              width: 100%;
-            }
-            
-            .custom-carousel-arrow {
-              width: 30px;
-              height: 30px;
-            }
-            
-            .custom-carousel-prev {
-              left: 8px;
-            }
-            
-            .custom-carousel-next {
-              right: 8px;
-            }
           }
         `}
       </style>

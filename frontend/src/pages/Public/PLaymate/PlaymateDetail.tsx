@@ -3,9 +3,12 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { PlaymateSearch, SkillLevel, PlaymateApplicationFormData, PlaymateActionRequest, ApplicationStatus } from '@/types/playmate.type';
 import playmateService from '@/services/playmate.service';
 import moment from 'moment';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store';
 import { getSportNameInVietnamese } from '@/utils/translateSport';
+import ChatService from '@/services/chat.service';
+import { openChatWidget, setActiveConversation } from '@/store/slices/chatSlice';
+import { useSocketService } from '@/hooks/useSocketService';
 
 import {
   Card,
@@ -39,7 +42,9 @@ import {
   ExpandOutlined,
   InfoCircleOutlined,
   CheckOutlined,
-  CloseOutlined
+  CloseOutlined,
+  MessageOutlined,
+  CheckCircleOutlined
 } from '@ant-design/icons';
 
 const { Title, Text, Paragraph } = Typography;
@@ -49,9 +54,11 @@ const { TextArea } = Input;
 const PlaymateDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [form] = Form.useForm();
   const user = useSelector((state: RootState) => state.user.user);
   const [activeTab, setActiveTab] = useState('general');
+  const socketService = useSocketService();
   
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -60,6 +67,11 @@ const PlaymateDetail: React.FC = () => {
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [mainImage, setMainImage] = useState<string>('');
   const [processingIds, setProcessingIds] = useState<string[]>([]);
+  const [creatingChat, setCreatingChat] = useState<boolean>(false);
+  const [chatCreated, setChatCreated] = useState<boolean>(false);
+  const [chatTitleModalVisible, setChatTitleModalVisible] = useState<boolean>(false);
+  const [chatTitle, setChatTitle] = useState<string>('');
+  const [titleForm] = Form.useForm();
 
   // Fetch playmate search data
   useEffect(() => {
@@ -81,6 +93,9 @@ const PlaymateDetail: React.FC = () => {
         if (data.image && data.image.length > 0) {
           setMainImage(data.image[0]);
         }
+
+        // Check if chat has already been created for this playmate
+        checkChatCreationStatus(id);
       } catch (error) {
         console.error('Error fetching playmate search:', error);
         setError('Đã có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại sau.');
@@ -91,6 +106,20 @@ const PlaymateDetail: React.FC = () => {
     
     fetchPlaymateSearch();
   }, [id]);
+
+  // Check if a chat has already been created for this playmate
+  const checkChatCreationStatus = (playmateId: string) => {
+    try {
+      // Get the list of playmateIds that have had chat created
+      const chatCreatedPlaymates = JSON.parse(localStorage.getItem('playmateChats') || '[]');
+      // Check if this playmate ID is in the list
+      if (chatCreatedPlaymates.includes(playmateId)) {
+        setChatCreated(true);
+      }
+    } catch (error) {
+      console.error('Error checking chat creation status:', error);
+    }
+  };
 
   // Check if user has already applied
   const hasApplied = playmateSearch?.participants?.some(app => app.playerId === user?.id);
@@ -105,8 +134,7 @@ const PlaymateDetail: React.FC = () => {
   const currentCount = acceptedParticipants; // Don't count creator in participants
   
   const isFull = playmateSearch && 
-    playmateSearch.maximumParticipants !== undefined && 
-    currentCount >= playmateSearch.maximumParticipants;
+    currentCount >= playmateSearch.numberOfParticipants;
 
   // Check if the search is active
   const isActive = playmateSearch?.status === true;
@@ -116,6 +144,23 @@ const PlaymateDetail: React.FC = () => {
   
   // Overall status determination (open or closed)
   const isOpen = playmateSearch ? (isActive && !isPastDate && !isFull) : false;
+  
+  // Check if there are enough accepted participants to create a chat group
+  const acceptedParticipantsCount = playmateSearch?.participants ? 
+    playmateSearch.participants.filter(p => p.status === 'accepted').length : 0;
+  
+  const canCreateChatGroup = isOwner && 
+    playmateSearch !== null &&
+    typeof playmateSearch.numberOfParticipants === 'number' &&
+    acceptedParticipantsCount >= playmateSearch.numberOfParticipants && 
+    !chatCreated;
+  
+  // When component mounts or playmateSearch updates, set default chat title
+  useEffect(() => {
+    if (playmateSearch) {
+      setChatTitle(`${playmateSearch.title} - Nhóm chat`);
+    }
+  }, [playmateSearch]);
   
   // Show application modal
   const showModal = () => {
@@ -133,7 +178,7 @@ const PlaymateDetail: React.FC = () => {
   };
   
   // Handle application form submission
-  const handleApply = async (values: { skillLevel: string; note?: string }) => {
+  const handleApply = async (values: { skillLevel: string; position?: string; note?: string }) => {
     if (!playmateSearch || !id || !user) return;
     
     try {
@@ -142,6 +187,7 @@ const PlaymateDetail: React.FC = () => {
       const applicationData: PlaymateApplicationFormData = {
         playmateId: id,
         skillLevel: values.skillLevel,
+        position: values.position || "",
         note: values.note
       };
       
@@ -335,6 +381,128 @@ const PlaymateDetail: React.FC = () => {
         return 'Không xác định';
     }
   };
+  
+  // Show chat title modal instead of directly creating chat
+  const showChatTitleModal = () => {
+    if (!playmateSearch) return;
+    
+    // Set default title
+    titleForm.setFieldsValue({
+      chatTitle: `${playmateSearch.title} - Nhóm chat`
+    });
+    
+    setChatTitleModalVisible(true);
+  };
+  
+  // Handle creating chat group
+  const handleCreateChatGroup = async (values: { chatTitle: string }) => {
+    if (!playmateSearch || !id || !user || !playmateSearch.participants) return;
+    
+    try {
+      setCreatingChat(true);
+      setChatTitleModalVisible(false); // Close modal
+      
+      message.loading({ content: 'Đang tạo nhóm chat...', key: 'createChat' });
+      
+      // Get participants with accepted status
+      const acceptedParticipants = playmateSearch.participants.filter(p => p.status === 'accepted');
+      
+      // Extract user IDs from accepted participants
+      const participantIds = acceptedParticipants.map(p => p.playerId);
+      
+      // Determine if we need to create a direct conversation or a group conversation
+      let conversation;
+      
+      if (acceptedParticipants.length === 1) {
+        // Create a direct conversation with the one participant
+        conversation = await ChatService.createConversation(participantIds[0]);
+        message.success({ content: 'Đã tạo cuộc hội thoại với người tham gia', key: 'createChat' });
+      } else {
+        // Create a group conversation with all participants
+        // Use the title from the form or default
+        const groupTitle = values.chatTitle.trim() || `${playmateSearch.title} - Nhóm chat`;
+        conversation = await ChatService.createGroupConversation(groupTitle, participantIds);
+        message.success({ content: 'Đã tạo nhóm chat thành công', key: 'createChat' });
+      }
+      
+      // Mark as created
+      setChatCreated(true);
+
+      // Save the playmate ID to localStorage to remember that a chat has been created
+      try {
+        const chatCreatedPlaymates = JSON.parse(localStorage.getItem('playmateChats') || '[]');
+        if (!chatCreatedPlaymates.includes(id)) {
+          chatCreatedPlaymates.push(id);
+          localStorage.setItem('playmateChats', JSON.stringify(chatCreatedPlaymates));
+        }
+      } catch (error) {
+        console.error('Error saving chat creation status:', error);
+      }
+      
+      // Open the chat widget and set the active conversation
+      dispatch(openChatWidget());
+      setTimeout(() => {
+        dispatch(setActiveConversation(conversation.id));
+      }, 200);
+      
+    } catch (error) {
+      console.error('Error creating chat group:', error);
+      message.error({ content: 'Không thể tạo nhóm chat. Vui lòng thử lại sau.', key: 'createChat' });
+    } finally {
+      setCreatingChat(false);
+    }
+  };
+  
+  // Listen for socket events, including join-conversation
+  useEffect(() => {
+    // Only set up listeners if the user is the owner
+    if (isOwner && socketService) {
+      console.log('Setting up socket listeners for playmate owner');
+      
+      // Check for existing conversations and whether a chat has been created
+      const refreshConversations = async () => {
+        try {
+          const conversations = await ChatService.getConversations();
+          const existingConversation = conversations.find(conv => 
+            conv.title?.includes(playmateSearch?.title || '')
+          );
+          
+          if (existingConversation) {
+            console.log('Found existing conversation for this playmate:', existingConversation);
+            setChatCreated(true);
+            
+            // Save to localStorage
+            try {
+              if (id) {
+                const chatCreatedPlaymates = JSON.parse(localStorage.getItem('playmateChats') || '[]');
+                if (!chatCreatedPlaymates.includes(id)) {
+                  chatCreatedPlaymates.push(id);
+                  localStorage.setItem('playmateChats', JSON.stringify(chatCreatedPlaymates));
+                }
+              }
+            } catch (error) {
+              console.error('Error saving chat creation status:', error);
+            }
+          }
+        } catch (error) {
+          console.error('Error checking for existing conversations:', error);
+        }
+      };
+      
+      refreshConversations();
+      
+      // Make sure socket service is properly subscribed to conversations
+      socketService.getConversations().subscribe({
+        next: (conversations) => {
+          console.log('Received updated conversations list via socket:', conversations.length);
+        }
+      });
+    }
+    
+    return () => {
+      // No specific cleanup needed as the subscription is maintained by the service
+    };
+  }, [isOwner, socketService, playmateSearch, id]);
   
   // Render loading state
   if (loading) {
@@ -548,29 +716,29 @@ const PlaymateDetail: React.FC = () => {
                                 <div>
                                   <Text strong>Số lượng tham gia cần thiết để bắt đầu trận đấu:</Text>
                                   <Text className="block" style={{ color: '#fa8c16' }}>
-                                    {`${playmateSearch.requiredParticipants} ${playmateSearch.playmateSearchType === 'group' ? 'nhóm tham gia' : 'người tham gia'}`}
+                                    {`${playmateSearch.numberOfParticipants} ${playmateSearch.playmateSearchType === 'group' ? 'nhóm tham gia' : 'người tham gia'}`}
                                   </Text>
                                 </div>
                               </li>
                               <Divider className="my-2" />
-
+{/* 
                               <li className="flex items-start">
                                 <TeamOutlined className="text-blue-600 mr-3 mt-1" />
                                 <div>
                                   <Text strong>Số lượng có thể tham gia tối đa:</Text>
                                   <Text className="block" style={{ color: '#fa8c16' }}>
-                                    {`${playmateSearch.maximumParticipants} ${playmateSearch.playmateSearchType === 'group' ? 'nhóm tham gia' : 'người tham gia'}`}
+                                    {`${playmateSearch.numberOfParticipants} ${playmateSearch.playmateSearchType === 'group' ? 'nhóm tham gia' : 'người tham gia'}`}
                                   </Text>
                                 </div>
                               </li>
-                              <Divider className="my-2" />
+                              <Divider className="my-2" /> */}
 
                               <li className="flex items-start">
                                 <TeamOutlined className="text-blue-600 mr-3 mt-1" />
                                 <div>
                                   <Text strong>Số người/nhóm đăng ký tham gia:</Text>
                                   <Text className="block" style={{ color: '#fa8c16' }}>
-                                    {`${currentCount}/${playmateSearch.maximumParticipants} ${playmateSearch.playmateSearchType === 'group' ? 'nhóm tham gia' : 'người tham gia'}`}
+                                    {`${currentCount}/${playmateSearch.currentParticipants} ${playmateSearch.playmateSearchType === 'group' ? 'nhóm tham gia' : 'người tham gia'}`}
                                   </Text>
                                 </div>
                               </li>
@@ -580,7 +748,26 @@ const PlaymateDetail: React.FC = () => {
                                 <UserOutlined className="text-blue-600 mr-3 mt-1" />
                                 <div>
                                   <Text strong>Trình độ yêu cầu:</Text>
-                                  <Text className="block">{getSkillLevelDisplay(playmateSearch.requiredSkillLevel)}</Text>
+                                  <Text className="block" style={{ color: '#722ed1' }}>
+                                    {getSkillLevelDisplay(playmateSearch.requiredSkillLevel)}
+                                  </Text>
+                                </div>
+                              </li>
+                              <Divider className="my-2" />
+                              
+                              <li className="flex items-start">
+                                <UserOutlined className="text-blue-600 mr-3 mt-1" />
+                                <div>
+                                  <Text strong>Vị trí cần người:</Text>
+                                  <div className="flex flex-wrap gap-2 mt-1">
+                                    {playmateSearch.positions && playmateSearch.positions.length > 0 ? (
+                                      playmateSearch.positions.map((pos, index) => (
+                                        <Tag key={index} color="blue" className="px-3 py-1">{pos}</Tag>
+                                      ))
+                                    ) : (
+                                      <Text type="secondary">Không có yêu cầu vị trí cụ thể</Text>
+                                    )}
+                                  </div>
                                 </div>
                               </li>
                               <Divider className="my-2" />
@@ -678,10 +865,35 @@ const PlaymateDetail: React.FC = () => {
                   children: (
                     <div className="py-4">
                       <Card className="shadow-sm">
-                        <Title level={4} className="flex items-center mb-4">
-                          <TeamOutlined className="mr-2 text-blue-600" /> 
-                          Danh sách đơn đăng ký
-                        </Title>
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
+                          <Title level={4} className="flex items-center mb-0">
+                            <TeamOutlined className="mr-2 text-blue-600" /> 
+                            Danh sách đơn đăng ký
+                          </Title>
+                          
+                          {/* Move the Create Chat Group button here */}
+                          {isOwner && (
+                            <Button 
+                              type={canCreateChatGroup ? "primary" : "default"}
+                              onClick={showChatTitleModal}
+                              loading={creatingChat}
+                              icon={<MessageOutlined />}
+                              className={`mt-2 sm:mt-0 ${canCreateChatGroup ? "" : "opacity-70"}`}
+                              disabled={!canCreateChatGroup && !chatCreated}
+                            >
+                              {chatCreated 
+                                ? (
+                                  <span className="flex items-center">
+                                    <CheckCircleOutlined className="mr-1 text-green-500" /> 
+                                    Đã tạo nhóm chat
+                                  </span>
+                                ) 
+                                : canCreateChatGroup 
+                                  ? 'Tạo nhóm chat' 
+                                  : 'Chưa đủ người tham gia'}
+                            </Button>
+                          )}
+                        </div>
                         
                         {playmateSearch.participants && playmateSearch.participants.length > 0 ? (
                           <List
@@ -749,7 +961,15 @@ const PlaymateDetail: React.FC = () => {
                                         <div><strong>Giới tính:</strong> {playerInfo?.gender || 'Chưa cập nhật'}</div>                                      </div> 
 
                                       <div className="text-sm text-gray-600">
-                                        <div><strong>Trình độ:</strong> {getSkillLevelDisplay(participant.skillLevel)}</div>
+                                        <div><strong>Trình độ:</strong> {getSkillLevelDisplay(participant.skillLevel as SkillLevel)}</div>
+                                        {participant.position && (
+                                          <div>
+                                            <strong>Vị trí:</strong>
+                                            <span className="ml-1">
+                                              {participant.position}
+                                            </span>
+                                          </div>
+                                        )}
                                         {participant.note && <div><strong>Ghi chú:</strong> {participant.note}</div>}
                                       </div>
                                       </>
@@ -796,14 +1016,66 @@ const PlaymateDetail: React.FC = () => {
                                   
                                   <div className="mb-3">
                                     <Text strong>Trình độ đã đăng ký:</Text>
-                                    <Text className="ml-2">{getSkillLevelDisplay(myApplication.skillLevel || 'any')}</Text>
+                                    <Text className="ml-2">{getSkillLevelDisplay(myApplication.skillLevel as SkillLevel)}</Text>
                                   </div>
+                                  
+                                  {myApplication.position && (
+                                    <div>
+                                      <Text strong>Vị trí:</Text>
+                                      <Text className="ml-2">{myApplication.position}</Text>
+                                    </div>
+                                  )}
                                   
                                   {myApplication.note && (
                                     <div>
                                       <Text strong>Ghi chú:</Text>
                                       <div className="mt-2 bg-gray-50 p-3 rounded">
                                         <Text>{myApplication.note}</Text>
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Check if chat group has been created */}
+                                  {chatCreated && (
+                                    <div className="mt-4">
+                                      <Divider className="my-2" />
+                                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between">
+                                        <div>
+                                          <Text strong className="text-green-600">Nhóm chat đã được tạo!</Text>
+                                          <Text className="block mt-1 text-sm">
+                                            Bạn có thể tham gia nhóm chat để trao đổi thông tin với những người tham gia khác.
+                                          </Text>
+                                        </div>
+                                        <Button 
+                                          type="primary"
+                                          onClick={() => {
+                                            // Open chat widget
+                                            dispatch(openChatWidget());
+                                            
+                                            // Get the list of playmateIds that have had chat created
+                                            try {
+                                              // Attempt to fetch conversations to find the one for this playmate
+                                              ChatService.getConversations().then(conversations => {
+                                                // Look for a group conversation that might be for this playmate
+                                                const playmateConversation = conversations.find(conv => 
+                                                  conv.title?.includes(playmateSearch?.title || '')
+                                                );
+                                                
+                                                if (playmateConversation) {
+                                                  setTimeout(() => {
+                                                    dispatch(setActiveConversation(playmateConversation.id));
+                                                  }, 200);
+                                                }
+                                              });
+                                            } catch (error) {
+                                              console.error('Error finding chat conversation:', error);
+                                            }
+                                          }}
+                                          icon={<MessageOutlined />}
+                                          className="mt-3 sm:mt-0"
+                                        >
+                                          Tham gia nhóm chat
+                                        </Button>
                                       </div>
                                     </div>
                                   )}
@@ -873,6 +1145,13 @@ const PlaymateDetail: React.FC = () => {
           </Form.Item>
 
           <Form.Item
+            name="position"
+            label="Vị trí muốn chơi (nếu có)"
+          >
+            <Input placeholder="Nhập vị trí bạn muốn chơi" />
+          </Form.Item>
+
+          <Form.Item
             name="note"
             label="Lời nhắn"
           >
@@ -889,6 +1168,43 @@ const PlaymateDetail: React.FC = () => {
               </Button>
               <Button type="primary" htmlType="submit" loading={submitting}>
                 Đăng ký
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+      
+      {/* Chat Group Title Modal */}
+      <Modal
+        title="Tạo nhóm chat"
+        open={chatTitleModalVisible}
+        onCancel={() => setChatTitleModalVisible(false)}
+        footer={null}
+        destroyOnClose
+      >
+        <Form
+          form={titleForm}
+          layout="vertical"
+          onFinish={handleCreateChatGroup}
+          initialValues={{
+            chatTitle: chatTitle
+          }}
+        >
+          <Form.Item
+            name="chatTitle"
+            label="Tên nhóm chat"
+            rules={[{ required: true, message: 'Vui lòng nhập tên nhóm!' }]}
+          >
+            <Input placeholder="Nhập tên nhóm chat" />
+          </Form.Item>
+          
+          <Form.Item className="mb-0">
+            <Space className="w-full justify-end">
+              <Button onClick={() => setChatTitleModalVisible(false)}>
+                Hủy
+              </Button>
+              <Button type="primary" htmlType="submit" loading={creatingChat}>
+                Tạo nhóm
               </Button>
             </Space>
           </Form.Item>

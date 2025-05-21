@@ -223,7 +223,7 @@ const BookingStepPayment: React.FC<BookingStepPaymentProps> = ({
       <Form
         form={form}
         layout="vertical"
-        initialValues={{...formData, refundedPoint: 0, voucherDiscount: 0}}
+        initialValues={{...formData, refundedPoint: 0, voucherDiscount: 0, paymentMethod: 'vnpay'}}
       >
         {/* Hidden field to store voucher discount amount */}
         <Form.Item name="voucherDiscount" hidden>
@@ -236,7 +236,7 @@ const BookingStepPayment: React.FC<BookingStepPaymentProps> = ({
           rules={[{ required: true, message: 'Vui lòng chọn phương thức thanh toán' }]}
 
         >
-          <Radio.Group className="w-full">
+          <Radio.Group className="w-full" defaultValue="vnpay">
             <Space direction="vertical" className="w-full">
               {/* <Radio value="banking" className="w-full">
                 <Card className="w-full mb-2 cursor-pointer hover:bg-gray-50">

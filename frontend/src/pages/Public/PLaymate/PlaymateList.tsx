@@ -105,8 +105,8 @@ const PlaymateList: React.FC = () => {
           search.participants.filter(p => p.status === 'accepted' || p.status === 'pending').length : 0;
         
         // Xác định bài đăng đã đủ người hay chưa
-        const isFullyBooked = search.maximumParticipants && 
-          currentCount >= search.maximumParticipants;
+        const isFullyBooked = search.numberOfParticipants && 
+          currentCount >= search.numberOfParticipants;
         
         // Xác định bài đăng đã quá hạn hay chưa
         const isPastDate = new Date(search.date) < new Date();
@@ -255,8 +255,8 @@ const PlaymateList: React.FC = () => {
       'accepted+pending:', search.participants?.filter(p => p.status === 'accepted' || p.status === 'pending').length || 0);
     
     // Determine if the playmate has reached maximum participants
-    const isFullyBooked = search.maximumParticipants && 
-      currentCount >= search.maximumParticipants;
+    const isFullyBooked = search.numberOfParticipants && 
+      currentCount >= search.numberOfParticipants;
     
     // Check if the playmate date has passed
     const isPastDate = new Date(search.date) < new Date();
@@ -348,7 +348,7 @@ const PlaymateList: React.FC = () => {
               <div className="ml-2">
                 <Text type="secondary" className="block text-xs">{search.playmateSearchType === 'group' ? 'Nhóm đăng ký tham gia:' : 'Người đăng ký tham gia:'}</Text>
                 <Text className="block" style={{ color: '#fa8c16' }}>
-                  {`${currentCount}/${search.maximumParticipants} ${participantText}`}
+                  {`${currentCount}/${search.numberOfParticipants} ${participantText}`}
                 </Text>
               </div>
             </div>

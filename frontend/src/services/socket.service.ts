@@ -75,7 +75,7 @@ export class SocketService {
 
       // Tạo kết nối mới
       console.log('Creating new socket connection');
-      this.socket = io(import.meta.env.VITE_API_URL + '/ws/message', {
+      this.socket = io('http://localhost:3000/ws/message', {
         extraHeaders: {
           Authorization: token
         },
