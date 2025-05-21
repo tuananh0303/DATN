@@ -69,6 +69,7 @@ export interface Participant {
   playerId: string;
   status: ApplicationStatus;
   skillLevel: SkillLevel;
+  position?: string;
   note?: string;
   player?: {
     id: string;
@@ -92,7 +93,7 @@ export interface ApiPlaymateSearch {
   title: string;
   imagesUrl: string[];
   bookingSlot: BookingSlot;
-  desciption?: string;
+  description?: string;
   additionalInfo?: string;
   costType: string;
   totalCost?: number;
@@ -100,10 +101,10 @@ export interface ApiPlaymateSearch {
   femaleCost?: number;
   detailOfCost?: string;
   isTeam: boolean;
-  minParticipant: number;
-  maxParticipant: number;
+  numberOfParticipants: number;  
   genderPreference: string;
   skillLevel: string;
+  positions: string[];
   participants: Participant[];
   createdAt: string;
 }
@@ -137,8 +138,8 @@ export interface PlaymateSearch {
   playmateSearchType: PlaymateSearchType;
   
   // Thông tin người tham gia
-  requiredParticipants: number; // Số người cần thiết
-  maximumParticipants?: number; // Số người tối đa
+  numberOfParticipants: number; // Số người cần thiết
+  positions: string[];
   currentParticipants?: number; // Số người đã đăng ký
   genderPreference?: GenderPreference;
   
@@ -177,6 +178,7 @@ export interface PlaymateApplication {
   note?: string;
   message?: string;
   skillLevel?: SkillLevel;
+  position?: string;
       
   // Thông tin trạng thái
   status: ApplicationStatus;
@@ -217,8 +219,8 @@ export interface PlaymateFormData {
 
   // Thông tin người tham gia
   isTeam: boolean;
-  minParticipant: number;
-  maxParticipant?: number;
+  numberOfParticipants: number;
+  positions: string[];
   genderPreference: string;
     
   // Thông tin trình độ kỹ năng
@@ -232,6 +234,7 @@ export interface PlaymateFormData {
 export interface PlaymateApplicationFormData {
   playmateId: string;
   skillLevel: string;
+  position: string;
   note?: string;
 }
 
@@ -248,8 +251,8 @@ export interface UpdatePlaymateFormData {
   femaleCost?: number;
   detailOfCost?: string;
   isTeam?: boolean;
-  minParticipant?: number;
-  maxParticipant?: number;
+  numberOfParticipants?: number;
+  positions?: string[];
   genderPreference?: string;
   skillLevel?: string;
   additionalInfor?: string;
@@ -299,7 +302,7 @@ export const mapApiToPlaymateSearch = (api: ApiPlaymateSearch): PlaymateSearch =
         email: api.bookingSlot.booking.player?.email
       },
       title: api.title,
-      description: api.desciption || undefined,
+      description: api.description || undefined,
       image: api.imagesUrl,
       requiredSkillLevel: skillLevel,
       location: api.additionalInfo || undefined,
@@ -308,8 +311,8 @@ export const mapApiToPlaymateSearch = (api: ApiPlaymateSearch): PlaymateSearch =
       endTime: api.bookingSlot.booking.endTime,
       communicationDescription: api.additionalInfo,
       playmateSearchType: api.isTeam ? 'group' : 'individual',
-      requiredParticipants: api.minParticipant,
-      maximumParticipants: api.maxParticipant,
+      numberOfParticipants: api.numberOfParticipants,
+      positions: api.positions,
       currentParticipants: api.participants.filter(p => p.status === 'accepted' || p.status === 'pending').length,
       genderPreference: genderPref,
       price: api.costType === 'total' ? api.totalCost : undefined,
@@ -338,7 +341,8 @@ export const mapApiToPlaymateSearch = (api: ApiPlaymateSearch): PlaymateSearch =
       startTime: '00:00:00',
       endTime: '00:00:00',
       playmateSearchType: 'individual',
-      requiredParticipants: 1,
+      numberOfParticipants: 1,
+      positions: [],
       status: true,
       createdAt: new Date().toISOString()
     };

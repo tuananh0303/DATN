@@ -228,7 +228,7 @@ const BookingStepServices: React.FC<BookingStepServicesProps> = ({
   };
 
   return (
-    <Card className="shadow-md">
+    <>
       <Row gutter={[24, 24]}>
         <Col span={24}>
           <div className="flex justify-between items-center flex-wrap mb-4">
@@ -328,7 +328,7 @@ const BookingStepServices: React.FC<BookingStepServicesProps> = ({
                    
         </Col>
       </Row>
-    </Card>
+    </>
   );
 };
 

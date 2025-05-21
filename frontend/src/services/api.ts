@@ -1,5 +1,7 @@
 import axios from 'axios';
 
+// URL cơ sở của API backend
+// const BASE_URL = 'http://localhost:3000';
 
 /**
  * Tạo một Axios instance với cấu hình mặc định

@@ -189,11 +189,20 @@ const ChatWidget: React.FC = () => {
                 onClick={() => handleConversationClick(conversation.id)}
               >
                 <Badge count={displayUnreadCount} size="small" className="badge-notify">
-                  <Avatar src={otherParticipant?.person?.avatarUrl} size={40} icon={<UserOutlined />} />
+                  <Avatar 
+                    src={conversation.isGroup ? null : otherParticipant?.person?.avatarUrl} 
+                    size={40} 
+                    icon={<UserOutlined />} 
+                    style={conversation.isGroup ? { backgroundColor: '#1890ff' } : {}}
+                  />
                 </Badge>
                 <div className="chat-item-content">
                   <div className="chat-item-header">
-                    <span className="chat-item-name">{otherParticipant?.person?.name || 'Không xác định'}</span>
+                    <span className="chat-item-name">
+                      {conversation.isGroup 
+                        ? (conversation.title || 'Nhóm chat') 
+                        : (otherParticipant?.person?.name || 'Không xác định')}
+                    </span>
                     <span className="chat-item-time">
                       {lastMessage ? new Date(lastMessage.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}
                     </span>
@@ -202,6 +211,9 @@ const ChatWidget: React.FC = () => {
                     {lastMessage ? (
                       <div className="truncate-text">
                         {lastMessage.sender.id === user?.id && <span className="message-status-inline"><CheckOutlined /></span>}
+                        {conversation.isGroup && lastMessage.sender.id !== user?.id && (
+                          <span className="sender-name-preview">{lastMessage.sender.name.split(' ').pop()}: </span>
+                        )}
                         {lastMessage.content}
                       </div>
                     ) : 'Bắt đầu cuộc trò chuyện'}
@@ -248,17 +260,22 @@ const ChatWidget: React.FC = () => {
             )}
             <div className="conversation-info">
               <Avatar 
-                src={otherParticipant?.person?.avatarUrl} 
+                src={currentConversation?.isGroup ? null : otherParticipant?.person?.avatarUrl} 
                 size="small" 
                 icon={<UserOutlined />} 
-                className="mr-2" 
+                className="mr-2"
+                style={currentConversation?.isGroup ? { backgroundColor: '#1890ff' } : {}}
               />
               <div>
                 <span className="conversation-name">
-                  {otherParticipant?.person?.name || 'Không xác định'}
+                  {currentConversation?.isGroup 
+                    ? (currentConversation.title || 'Nhóm chat') 
+                    : (otherParticipant?.person?.name || 'Không xác định')}
                 </span>
                 <span className={`conversation-status ${isOnline ? 'online' : 'offline'}`}>
-                  {isOnline ? 'Đang hoạt động' : 'Không hoạt động'}
+                  {currentConversation?.isGroup 
+                    ? `${currentConversation.participants.length} thành viên` 
+                    : (isOnline ? 'Đang hoạt động' : 'Không hoạt động')}
                 </span>
               </div>
             </div>

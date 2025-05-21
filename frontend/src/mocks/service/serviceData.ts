@@ -45,7 +45,7 @@ export const mockServices: Service[] = [
       name: 'Bóng rổ'
     },
     unit: 'chai',
-    type: 'food',
+    type: 'other',
     bookedCountOnDate: 10,
     facilityId: '3',
     bookedCount: 210,

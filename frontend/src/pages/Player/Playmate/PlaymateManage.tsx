@@ -137,8 +137,8 @@ const PlaymateManage: React.FC = () => {
     const isPastDate = new Date(search.date) < new Date();
     
     // Determine if the playmate has reached maximum participants
-    const isFullyBooked = search.maximumParticipants && 
-      currentCount >= search.maximumParticipants;
+    const isFullyBooked = search.numberOfParticipants && 
+      currentCount >= search.numberOfParticipants;
     
     // Overall status determination (open or closed)
     const isOpen = search.status && !isPastDate && !isFullyBooked;
@@ -226,7 +226,7 @@ const PlaymateManage: React.FC = () => {
                   {search.playmateSearchType === 'group' ? 'Nhóm đăng ký tham gia:' : 'Người đăng ký tham gia:'}
                 </Text>
                 <Text className="block" style={{ color: '#fa8c16' }}>
-                {`${currentCount}/${search.maximumParticipants} ${participantText}`}
+                  {`${currentCount}/${search.numberOfParticipants} ${participantText}`}
                 </Text>
               </div>
             </div>
@@ -242,10 +242,10 @@ const PlaymateManage: React.FC = () => {
           </div>
           
           {/* Pending applications section */}          
-            <div className="pending-applications mt-2 mb-2">
-              <Divider className="my-2" />
-              <Text strong className="text-sm">Đơn đăng ký đang chờ: <span className="text-red-500 font-bold">{pendingApplications}</span></Text>              
-            </div>          
+          <div className="pending-applications mt-2 mb-2">
+            <Divider className="my-2" />
+            <Text strong className="text-sm">Đơn đăng ký đang chờ: <span className="text-red-500 font-bold">{pendingApplications}</span></Text>              
+          </div>          
           
           <div className="playmate-card-footer">           
             <Button

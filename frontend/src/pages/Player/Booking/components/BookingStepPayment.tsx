@@ -219,11 +219,11 @@ const BookingStepPayment: React.FC<BookingStepPaymentProps> = ({
   };
 
   return (
-    <Card className="shadow-md">
+    <>
       <Form
         form={form}
         layout="vertical"
-        initialValues={{...formData, refundedPoint: 0, voucherDiscount: 0}}
+        initialValues={{...formData, refundedPoint: 0, voucherDiscount: 0, paymentMethod: 'vnpay'}}
       >
         {/* Hidden field to store voucher discount amount */}
         <Form.Item name="voucherDiscount" hidden>
@@ -236,7 +236,7 @@ const BookingStepPayment: React.FC<BookingStepPaymentProps> = ({
           rules={[{ required: true, message: 'Vui lòng chọn phương thức thanh toán' }]}
 
         >
-          <Radio.Group className="w-full">
+          <Radio.Group className="w-full" defaultValue="vnpay">
             <Space direction="vertical" className="w-full">
               {/* <Radio value="banking" className="w-full">
                 <Card className="w-full mb-2 cursor-pointer hover:bg-gray-50">
@@ -415,70 +415,9 @@ const BookingStepPayment: React.FC<BookingStepPaymentProps> = ({
         refundedPoint={Number(refundedPointsInput) || 0}
         formatCurrency={formatCurrency}
         calculateTotalPrice={calculateTotalPrice}
-      />
+      />      
       
-      {/* <Divider /> */}
-      
-      {/* <div className="bg-gray-50 p-4 rounded-lg">
-        <Title level={5} className="mb-4">Thông tin đặt sân</Title>
-        
-        <Row gutter={[16, 16]}>
-          <Col xs={24} md={12}>
-            <div className="mb-2">
-              <Text type="secondary">Loại hình thể thao:</Text>
-              <div>{sports?.find(s => s.id === formData.sportId)?.name || '-'}</div>
-            </div>
-            
-            <div className="mb-2">
-              <Text type="secondary">Ngày đặt sân:</Text>
-              <div>
-                {formData.isRecurring ? (
-                  <div>
-                    <div>Đặt sân định kỳ</div>
-                    <div className="text-sm text-gray-500">
-                      {selectedDates.length} ngày đã chọn
-                    </div>
-                  </div>
-                ) : (
-                  formData.date ? dayjs(formData.date).format('DD/MM/YYYY') : '-'
-                )}
-              </div>
-            </div>
-            
-            <div className="mb-2">
-              <Text type="secondary">Thời gian:</Text>
-              <div>
-                {formData.timeRange ? 
-                  `${dayjs(formData.timeRange[0]).format('HH:mm')} - ${dayjs(formData.timeRange[1]).format('HH:mm')}` 
-                  : '-'
-                }
-              </div>
-            </div>
-          </Col>
-          
-          <Col xs={24} md={12}>
-            <div className="mb-2">
-              <Text type="secondary">Loại sân:</Text>
-              <div>
-                {formData.fieldGroupId ? 
-                  fieldGroups.find(g => String(g.id) === String(formData.fieldGroupId))?.name || '-' 
-                  : '-'
-                }
-              </div>
-            </div>
-            
-            <div className="mb-2">
-              <Text type="secondary">Phương thức thanh toán:</Text>
-              <div>
-                {formData.paymentMethod === 'banking' ? 'Chuyển khoản ngân hàng' :
-                 formData.paymentMethod === 'momo' ? 'Ví MoMo' :
-                 formData.paymentMethod === 'vnpay' ? 'VNPay' : '-'}
-              </div>
-            </div>
-          </Col>
-        </Row>
-      </div> */}
-    </Card>
+    </>
   );
 };
 

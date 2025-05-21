@@ -367,7 +367,7 @@ const BookingStepInfo: React.FC<BookingStepInfoProps> = ({
   };
 
   return (
-    <Card className="shadow-md">
+    
       <Form
         form={form}
         layout="vertical"
@@ -536,7 +536,6 @@ const BookingStepInfo: React.FC<BookingStepInfoProps> = ({
           <input type="checkbox" />
         </Form.Item>
       </Form>
-    </Card>
   );
 };
 

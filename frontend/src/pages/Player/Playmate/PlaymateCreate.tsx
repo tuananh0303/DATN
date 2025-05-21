@@ -144,10 +144,10 @@ const PlaymateCreate: React.FC = () => {
         femaleCost: formValues.femaleCost,
         detailOfCost: formValues.detailOfCost,
         isTeam: formValues.isTeam,
-        minParticipant: formValues.minParticipant,
-        maxParticipant: formValues.maxParticipant,
+        numberOfParticipants: formValues.numberOfParticipants,
         genderPreference: formValues.genderPreference,
-        skillLevel: formValues.skillLevel
+        skillLevel: formValues.skillLevel,
+        positions: formValues.positions || []
       };
       
       // Create playmate search
@@ -276,9 +276,10 @@ const PlaymateCreate: React.FC = () => {
                   bookingSlotId: undefined,
                   costType: 'total',
                   isTeam: false,
-                  minParticipant: 2,
+                  numberOfParticipants: 1,
                   genderPreference: 'any',
-                  skillLevel: 'any'
+                  skillLevel: 'any',
+                  positions: ['']
                 }}
               >
                 <Card 
@@ -527,7 +528,7 @@ const PlaymateCreate: React.FC = () => {
                     <Col xs={24} md={12}>
                       <Form.Item
                         label={<span className="required-field">Số người/đội cần thiết</span>}
-                        name="minParticipant"
+                        name="numberOfParticipants"
                         rules={[{ required: true, message: 'Vui lòng nhập số người/đội cần thiết!' }]}
                       >
                         <InputNumber 
@@ -538,22 +539,68 @@ const PlaymateCreate: React.FC = () => {
                         />
                       </Form.Item>
                     </Col>
-                    <Col xs={24} md={12}>
-                      <Form.Item
-                        label="Số người/đội tối đa"
-                        name="maxParticipant"
-                        tooltip="Để trống nếu không giới hạn"
-                      >
-                        <InputNumber 
-                          min={1} 
-                          max={100} 
-                          className="w-full" 
-                          placeholder="Số người tối đa (nếu có)"
-                        />
-                      </Form.Item>
-                    </Col>
                   </Row>
                 </Card>
+
+                {/* Positions section */}
+                <Form.List name="positions">
+                  {(fields, { add, remove }) => (
+                    <>
+                      <div className="mb-2">
+                        <Text strong>Các vị trí cần người tham gia</Text>
+                        <Text type="secondary" className="ml-2">(Nhập các vị trí mà bạn cần người tham gia)</Text>
+                      </div>
+                      
+                      {fields.map((field, index) => (
+                        <Form.Item
+                          required={false}
+                          key={field.key}
+                          className="mb-2"
+                        >
+                          <div className="flex items-center">
+                            <Form.Item
+                              {...field}
+                              validateTrigger={['onChange', 'onBlur']}
+                              rules={[
+                                { 
+                                  required: true, 
+                                  message: 'Vui lòng nhập vị trí hoặc xóa trường này' 
+                                }
+                              ]}
+                              noStyle
+                            >
+                              <Input 
+                                placeholder={`Vị trí ${index + 1}`} 
+                                style={{ width: '90%' }} 
+                              />
+                            </Form.Item>
+                            {fields.length > 0 ? (
+                              <Button
+                                danger
+                                type="text"
+                                className="ml-2"
+                                onClick={() => remove(field.name)}
+                              >
+                                Xóa
+                              </Button>
+                            ) : null}
+                          </div>
+                        </Form.Item>
+                      ))}
+                      
+                      <Form.Item>
+                        <Button 
+                          type="dashed" 
+                          onClick={() => add()} 
+                          className="w-full"
+                          icon={<PlusOutlined />}
+                        >
+                          Thêm vị trí
+                        </Button>
+                      </Form.Item>
+                    </>
+                  )}
+                </Form.List>
 
                 <Card 
                   title={
