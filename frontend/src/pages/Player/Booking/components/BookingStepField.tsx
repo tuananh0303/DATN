@@ -12,6 +12,7 @@ import {
 import dayjs from 'dayjs';
 import { getSportNameInVietnamese } from '@/utils/translateSport';
 import BookingPaymentSummary from './BookingPaymentSummary';
+import './fieldStyles.css';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -165,6 +166,44 @@ const BookingStepField: React.FC<BookingStepFieldProps> = ({
       }
     }
   }, [selectedFieldGroup, form]);
+
+  // Thêm effect để lọc ra các ngày không có sân khả dụng và cập nhật vào form
+  useEffect(() => {
+    if (selectedFieldGroup && selectedFieldGroup.bookingSlot) {
+      // Lọc ra các ngày có sân khả dụng
+      const validSelections: FieldSelection = {};
+      const validDates: string[] = [];
+      
+      // Kiểm tra từng ngày trong booking slot
+      selectedFieldGroup.bookingSlot.forEach(slot => {
+        const dateStr = dayjs(slot.date).format('YYYY-MM-DD');
+        const hasAvailableField = slot.fields.some(field => field.status === 'active');
+        
+        // Nếu ngày này có sân khả dụng, giữ lại trong validSelections
+        if (hasAvailableField) {
+          validDates.push(dateStr);
+          
+          // Nếu đã có lựa chọn trước đó, giữ nguyên
+          if (fieldSelections[dateStr]) {
+            validSelections[dateStr] = fieldSelections[dateStr];
+          } else {
+            // Nếu chưa có lựa chọn, chọn sân đầu tiên có status active
+            const firstActiveField = slot.fields.find(field => field.status === 'active');
+            if (firstActiveField) {
+              validSelections[dateStr] = firstActiveField.id;
+            }
+          }
+        }
+      });
+      
+      // Cập nhật validFieldSelections vào form
+      form.setFieldValue('validFieldSelections', validSelections);
+      form.setFieldValue('validDates', validDates);
+      
+      console.log('Valid field selections:', validSelections);
+      console.log('Valid dates:', validDates);
+    }
+  }, [selectedFieldGroup, fieldSelections, form]);
 
   // Hàm helper để định dạng giờ từ "HH:MM:SS" sang "HH:MM"
   const formatTimeString = (timeStr: string | null | undefined): string => {
@@ -469,6 +508,8 @@ const BookingStepField: React.FC<BookingStepFieldProps> = ({
             ...formData,
             fieldId: formData.fieldId || "",
             fieldSelections: {},
+            validFieldSelections: {},
+            validDates: []
           }}
         >
           <Form.Item 
@@ -482,6 +523,22 @@ const BookingStepField: React.FC<BookingStepFieldProps> = ({
           {/* Hidden field to store field selections for all dates */}
           <Form.Item 
             name="fieldSelections" 
+            style={{ display: 'none' }}
+          >
+            <input type="hidden" />
+          </Form.Item>
+          
+          {/* Hidden field to store valid field selections (only dates with available fields) */}
+          <Form.Item 
+            name="validFieldSelections" 
+            style={{ display: 'none' }}
+          >
+            <input type="hidden" />
+          </Form.Item>
+          
+          {/* Hidden field to store valid dates (only dates with available fields) */}
+          <Form.Item 
+            name="validDates" 
             style={{ display: 'none' }}
           >
             <input type="hidden" />
@@ -503,18 +560,22 @@ const BookingStepField: React.FC<BookingStepFieldProps> = ({
                 >
                   <Space direction="vertical" className="w-full" style={{ width: '100%' }}>
                     {fieldGroups.map(group => (
-                      <Radio key={group.id} value={group.id} className="w-full" style={{ width: '100%' }}>
+                      <Radio key={group.id} value={group.id} className="w-full custom-radio-card" style={{ width: '100%' }}>
                         <Card 
                           className={`w-full mb-2 cursor-pointer hover:bg-gray-50 transition-all ${
                             selectedFieldGroup && selectedFieldGroup.id === group.id 
-                              ? 'border-blue-500 shadow-sm' 
+                              ? 'border-blue-500 shadow-md bg-blue-50' 
                               : 'border-gray-200'
                           }`}
-                          style={{ padding: '12px', width: '100%' }}
+                          style={{ 
+                            padding: '12px', 
+                            width: '100%',
+                            borderWidth: selectedFieldGroup && selectedFieldGroup.id === group.id ? '2px' : '1px'
+                          }}
                         >
                           <div className="flex justify-between items-start w-full pr-10">
                             <div className="w-full flex flex-col gap-1">
-                              <Text strong className="text-lg">{group.name}</Text>
+                              <Text strong className={`text-lg ${selectedFieldGroup && selectedFieldGroup.id === group.id ? 'text-blue-700' : ''}`}>{group.name}</Text>
                               <div className="text-sm text-gray-600 mt-1 flex flex-col gap-1">
                                 <div className="flex items-center">
                                   <EnvironmentOutlined className="mr-1" />
@@ -544,6 +605,11 @@ const BookingStepField: React.FC<BookingStepFieldProps> = ({
                               </div>
                             </div>                            
                           </div>
+                          {selectedFieldGroup && selectedFieldGroup.id === group.id && (
+                            <div className="absolute top-2 right-2">
+                              <CheckCircleOutlined className="text-blue-500 text-lg" />
+                            </div>
+                          )}
                         </Card>
                       </Radio>
                     ))}

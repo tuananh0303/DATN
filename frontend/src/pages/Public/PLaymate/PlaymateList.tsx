@@ -33,7 +33,6 @@ import {
   message,
   Pagination,
   Tabs,
-  Badge
 } from 'antd';
 import {
   PlusOutlined,
@@ -547,13 +546,13 @@ const PlaymateList: React.FC = () => {
           <div>
             <Title level={2} className="m-0 text-xl md:text-2xl lg:text-3xl">
               Tìm bạn chơi
-              {isConnected && (
+              {/* {isConnected && (
                 <Badge 
                   status="processing" 
                   text={<span className="ml-2 text-sm text-green-600">Realtime</span>} 
                   style={{ marginLeft: 8 }}
                 />
-              )}
+              )} */}
             </Title>
             <Text type="secondary">
               Tìm kiếm bạn chơi thể thao cùng sở thích

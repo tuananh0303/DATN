@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Card, Radio, Space, Divider, Typography, FormInstance, Select, Spin, Empty, message, InputNumber, Button } from 'antd';
+import { Form, Card, Radio, Space, Divider, Typography, FormInstance, Select, Spin, Empty, message, InputNumber, Button, Tag } from 'antd';
 import { 
   CreditCardOutlined, TagOutlined, InfoCircleOutlined, 
   WalletFilled
@@ -329,6 +329,17 @@ const BookingStepPayment: React.FC<BookingStepPaymentProps> = ({
                         </span>
                         <span>Còn lại: {voucher.remain}</span>
                       </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        <div className="flex justify-between">
+                          <span>Đơn tối thiểu: {formatCurrency(voucher.minPrice)}</span>
+                          {voucher.voucherType === 'percent' && voucher.maxDiscount > 0 && (
+                            <span>Giảm tối đa: {formatCurrency(voucher.maxDiscount)}</span>
+                          )}
+                        </div>
+                        <div className="mt-1">
+                          Hiệu lực: {dayjs(voucher.startDate).format('DD/MM/YYYY')} - {dayjs(voucher.endDate).format('DD/MM/YYYY')}
+                        </div>
+                      </div>
                     </div>
                   </Option>
                 ))}
@@ -339,6 +350,61 @@ const BookingStepPayment: React.FC<BookingStepPaymentProps> = ({
             <div className="mt-1 text-xs text-gray-500">
               <InfoCircleOutlined className="mr-1" />
               Chỉ hiển thị voucher phù hợp với đơn hàng của bạn
+            </div>
+          )}
+          
+          {/* Hiển thị thông tin chi tiết voucher đã chọn */}
+          {formData.voucherId && vouchers.length > 0 && (
+            <div className="mt-3 p-3 bg-orange-50 rounded-md border border-orange-200">
+              {(() => {
+                const selectedVoucher = vouchers.find(v => v.id === formData.voucherId);
+                if (!selectedVoucher) return null;
+                
+                return (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <Text strong className="text-orange-600">{selectedVoucher.name}</Text>
+                      <Tag color="orange">
+                        {selectedVoucher.voucherType === 'cash' 
+                          ? `Giảm ${formatCurrency(selectedVoucher.discount)}` 
+                          : `Giảm ${selectedVoucher.discount}%`}
+                      </Tag>
+                    </div>
+                    
+                    <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <span className="text-gray-500">Đơn tối thiểu:</span>{' '}
+                        <span className="font-medium">{formatCurrency(selectedVoucher.minPrice)}</span>
+                      </div>
+                      
+                      {selectedVoucher.voucherType === 'percent' && selectedVoucher.maxDiscount > 0 && (
+                        <div>
+                          <span className="text-gray-500">Giảm tối đa:</span>{' '}
+                          <span className="font-medium">{formatCurrency(selectedVoucher.maxDiscount)}</span>
+                        </div>
+                      )}
+                      
+                      <div>
+                        <span className="text-gray-500">Còn lại:</span>{' '}
+                        <span className="font-medium">{selectedVoucher.remain}</span>
+                      </div>
+                      
+                      <div>
+                        <span className="text-gray-500">Hiệu lực đến:</span>{' '}
+                        <span className="font-medium">{dayjs(selectedVoucher.endDate).format('DD/MM/YYYY')}</span>
+                      </div>
+                    </div>
+                    
+                    {discountAmount > 0 && (
+                      <div className="mt-2 text-right">
+                        <Text type="success" strong>
+                          Giảm giá: -{formatCurrency(discountAmount)}
+                        </Text>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           )}
         </Form.Item>
