@@ -522,6 +522,12 @@ const BookingPage: React.FC = () => {
       const fieldSelections = form.getFieldValue('fieldSelections') || {};
       console.log('Field selections from form:', fieldSelections);
       
+      // Lấy validFieldSelections và validDates để chỉ gửi những ngày có sân khả dụng
+      const validFieldSelections = form.getFieldValue('validFieldSelections') || {};
+      const validDates = form.getFieldValue('validDates') || [];
+      console.log('Valid field selections:', validFieldSelections);
+      console.log('Valid dates:', validDates);
+      
       // Get fallback fieldId
       const fallbackFieldId = form.getFieldValue('fieldId');
       if (!fallbackFieldId) {
@@ -536,18 +542,31 @@ const BookingPage: React.FC = () => {
               console.log('Using first active field as fallback:', firstActiveField.id);
               
               // Prepare booking slots with per-date field selection or fallback
-              const bookingSlots = selectedDates.map(date => {
-                const dateStr = date.format('YYYY-MM-DD');
-                // Use the field selected for this date, or the fallback
-                const fieldId = fieldSelections[dateStr] ? Number(fieldSelections[dateStr]) : firstActiveField.id;
-                
-                return {
-                  date: dateStr,
-                  fieldId: fieldId
-                };
-              });
+              // Chỉ gửi những ngày có sân khả dụng
+              const bookingSlots = selectedDates
+                .filter(date => {
+                  const dateStr = date.format('YYYY-MM-DD');
+                  return validDates.includes(dateStr);
+                })
+                .map(date => {
+                  const dateStr = date.format('YYYY-MM-DD');
+                  // Sử dụng validFieldSelections nếu có
+                  const fieldId = validFieldSelections[dateStr] ? Number(validFieldSelections[dateStr]) : firstActiveField.id;
+                  
+                  return {
+                    date: dateStr,
+                    fieldId: fieldId
+                  };
+                });
               
               console.log("Booking slots with per-date selection:", bookingSlots);
+              
+              // Nếu không có ngày nào có sân khả dụng
+              if (bookingSlots.length === 0) {
+                message.error('Không có ngày nào có sân khả dụng. Vui lòng chọn ngày khác.');
+                setLoading(false);
+                return null;
+              }
               
               // Create draft booking
               const response = await bookingService.createDraftBooking(
@@ -575,16 +594,24 @@ const BookingPage: React.FC = () => {
       }
       
       // Prepare booking slots with per-date field selection
-      const bookingSlots = selectedDates.map(date => {
-        const dateStr = date.format('YYYY-MM-DD');
-        // Use the specific field selected for this date, or fallback to the default
-        const fieldId = fieldSelections[dateStr] ? Number(fieldSelections[dateStr]) : Number(fallbackFieldId);
-        
-        return {
-          date: dateStr,
-          fieldId: fieldId
-        };
-      });
+      // Chỉ gửi những ngày có sân khả dụng
+      const bookingSlots = selectedDates
+        .filter(date => {
+          const dateStr = date.format('YYYY-MM-DD');
+          return validDates.includes(dateStr);
+        })
+        .map(date => {
+          const dateStr = date.format('YYYY-MM-DD');
+          // Sử dụng validFieldSelections nếu có, nếu không thì dùng fieldSelections hoặc fallback
+          const fieldId = validFieldSelections[dateStr] 
+            ? Number(validFieldSelections[dateStr]) 
+            : (fieldSelections[dateStr] ? Number(fieldSelections[dateStr]) : Number(fallbackFieldId));
+          
+          return {
+            date: dateStr,
+            fieldId: fieldId
+          };
+        });
       
       console.log("Booking slots with per-date selection:", bookingSlots);
       console.log("Request body:", {
@@ -593,6 +620,13 @@ const BookingPage: React.FC = () => {
         bookingSlots,
         sportId: formData.sportId
       });
+      
+      // Nếu không có ngày nào có sân khả dụng
+      if (bookingSlots.length === 0) {
+        message.error('Không có ngày nào có sân khả dụng. Vui lòng chọn ngày khác.');
+        setLoading(false);
+        return null;
+      }
       
       // Create draft booking
       const response = await bookingService.createDraftBooking(
@@ -652,6 +686,12 @@ const BookingPage: React.FC = () => {
       const fieldSelections = form.getFieldValue('fieldSelections') || {};
       console.log('Field selections from form:', fieldSelections);
       
+      // Lấy validFieldSelections và validDates để chỉ gửi những ngày có sân khả dụng
+      const validFieldSelections = form.getFieldValue('validFieldSelections') || {};
+      const validDates = form.getFieldValue('validDates') || [];
+      console.log('Valid field selections:', validFieldSelections);
+      console.log('Valid dates:', validDates);
+      
       // Ensure fallback fieldId is available if needed
       const fallbackFieldId = Number(formData.fieldId);
       if (!fallbackFieldId || isNaN(fallbackFieldId)) {
@@ -669,18 +709,33 @@ const BookingPage: React.FC = () => {
       }
       
       // Prepare booking slots - now using the specific field for each date
-      const bookingSlots = selectedDates.map(date => {
-        const dateStr = date.format('YYYY-MM-DD');
-        // Use the specific field selected for this date, or fallback to the default
-        const fieldId = fieldSelections[dateStr] ? Number(fieldSelections[dateStr]) : fallbackFieldId;
-        
-        return {
-          date: dateStr,
-          fieldId: fieldId
-        };
-      });
+      // Chỉ gửi những ngày có sân khả dụng
+      const bookingSlots = selectedDates
+        .filter(date => {
+          const dateStr = date.format('YYYY-MM-DD');
+          return validDates.includes(dateStr);
+        })
+        .map(date => {
+          const dateStr = date.format('YYYY-MM-DD');
+          // Sử dụng validFieldSelections nếu có, nếu không thì dùng fieldSelections hoặc fallback
+          const fieldId = validFieldSelections[dateStr] 
+            ? Number(validFieldSelections[dateStr]) 
+            : (fieldSelections[dateStr] ? Number(fieldSelections[dateStr]) : fallbackFieldId);
+          
+          return {
+            date: dateStr,
+            fieldId: fieldId
+          };
+        });
       
       console.log("Updated booking slots:", bookingSlots);
+      
+      // Nếu không có ngày nào có sân khả dụng
+      if (bookingSlots.length === 0) {
+        message.error('Không có ngày nào có sân khả dụng. Vui lòng chọn ngày khác.');
+        setLoading(false);
+        return false;
+      }
       
       // Update booking slots
       const response = await bookingService.updateBookingSlot(bookingId, bookingSlots);

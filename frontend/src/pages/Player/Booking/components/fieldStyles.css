@@ -1,0 +1,24 @@
+/* Custom styles for radio cards in BookingStepField */
+.custom-radio-card .ant-radio {
+  display: none !important; /* Ẩn radio tròn */
+}
+
+.custom-radio-card .ant-radio + * {
+  padding-left: 0; /* Xóa padding mặc định khi có radio */
+  width: 100%;
+}
+
+.custom-radio-card .ant-card {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.custom-radio-card .ant-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.custom-radio-card .ant-radio-checked + * .ant-card {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+} 

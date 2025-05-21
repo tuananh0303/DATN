@@ -34,6 +34,7 @@ import {
   EditOutlined,
   EyeOutlined,
 } from '@ant-design/icons';
+import PlaymateEdit from './PlaymateEdit';
 
 const { Title, Text } = Typography;
 
@@ -47,6 +48,10 @@ const PlaymateManage: React.FC = () => {
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(6); // 6 items per page (2 rows of 3)
+
+  // Edit modal states
+  const [editModalVisible, setEditModalVisible] = useState<boolean>(false);
+  const [selectedPlaymateId, setSelectedPlaymateId] = useState<string>('');
 
   useEffect(() => {
     // Fetch data based on active tab
@@ -89,8 +94,23 @@ const PlaymateManage: React.FC = () => {
     navigate(`/user/playmate/${playmateId}`);
   };
   
+  // Handle edit button click
+  const handleEditPlaymate = (playmateId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedPlaymateId(playmateId);
+    setEditModalVisible(true);
+  };
 
-  
+  // Handle edit modal close
+  const handleEditModalClose = () => {
+    setEditModalVisible(false);
+  };
+
+  // Handle edit success
+  const handleEditSuccess = () => {
+    // Refresh data
+    fetchData(activeTab);
+  };
 
   const formatDate = (dateStr: string) => {
     try {
@@ -241,22 +261,30 @@ const PlaymateManage: React.FC = () => {
             </div>
           </div>
           
-          {/* Pending applications section */}          
+          {/* Pending applications section */}
           <div className="pending-applications mt-2 mb-2">
             <Divider className="my-2" />
             <Text strong className="text-sm">Đơn đăng ký đang chờ: <span className="text-red-500 font-bold">{pendingApplications}</span></Text>              
           </div>          
           
-          <div className="playmate-card-footer">           
+          <div className="playmate-card-footer">
+            <Button
+              type="default"
+              size="small"
+              icon={<EditOutlined />}
+              onClick={(e) => handleEditPlaymate(search.id, e)}
+              className="mr-2"
+            >
+              Chỉnh sửa
+            </Button>           
             <Button
               type="primary"
               size="small"
-              icon={<EditOutlined />}
+              icon={<EyeOutlined />}
               onClick={(e) => {
                 e.stopPropagation();
                 handleViewPlaymate(search.id);
               }}
-              className="ml-2"
             >
               Xem chi tiết
             </Button>
@@ -578,6 +606,14 @@ const PlaymateManage: React.FC = () => {
           items={items}
         />
       </div>
+      
+      {/* Edit Modal */}
+      <PlaymateEdit
+        visible={editModalVisible}
+        onClose={handleEditModalClose}
+        playmateId={selectedPlaymateId}
+        onSuccess={handleEditSuccess}
+      />
       
       <style>
         {`

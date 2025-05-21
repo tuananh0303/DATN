@@ -1,0 +1,32 @@
+.custom-radio-card .ant-radio {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+}
+
+.custom-radio-card {
+  width: 100%;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.table-container .ant-table-tbody .ant-table-row:hover {
+  background-color: #f0f7ff;
+  cursor: pointer;
+}
+
+.ant-radio + * {
+  width: 100%;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .custom-radio-card .ant-card {
+    padding: 8px !important;
+  }
+
+  .custom-radio-card .ant-card-body {
+    padding: 8px !important;
+  }
+} 

@@ -9,6 +9,7 @@ import { getSportNameInVietnamese } from '@/utils/translateSport';
 import ChatService from '@/services/chat.service';
 import { openChatWidget, setActiveConversation } from '@/store/slices/chatSlice';
 import { useSocketService } from '@/hooks/useSocketService';
+import PlaymateEdit from '../../Player/Playmate/PlaymateEdit';
 
 import {
   Card,
@@ -44,7 +45,8 @@ import {
   CheckOutlined,
   CloseOutlined,
   MessageOutlined,
-  CheckCircleOutlined
+  CheckCircleOutlined,
+  EditOutlined
 } from '@ant-design/icons';
 
 const { Title, Text, Paragraph } = Typography;
@@ -72,38 +74,40 @@ const PlaymateDetail: React.FC = () => {
   const [chatTitleModalVisible, setChatTitleModalVisible] = useState<boolean>(false);
   const [chatTitle, setChatTitle] = useState<string>('');
   const [titleForm] = Form.useForm();
+  const [editModalVisible, setEditModalVisible] = useState<boolean>(false);
+
+  // Extract the fetch playmate search logic into a named function
+  const fetchPlaymateSearch = async () => {
+    if (!id) return;
+    
+    try {
+      setLoading(true);
+      const data = await playmateService.getPlaymateSearchById(id);
+      
+      if (!data) {
+        setError('Không tìm thấy bài đăng.');
+        return;
+      }
+      
+      setPlaymateSearch(data);
+      
+      // Set main image if available
+      if (data.image && data.image.length > 0) {
+        setMainImage(data.image[0]);
+      }
+
+      // Check if chat has already been created for this playmate
+      checkChatCreationStatus(id);
+    } catch (error) {
+      console.error('Error fetching playmate search:', error);
+      setError('Đã có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại sau.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Fetch playmate search data
   useEffect(() => {
-    const fetchPlaymateSearch = async () => {
-      if (!id) return;
-      
-      try {
-        setLoading(true);
-        const data = await playmateService.getPlaymateSearchById(id);
-        
-        if (!data) {
-          setError('Không tìm thấy bài đăng.');
-          return;
-        }
-        
-        setPlaymateSearch(data);
-        
-        // Set main image if available
-        if (data.image && data.image.length > 0) {
-          setMainImage(data.image[0]);
-        }
-
-        // Check if chat has already been created for this playmate
-        checkChatCreationStatus(id);
-      } catch (error) {
-        console.error('Error fetching playmate search:', error);
-        setError('Đã có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại sau.');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     fetchPlaymateSearch();
   }, [id]);
 
@@ -504,6 +508,24 @@ const PlaymateDetail: React.FC = () => {
     };
   }, [isOwner, socketService, playmateSearch, id]);
   
+  // Handle edit button click
+  const handleEditClick = () => {
+    setEditModalVisible(true);
+  };
+
+  // Handle edit modal close
+  const handleEditModalClose = () => {
+    setEditModalVisible(false);
+  };
+
+  // Handle edit success
+  const handleEditSuccess = () => {
+    // Refresh data
+    if (id) {
+      fetchPlaymateSearch();
+    }
+  };
+  
   // Render loading state
   if (loading) {
     return (
@@ -564,6 +586,16 @@ const PlaymateDetail: React.FC = () => {
           
           {/* Action Buttons */}
           <div className="mb-4">
+            {isOwner && (
+              <Button
+                type="primary"
+                icon={<EditOutlined />}
+                onClick={handleEditClick}
+                className="mr-3"
+              >
+                Chỉnh sửa bài đăng
+              </Button>
+            )}
             {!isOwner && isOpen && (
               <Button 
                 type="primary" 
@@ -815,14 +847,13 @@ const PlaymateDetail: React.FC = () => {
                             </Paragraph>
                           </div>
                   
-                          {/* Additional information */}
-                          {playmateSearch.communicationDescription && (
+                          {/* Additional information */}                          
                             <div className="mb-4">
                               <Divider className="my-2" />
-                              <Title level={5}>Thông tin liên hệ</Title>
-                              <Paragraph>{playmateSearch.communicationDescription}</Paragraph>
+                              <Title level={5}>Thông tin liên hệ bổ sung</Title>
+                              <Paragraph>{playmateSearch.communicationDescription || 'Không có thông tin liên hệ bổ sung.'}</Paragraph>
                             </div>
-                          )}
+                          
                         </Card>
                       </div>
                       
@@ -1210,6 +1241,16 @@ const PlaymateDetail: React.FC = () => {
           </Form.Item>
         </Form>
       </Modal>
+      
+      {/* Edit Modal */}
+      {playmateSearch && (
+        <PlaymateEdit
+          visible={editModalVisible}
+          onClose={handleEditModalClose}
+          playmateId={playmateSearch.id}
+          onSuccess={handleEditSuccess}
+        />
+      )}
       
       <style>{`
         .ant-descriptions-item-label {

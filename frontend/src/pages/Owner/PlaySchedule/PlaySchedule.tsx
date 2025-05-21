@@ -19,6 +19,7 @@ import bookingService from '@/services/booking.service';
 import { getSportNameInVietnamese } from '@/utils/translateSport';
 import { sportService } from '@/services/sport.service';
 import { FacilityDropdownItem, facilityService } from '@/services/facility.service';
+import DirectBookingModal from '@/components/Owner/DirectBooking/DirectBookingModal';
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -132,6 +133,8 @@ interface BookingSlot {
     endTime: string;
     status: string;
     player?: PlayerType;
+    guestName?: string;
+    guestPhone?: string;
   };
 }
 
@@ -157,6 +160,13 @@ interface BookingData {
   bookingSlots: BookingSlot[];
   payment: Payment;
   player?: PlayerType;
+  guestName?: string;
+  guestPhone?: string;
+  review?: {
+    id: string;
+    comment: string;
+    rating: number;
+  } | null;
 }
 
 interface BookingHistoryItem {
@@ -353,6 +363,7 @@ const PlaySchedule: React.FC = () => {
   const [filterTimeRange, setFilterTimeRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
   const [searchText, setSearchText] = useState('');
   const [sportFilter, setSportFilter] = useState<number | null>(null);
+  const [bookingSourceFilter, setBookingSourceFilter] = useState<string>('all'); // 'all', 'player', 'direct'
   const [filterVisible, setFilterVisible] = useState(false);
   const [sports, setSports] = useState<Sport[]>([]);
   
@@ -397,6 +408,7 @@ const PlaySchedule: React.FC = () => {
   const [isSlotModalVisible, setIsSlotModalVisible] = useState(false);
   const [currentSlot, setCurrentSlot] = useState<SlotInfo | null>(null);
   const [bookingSchedule, setBookingSchedule] = useState<BookingScheduleItem[]>([]);
+  const [showDirectBookingModal, setShowDirectBookingModal] = useState(false);
   
   // Update container width for responsive design
   useEffect(() => {
@@ -835,6 +847,7 @@ const PlaySchedule: React.FC = () => {
     setFilterTimeRange(null);
     setSearchText('');
     setSportFilter(null);
+    setBookingSourceFilter('all');
     
     // Giả lập delay API
     setFilterLoading(true);
@@ -942,9 +955,16 @@ const PlaySchedule: React.FC = () => {
         return false;
       }
 
+      // Lọc theo nguồn đặt sân (player hoặc owner)
+      if (bookingSourceFilter !== 'all') {
+        const isDirectBooking = !!item.booking.guestName && !!item.booking.guestPhone;
+        if (bookingSourceFilter === 'player' && isDirectBooking) return false;
+        if (bookingSourceFilter === 'direct' && !isDirectBooking) return false;
+      }
+
       return true;
     });
-  }, [bookings, activeTab, filterTimeRange, searchText, sportFilter]);
+  }, [bookings, activeTab, filterTimeRange, searchText, sportFilter, bookingSourceFilter]);
 
   // Memoize columns để tránh tính toán lại
   const columns = React.useMemo<ColumnType<BookingHistoryItem>[]>(() => [
@@ -962,16 +982,39 @@ const PlaySchedule: React.FC = () => {
       title: 'Khách hàng',
       key: 'player',
       render: (_: unknown, record: BookingHistoryItem) => {
-        // Get player info from bookingSlots if available
-        const playerInfo = record.booking.bookingSlots[0]?.booking?.player || record.booking.player;
+        // Get player info or guest info for direct bookings (by facility owner)
+        const isDirectBooking = record.booking.guestName && record.booking.guestPhone;
+        
+        // Type the slot booking info properly
+        const slotBooking = record.booking.bookingSlots[0]?.booking;
+        
+        // Get player and guest info with proper types
+        const slotPlayerInfo: Partial<PlayerType> = slotBooking?.player || {};
+        const slotGuestInfo = {
+          name: slotBooking?.guestName,
+          phoneNumber: slotBooking?.guestPhone,
+        };
+        
+        // Use booking level guest info if available, otherwise slot level guest info,
+        // otherwise player info from either level
+        const customerInfo = isDirectBooking ? 
+          { name: record.booking.guestName, phoneNumber: record.booking.guestPhone } :
+          (slotGuestInfo.name && slotGuestInfo.phoneNumber) ? 
+            slotGuestInfo : 
+            (record.booking.player || slotPlayerInfo);
+        
+        const isGuest = isDirectBooking || (slotGuestInfo.name && slotGuestInfo.phoneNumber);
         
         return (
           <div style={{ display: 'flex', alignItems: 'center' }}>
-            <Avatar size="small" src={`https://ui-avatars.com/api/?name=${playerInfo?.name || 'User'}&background=random`} style={{ marginRight: 8 }} />
+            <Avatar size="small" src={`https://ui-avatars.com/api/?name=${customerInfo?.name || 'Guest'}&background=random`} style={{ marginRight: 8 }} />
             <div>
-              <div>{playerInfo?.name || `Khách hàng #${record.booking.id.substring(0, 4)}`}</div>
-              {playerInfo?.phoneNumber && (
-                <div className="text-xs text-gray-500">{playerInfo.phoneNumber}</div>
+              <div className="flex items-center">
+                {customerInfo?.name || `Khách hàng #${record.booking.id.substring(0, 4)}`}
+                {isGuest && <Tag color="orange" className="ml-2 text-xs">Khách</Tag>}
+              </div>
+              {customerInfo?.phoneNumber && (
+                <div className="text-xs text-gray-500">{customerInfo.phoneNumber}</div>
               )}
             </div>
           </div>
@@ -1242,6 +1285,17 @@ const PlaySchedule: React.FC = () => {
     return calendarData;
   };
 
+  // Handle direct booking button click
+  const handleDirectBookingClick = () => {
+    setShowDirectBookingModal(true);
+  };
+
+  // Handle booking success
+  const handleBookingSuccess = () => {
+    message.success('Đặt sân thành công!');
+    fetchBookings(selectedFacilityId, false);
+  };
+
   return (
     <div ref={containerRef} className="w-full px-4 py-6 bg-gray-50">
       <div className="max-w-7xl mx-auto">
@@ -1280,6 +1334,16 @@ const PlaySchedule: React.FC = () => {
           
         <div className="flex justify-end mb-6">
           <Space>
+            {selectedFacilityId && (
+              <Button 
+                type="primary"
+                icon={<CalendarOutlined />}
+                onClick={handleDirectBookingClick}
+                className="flex items-center"
+              >
+                Đặt sân trực tiếp
+              </Button>
+            )}
             <Button 
               icon={<FilterOutlined />} 
               onClick={() => setFilterVisible(!filterVisible)}
@@ -1358,6 +1422,20 @@ const PlaySchedule: React.FC = () => {
                       {getSportNameInVietnamese(sport.name)}
                     </Option>
                   ))}
+                </Select>
+              </Col>
+              <Col xs={24} md={8}>
+                <div className="mb-2 font-medium">Nguồn đặt sân</div>
+                <Select
+                  style={{ width: '100%' }}
+                  placeholder="Chọn nguồn đặt sân"
+                  value={bookingSourceFilter}
+                  onChange={(value) => setBookingSourceFilter(value)}
+                  className="w-full"
+                >
+                  <Option value="all">Tất cả</Option>
+                  <Option value="player">Người chơi đặt</Option>
+                  <Option value="direct">Chủ sân đặt trực tiếp</Option>
                 </Select>
               </Col>
               <Col xs={24} className="text-right">
@@ -1617,14 +1695,35 @@ const PlaySchedule: React.FC = () => {
                 <Col xs={24} md={12}>
                   <Card size="small" title="Thông tin khách hàng" className="h-full">
                     {(() => {
-                      // Get player info from bookingSlots if available
-                      const playerInfo = currentBooking.booking.bookingSlots[0]?.booking?.player || currentBooking.booking.player;
+                      // Check if this is a direct booking by looking for guest information
+                      const isDirectBooking = currentBooking.booking.guestName && currentBooking.booking.guestPhone;
+                      
+                      // Get guest info from booking or from booking slots with proper typing
+                      const slotBooking = currentBooking.booking.bookingSlots[0]?.booking;
+                      
+                      // Get player and guest info with proper types
+                      const slotPlayerInfo: Partial<PlayerType> = slotBooking?.player || {};
+                      const slotGuestInfo = {
+                        name: slotBooking?.guestName,
+                        phoneNumber: slotBooking?.guestPhone,
+                      };
+                      
+                      // Prioritize booking level guest info, then slot level guest info, then player info
+                      const customerInfo = isDirectBooking ? 
+                        { name: currentBooking.booking.guestName, phoneNumber: currentBooking.booking.guestPhone } :
+                        (slotGuestInfo.name && slotGuestInfo.phoneNumber) ? 
+                          slotGuestInfo : 
+                          (currentBooking.booking.player || slotPlayerInfo);
+                      
+                      const isGuest = isDirectBooking || (slotGuestInfo.name && slotGuestInfo.phoneNumber);
                       
                       return (
                         <>
-                          <p><strong>Tên khách hàng:</strong> {playerInfo?.name || 'Không có thông tin'}</p>
-                          <p><strong>Số điện thoại:</strong> {playerInfo?.phoneNumber || 'Không có thông tin'}</p>
-                          <p><strong>Email:</strong> {playerInfo?.email || 'Không có thông tin'}</p>
+                          <p><strong>Tên khách hàng:</strong> {customerInfo?.name || 'Không có thông tin'} 
+                            {isGuest && <Tag color="orange" className="ml-2">Khách</Tag>}
+                          </p>
+                          <p><strong>Số điện thoại:</strong> {customerInfo?.phoneNumber || 'Không có thông tin'}</p>
+                          <p><strong>Email:</strong> {!isGuest && (customerInfo as PlayerType)?.email || 'Không có thông tin'}</p>
                         </>
                       );
                     })()}
@@ -1751,6 +1850,16 @@ const PlaySchedule: React.FC = () => {
             </div>
           )}
         </Modal>
+
+        {/* Direct Booking Modal */}
+        {selectedFacilityId && (
+          <DirectBookingModal
+            visible={showDirectBookingModal}
+            facilityId={selectedFacilityId}
+            onClose={() => setShowDirectBookingModal(false)}
+            onSuccess={handleBookingSuccess}
+          />
+        )}
 
         <div className="mt-6 text-center text-gray-500 text-sm">
           <p>Lưu ý: Nếu bạn cần hỗ trợ, vui lòng liên hệ với chúng tôi qua hotline: 0976302-xxx</p>

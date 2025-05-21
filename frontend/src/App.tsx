@@ -9,6 +9,7 @@ import { hidePlayerRoleModal, hideOwnerRoleModal, hideRoleModal, showLoginModal,
 import PlayerRoleModal from './components/LoginModal/PlayerRoleModal';
 import OwnerRoleModal from './components/LoginModal/OwnerRoleModal';
 import { SocketServiceProvider } from './providers/SocketServiceProvider';
+import { PlaymateSocketProvider } from './providers/PlaymateSocketProvider';
 
 const App: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -55,31 +56,33 @@ const App: React.FC = () => {
 
   return (
     <SocketServiceProvider>
-      <BrowserRouter>    
-        <AppRouter />
-        {loginModalVisible && <LoginModal visible={loginModalVisible} requiredRole={selectedRole || undefined} />}
-        {roleModalVisible && (
-        <RoleSelectionModal 
-          visible={roleModalVisible} 
-          onClose={handleCloseRoleModal} 
-          onSelectRole={handleSelectRole} 
-        />
-      )}
-      {playerRoleModalVisible && (
-        <PlayerRoleModal
-          visible={playerRoleModalVisible} 
-          onClose={() => dispatch(hidePlayerRoleModal())}
-          onLogin={handlePlayerLogin}
-        />
-      )}
-      {ownerRoleModalVisible && (
-        <OwnerRoleModal
-          visible={ownerRoleModalVisible}
-          onClose={() => dispatch(hideOwnerRoleModal())}
-          onLogin={handleOwnerLogin}
-        />
-      )}
-    </BrowserRouter>
+      <PlaymateSocketProvider>
+        <BrowserRouter>    
+          <AppRouter />
+          {loginModalVisible && <LoginModal visible={loginModalVisible} requiredRole={selectedRole || undefined} />}
+          {roleModalVisible && (
+          <RoleSelectionModal 
+            visible={roleModalVisible} 
+            onClose={handleCloseRoleModal} 
+            onSelectRole={handleSelectRole} 
+          />
+        )}
+        {playerRoleModalVisible && (
+          <PlayerRoleModal
+            visible={playerRoleModalVisible} 
+            onClose={() => dispatch(hidePlayerRoleModal())}
+            onLogin={handlePlayerLogin}
+          />
+        )}
+        {ownerRoleModalVisible && (
+          <OwnerRoleModal
+            visible={ownerRoleModalVisible}
+            onClose={() => dispatch(hideOwnerRoleModal())}
+            onLogin={handleOwnerLogin}
+          />
+        )}
+      </BrowserRouter>
+      </PlaymateSocketProvider>
     </SocketServiceProvider>
   );
 };
