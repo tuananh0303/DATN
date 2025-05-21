@@ -75,7 +75,7 @@ export class SocketService {
 
       // Tạo kết nối mới
       console.log('Creating new socket connection');
-      this.socket = io('http://localhost:3000/ws/message', {
+      this.socket = io(import.meta.env.VITE_API_URL + '/ws/message', {
         extraHeaders: {
           Authorization: token
         },
@@ -347,23 +347,23 @@ export class SocketService {
             // Kết nối lại sau khi refresh token
             this.reconnect();
           } else {
-            // Nếu không refresh được, đăng xuất
-            localStorage.removeItem('access_token');
-            localStorage.removeItem('refresh_token');
-            window.location.href = '/';
+            // Thay vì đăng xuất ngay, chỉ thử kết nối lại sau một khoảng thời gian
+            console.log('Failed to refresh token, will retry connection later');
+            setTimeout(() => this.reconnect(), 5000);
           }
         })
         .catch(error => {
           console.error('Error refreshing token:', error);
-          // Nếu lỗi, đăng xuất
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('refresh_token');
-          window.location.href = '/';
+          // Thay vì đăng xuất ngay, chỉ thử kết nối lại sau một khoảng thời gian
+          // Server có thể đang restart và chưa sẵn sàng xử lý refresh token
+          console.log('Will retry connection in 5 seconds...');
+          setTimeout(() => this.reconnect(), 5000);
         });
     } else {
-      // Không có refresh token, đăng xuất
-      localStorage.removeItem('access_token');
-      window.location.href = '/';
+      // Không có refresh token, nhưng vẫn thử kết nối lại
+      // Có thể access token vẫn còn hợp lệ
+      console.log('No refresh token available, will retry with existing access token');
+      setTimeout(() => this.reconnect(), 5000);
     }
   }
 

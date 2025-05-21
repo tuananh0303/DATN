@@ -458,7 +458,7 @@ const BookingStepField: React.FC<BookingStepFieldProps> = ({
   };
 
   return (
-    <Card className="shadow-md">
+    <>
       {fieldGroups.length === 0 ? (
         <Empty description="Không có sân nào phù hợp" />
       ) : (
@@ -591,7 +591,7 @@ const BookingStepField: React.FC<BookingStepFieldProps> = ({
           </Row>
         </Form>
       )}
-    </Card>
+    </>
   );
 };
 
