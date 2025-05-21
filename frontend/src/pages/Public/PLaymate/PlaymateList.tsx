@@ -4,7 +4,8 @@ import {
   PlaymateSearch, 
   PlaymateSearchType, 
   SkillLevel, 
-  CostType 
+  CostType,
+  GenderPreference
 } from '@/types/playmate.type';
 import { Sport } from '@/types/sport.type';
 import playmateService from '@/services/playmate.service';
@@ -12,6 +13,7 @@ import { sportService } from '@/services/sport.service';
 import { getSportNameInVietnamese } from '@/utils/translateSport';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
+import { usePlaymateSocket } from '@/hooks/usePlaymateSocket';
 
 import {
   Card,
@@ -30,7 +32,8 @@ import {
   Avatar,
   message,
   Pagination,
-  Tabs
+  Tabs,
+  Badge
 } from 'antd';
 import {
   PlusOutlined,
@@ -53,6 +56,9 @@ const PlaymateList: React.FC = () => {
   const [filteredSearches, setFilteredSearches] = useState<PlaymateSearch[]>([]);
   const [sportsList, setSportsList] = useState<Sport[]>([]);
   const user = useSelector((state: RootState) => state.user.user);
+  
+  // Lắng nghe socket playmate
+  const { isConnected, newPlaymate, updatedPlaymate } = usePlaymateSocket();
   
   // Filter states
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -89,6 +95,127 @@ const PlaymateList: React.FC = () => {
 
     fetchData();
   }, [user]);
+
+  // Xử lý khi có playmate mới từ socket
+  useEffect(() => {
+    if (newPlaymate) {
+      console.log('Nhận được bài đăng mới qua socket:', newPlaymate);
+      
+      try {
+        // Chuyển đổi từ SocketPlaymate sang PlaymateSearch để hiển thị
+        const processedPlaymate: PlaymateSearch = {
+          id: newPlaymate.id,
+          userId: newPlaymate.bookingSlot.booking.player?.id || '',
+          userInfo: {
+            id: newPlaymate.bookingSlot.booking.player?.id,
+            name: newPlaymate.bookingSlot.booking.player?.name || 'Unknown',
+            avatar: newPlaymate.bookingSlot.booking.player?.avatarUrl,
+            phoneNumber: newPlaymate.bookingSlot.booking.player?.phoneNumber,
+            email: newPlaymate.bookingSlot.booking.player?.email
+          },
+          title: newPlaymate.title,
+          description: newPlaymate.description,
+          image: newPlaymate.imagesUrl,
+          requiredSkillLevel: (newPlaymate.skillLevel.toLowerCase() || 'any') as SkillLevel,
+          facilityName: newPlaymate.bookingSlot.field.fieldGroup.facility.name,
+          location: newPlaymate.bookingSlot.field.fieldGroup.facility.location,
+          date: newPlaymate.bookingSlot.date.split('T')[0],
+          startTime: newPlaymate.bookingSlot.booking.startTime,
+          endTime: newPlaymate.bookingSlot.booking.endTime,
+          playmateSearchType: newPlaymate.isTeam ? 'group' : 'individual',
+          numberOfParticipants: newPlaymate.numberOfParticipants,
+          positions: newPlaymate.positions,
+          currentParticipants: newPlaymate.participants?.length || 0,
+          genderPreference: (newPlaymate.genderPreference.toLowerCase() || 'any') as GenderPreference,
+          price: newPlaymate.costType === 'total' ? newPlaymate.totalCost : undefined,
+          costType: newPlaymate.costType as CostType,
+          costMale: newPlaymate.maleCost,
+          costFemale: newPlaymate.femaleCost,
+          costDetails: newPlaymate.detailOfCost,
+          status: true,
+          createdAt: newPlaymate.createdAt,
+          bookingSlotId: newPlaymate.bookingSlot.id,
+          bookingSlot: newPlaymate.bookingSlot as any, // Cast để tránh lỗi type
+          // participants: newPlaymate.participants || []
+        };
+        
+        console.log('Processed playmate for display:', processedPlaymate);
+        
+        // Thêm playmate mới vào đầu danh sách
+        setPlaymateSearches(prevSearches => {
+          // Kiểm tra xem đã có bài đăng với ID này chưa
+          const exists = prevSearches.some(search => search.id === processedPlaymate.id);
+          if (!exists) {
+            // Hiển thị thông báo khi có bài đăng mới
+            setTimeout(() => {
+              message.success('Có bài đăng mới vừa được tạo!');
+            }, 100);
+            return [processedPlaymate, ...prevSearches];
+          }
+          return prevSearches;
+        });
+      } catch (error) {
+        console.error('Lỗi khi xử lý dữ liệu playmate mới:', error);
+      }
+    }
+  }, [newPlaymate]);
+
+  // Xử lý khi có playmate được cập nhật từ socket
+  useEffect(() => {
+    if (updatedPlaymate) {
+      console.log('Nhận được bài đăng cập nhật qua socket:', updatedPlaymate);
+      
+      try {
+        // Chuyển đổi từ SocketPlaymate sang PlaymateSearch để hiển thị
+        const processedPlaymate: PlaymateSearch = {
+          id: updatedPlaymate.id,
+          userId: updatedPlaymate.bookingSlot.booking.player?.id || '',
+          userInfo: {
+            id: updatedPlaymate.bookingSlot.booking.player?.id,
+            name: updatedPlaymate.bookingSlot.booking.player?.name || 'Unknown',
+            avatar: updatedPlaymate.bookingSlot.booking.player?.avatarUrl,
+            phoneNumber: updatedPlaymate.bookingSlot.booking.player?.phoneNumber,
+            email: updatedPlaymate.bookingSlot.booking.player?.email
+          },
+          title: updatedPlaymate.title,
+          description: updatedPlaymate.description,
+          image: updatedPlaymate.imagesUrl,
+          requiredSkillLevel: (updatedPlaymate.skillLevel.toLowerCase() || 'any') as SkillLevel,
+          facilityName: updatedPlaymate.bookingSlot.field.fieldGroup.facility.name,
+          location: updatedPlaymate.bookingSlot.field.fieldGroup.facility.location,
+          date: updatedPlaymate.bookingSlot.date.split('T')[0],
+          startTime: updatedPlaymate.bookingSlot.booking.startTime,
+          endTime: updatedPlaymate.bookingSlot.booking.endTime,
+          playmateSearchType: updatedPlaymate.isTeam ? 'group' : 'individual',
+          numberOfParticipants: updatedPlaymate.numberOfParticipants,
+          positions: updatedPlaymate.positions,
+          currentParticipants: updatedPlaymate.participants?.length || 0,
+          genderPreference: (updatedPlaymate.genderPreference.toLowerCase() || 'any') as GenderPreference,
+          price: updatedPlaymate.costType === 'total' ? updatedPlaymate.totalCost : undefined,
+          costType: updatedPlaymate.costType as CostType,
+          costMale: updatedPlaymate.maleCost,
+          costFemale: updatedPlaymate.femaleCost,
+          costDetails: updatedPlaymate.detailOfCost,
+          status: true,
+          createdAt: updatedPlaymate.createdAt,
+          bookingSlotId: updatedPlaymate.bookingSlot.id,
+          bookingSlot: updatedPlaymate.bookingSlot as any, // Cast để tránh lỗi type
+          // participants: updatedPlaymate.participants || []
+        };
+        
+        console.log('Processed updated playmate for display:', processedPlaymate);
+        
+        // Cập nhật playmate trong danh sách
+        setPlaymateSearches(prevSearches => 
+          prevSearches.map(search => 
+            search.id === processedPlaymate.id ? processedPlaymate : search
+          )
+        );
+      } catch (error) {
+        console.error('Lỗi khi xử lý dữ liệu playmate cập nhật:', error);
+      }
+    }
+  }, [updatedPlaymate]);
 
   // Apply filters whenever any filter changes
   useEffect(() => {
@@ -250,10 +377,6 @@ const PlaymateList: React.FC = () => {
         search.participants.filter(p => p.status === 'accepted' || p.status === 'pending').length : 0;
     }
     
-    console.log('Playmate ID:', search.id, 'currentParticipants:', search.currentParticipants, 
-      'participants length:', search.participants?.length || 0,
-      'accepted+pending:', search.participants?.filter(p => p.status === 'accepted' || p.status === 'pending').length || 0);
-    
     // Determine if the playmate has reached maximum participants
     const isFullyBooked = search.numberOfParticipants && 
       currentCount >= search.numberOfParticipants;
@@ -279,10 +402,13 @@ const PlaymateList: React.FC = () => {
     // Determine participant text based on playmate type
     const participantText = search.playmateSearchType === 'group' ? 'nhóm tham gia' : 'người tham gia';
 
+    // Check if this is a newly added playmate via socket
+    const isNewlyAdded = newPlaymate && newPlaymate.id === search.id;
+
     return (
       <Card
         hoverable
-        className={`playmate-card h-full shadow-sm hover:shadow-md transition-all ${isUserPost ? 'my-playmate-card' : ''}`}
+        className={`playmate-card h-full shadow-sm hover:shadow-md transition-all ${isUserPost ? 'my-playmate-card' : ''} ${isNewlyAdded ? 'newly-added' : ''}`}
         onClick={() => handleViewPlaymate(search.id)}
         cover={
           <div className="playmate-card-cover">
@@ -293,6 +419,7 @@ const PlaymateList: React.FC = () => {
             />
             <div className="playmate-card-badge">
               {isUserPost && <Tag color="gold">Bài đăng của bạn</Tag>}
+              {isNewlyAdded && <Tag color="cyan">Mới</Tag>}
               {getStatusTag(isOpen)}
               {getTypeTag(search.playmateSearchType)}
             </div>
@@ -420,6 +547,13 @@ const PlaymateList: React.FC = () => {
           <div>
             <Title level={2} className="m-0 text-xl md:text-2xl lg:text-3xl">
               Tìm bạn chơi
+              {isConnected && (
+                <Badge 
+                  status="processing" 
+                  text={<span className="ml-2 text-sm text-green-600">Realtime</span>} 
+                  style={{ marginLeft: 8 }}
+                />
+              )}
             </Title>
             <Text type="secondary">
               Tìm kiếm bạn chơi thể thao cùng sở thích
@@ -615,6 +749,23 @@ const PlaymateList: React.FC = () => {
             border: 2px solid #faad14;
           }
           
+          .newly-added {
+            border: 2px solid #13c2c2;
+            animation: pulse 2s infinite;
+          }
+          
+          @keyframes pulse {
+            0% {
+              box-shadow: 0 0 0 0 rgba(19, 194, 194, 0.7);
+            }
+            70% {
+              box-shadow: 0 0 0 10px rgba(19, 194, 194, 0);
+            }
+            100% {
+              box-shadow: 0 0 0 0 rgba(19, 194, 194, 0);
+            }
+          }
+          
           .text-gold {
             color: #faad14;
           }
@@ -752,6 +903,22 @@ const PlaymateList: React.FC = () => {
           .my-8 {
             margin-top: 32px;
             margin-bottom: 32px;
+          }
+          
+          /* Socket connection indicator styles */
+          .socket-connection {
+            display: inline-flex;
+            align-items: center;
+            margin-left: 8px;
+            font-size: 0.85em;
+          }
+          
+          .connected {
+            color: #52c41a;
+          }
+          
+          .disconnected {
+            color: #ff4d4f;
           }
           
           @media (max-width: 768px) {
