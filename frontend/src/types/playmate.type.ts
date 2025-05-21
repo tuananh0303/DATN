@@ -305,7 +305,7 @@ export const mapApiToPlaymateSearch = (api: ApiPlaymateSearch): PlaymateSearch =
       description: api.description || undefined,
       image: api.imagesUrl,
       requiredSkillLevel: skillLevel,
-      location: api.additionalInfo || undefined,
+      location: api.bookingSlot?.field?.fieldGroup?.facility?.location || undefined,
       date: api.bookingSlot.date.split('T')[0],
       startTime: api.bookingSlot.booking.startTime,
       endTime: api.bookingSlot.booking.endTime,

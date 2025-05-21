@@ -847,14 +847,13 @@ const PlaymateDetail: React.FC = () => {
                             </Paragraph>
                           </div>
                   
-                          {/* Additional information */}
-                          {playmateSearch.communicationDescription && (
+                          {/* Additional information */}                          
                             <div className="mb-4">
                               <Divider className="my-2" />
-                              <Title level={5}>Thông tin liên hệ</Title>
-                              <Paragraph>{playmateSearch.communicationDescription}</Paragraph>
+                              <Title level={5}>Thông tin liên hệ bổ sung</Title>
+                              <Paragraph>{playmateSearch.communicationDescription || 'Không có thông tin liên hệ bổ sung.'}</Paragraph>
                             </div>
-                          )}
+                          
                         </Card>
                       </div>
                       
