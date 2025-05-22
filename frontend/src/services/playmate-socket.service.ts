@@ -42,7 +42,7 @@ export class PlaymateSocketService {
       // Create new connection
       console.log('Creating new playmate socket connection');
       this.socket = io(import.meta.env.VITE_API_URL + '/ws/playmate', {
-        withCredentials: true,
+        withCredentials: false,  // TODO: change to true when backend is ready
         autoConnect: true,
         reconnection: true,
         reconnectionAttempts: this.maxReconnectAttempts,
